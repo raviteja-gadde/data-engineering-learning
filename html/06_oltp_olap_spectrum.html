@@ -1,0 +1,1280 @@
+<!--
+  Synthesis Page: OLTP vs OLAP Spectrum
+  Generated: 2026-08-23
+  Sources:
+  notes/06_oltp_olap_spectrum.md
+  labs/06_oltp_olap_spectrum/01_oltp_vs_olap_queries.py
+  labs/06_oltp_olap_spectrum/02_serving_layer.py
+  labs/06_oltp_olap_spectrum/03_hybrid_patterns.py
+  labs/06_oltp_olap_spectrum/04_caching_strategies.py
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OLTP vs OLAP Spectrum</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --bg-secondary: #f5f7fa;
+      --text: #1a1a2e;
+      --text-secondary: #555770;
+      --border: #e0e0e8;
+      --accent: #4a6cf7;
+      --accent-soft: #eef0ff;
+      --code-bg: #f0f2f8;
+      --card-bg: #ffffff;
+      --card-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      --callout-info: #e8f0fe;
+      --callout-warn: #fef7e0;
+      --callout-tip: #e6f9ef;
+      --callout-info-border: #4a6cf7;
+      --callout-warn-border: #e6a817;
+      --callout-tip-border: #27ae60;
+    }
+
+    [data-theme="dark"] {
+      --bg: #0f0f1a;
+      --bg-secondary: #1a1a2e;
+      --text: #e0e0ec;
+      --text-secondary: #9999b0;
+      --border: #2a2a40;
+      --accent: #6b8cff;
+      --accent-soft: #1a1a3e;
+      --code-bg: #1e1e32;
+      --card-bg: #16162a;
+      --card-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      --callout-info: #141430;
+      --callout-warn: #1e1a10;
+      --callout-tip: #0e1e14;
+      --callout-info-border: #6b8cff;
+      --callout-warn-border: #d4a017;
+      --callout-tip-border: #2ecc71;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    /* ── Header ── */
+    header {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 2.5rem 2rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    header h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.3;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-shrink: 0;
+      padding-top: 0.35rem;
+    }
+
+    .meta-date {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+
+    /* ── Theme button ── */
+    .theme-btn {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg-secondary);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.7rem;
+      flex-shrink: 0;
+      transition: background 0.2s ease, border-color 0.2s ease;
+      color: var(--text-secondary);
+      font-family: inherit;
+      font-size: 0.8rem;
+      font-weight: 500;
+      line-height: 1;
+    }
+
+    .theme-btn:hover {
+      background: var(--border);
+      color: var(--text);
+    }
+
+    .theme-btn:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .theme-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .theme-btn .icon-sun,
+    .theme-btn .icon-moon,
+    .theme-btn .label-light,
+    .theme-btn .label-dark {
+      display: none;
+    }
+
+    [data-theme="dark"] .theme-btn .icon-sun { display: block; }
+    [data-theme="dark"] .theme-btn .label-dark { display: inline; }
+    :root:not([data-theme="dark"]) .theme-btn .icon-moon { display: block; }
+    :root:not([data-theme="dark"]) .theme-btn .label-light { display: inline; }
+    [data-theme="light"] .theme-btn .icon-moon { display: block; }
+    [data-theme="light"] .theme-btn .label-light { display: inline; }
+
+    /* ── Main ── */
+    main {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 2rem 3rem;
+    }
+
+    main h2 {
+      font-size: 1.35rem;
+      font-weight: 600;
+      margin: 2.5rem 0 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 2px solid var(--border);
+      letter-spacing: -0.01em;
+    }
+
+    main h2:first-child {
+      margin-top: 0.5rem;
+    }
+
+    main h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin: 1.8rem 0 0.6rem;
+    }
+
+    main p { margin: 0.8rem 0; }
+
+    main ul, main ol {
+      margin: 0.8rem 0;
+      padding-left: 1.6rem;
+    }
+
+    main li { margin: 0.35rem 0; }
+    main li strong { color: var(--accent); }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.2s;
+    }
+
+    a:hover { border-bottom-color: var(--accent); }
+
+    code {
+      font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+      font-size: 0.88em;
+      background: var(--code-bg);
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+    }
+
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      overflow-x: auto;
+      margin: 1rem 0;
+    }
+
+    pre code {
+      background: none;
+      padding: 0;
+      font-size: 0.85em;
+      line-height: 1.6;
+    }
+
+    blockquote {
+      border-left: 3px solid var(--accent);
+      padding: 0.6rem 1rem;
+      margin: 1rem 0;
+      background: var(--accent-soft);
+      border-radius: 0 6px 6px 0;
+      color: var(--text-secondary);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.92em;
+    }
+
+    th, td {
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      font-weight: 600;
+      background: var(--bg-secondary);
+      white-space: nowrap;
+    }
+
+    tr:hover td { background: var(--bg-secondary); }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.2rem 1.4rem;
+      margin: 1rem 0;
+      box-shadow: var(--card-shadow);
+      transition: box-shadow 0.2s ease, transform 0.2s ease;
+    }
+
+    .card:hover {
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+      transform: translateY(-1px);
+    }
+
+    [data-theme="dark"] .card:hover {
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    }
+
+    .card h3 { margin-top: 0; }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+
+    .card-grid .card { margin: 0; }
+
+    /* ── Callouts ── */
+    .callout {
+      padding: 0.8rem 1rem;
+      border-radius: 8px;
+      margin: 1rem 0;
+      border-left: 4px solid;
+    }
+
+    .callout-info {
+      background: var(--callout-info);
+      border-left-color: var(--callout-info-border);
+    }
+
+    .callout-warn {
+      background: var(--callout-warn);
+      border-left-color: var(--callout-warn-border);
+    }
+
+    .callout-tip {
+      background: var(--callout-tip);
+      border-left-color: var(--callout-tip-border);
+    }
+
+    .callout strong {
+      display: block;
+      margin-bottom: 0.3rem;
+    }
+
+    /* ── Table of contents ── */
+    nav.toc {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.4rem;
+      margin: 1.5rem 0;
+    }
+
+    nav.toc ul { list-style: none; padding-left: 0; }
+    nav.toc li { margin: 0.3rem 0; }
+
+    nav.toc a {
+      color: var(--text-secondary);
+      font-size: 0.92em;
+    }
+
+    nav.toc a:hover { color: var(--accent); }
+
+    /* ── SVG ── */
+    svg text { fill: var(--text); }
+    svg .stroke { stroke: var(--border); }
+
+    /* ── Footer ── */
+    footer {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 2rem;
+      border-top: 1px solid var(--border);
+    }
+
+    footer h2 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    footer .source {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin: 0.25rem 0;
+    }
+
+    footer .source code { font-size: 0.85em; }
+
+    /* ── Sidebar ── */
+    .page-wrapper {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      width: 260px;
+      flex-shrink: 0;
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border);
+      padding: 1.5rem 0;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+
+    .sidebar h2 {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-secondary);
+      padding: 0 1.2rem;
+      margin-bottom: 0.6rem;
+    }
+
+    .sidebar ol {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .sidebar li a {
+      display: block;
+      padding: 0.4rem 1.2rem;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      border-bottom: none;
+      line-height: 1.4;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .sidebar li a:hover {
+      background: var(--border);
+      color: var(--text);
+      border-bottom: none;
+    }
+
+    .sidebar li.active a {
+      color: var(--accent);
+      font-weight: 600;
+      background: var(--accent-soft);
+      border-left: 3px solid var(--accent);
+      padding-left: calc(1.2rem - 3px);
+    }
+
+    .sidebar .topic-num {
+      display: inline-block;
+      width: 1.4em;
+      color: var(--text-secondary);
+      font-size: 0.8em;
+      opacity: 0.7;
+    }
+
+    .content-area {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .content-area header {
+      max-width: 860px;
+    }
+
+    .content-area main {
+      max-width: 860px;
+    }
+
+    .content-area footer {
+      max-width: 860px;
+    }
+
+    /* ── Sidebar toggle (mobile) ── */
+    .sidebar-toggle {
+      display: none;
+      position: fixed;
+      bottom: 1.2rem;
+      left: 1.2rem;
+      z-index: 1000;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 44px;
+      height: 44px;
+      font-size: 1.3rem;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    /* ── Details/Summary ── */
+    details {
+      margin: 1rem 0;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    details summary {
+      padding: 0.7rem 1rem;
+      background: var(--bg-secondary);
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.95rem;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    details summary::-webkit-details-marker { display: none; }
+
+    details summary::before {
+      content: "\25B6";
+      font-size: 0.7em;
+      transition: transform 0.2s;
+    }
+
+    details[open] summary::before {
+      transform: rotate(90deg);
+    }
+
+    details .details-body {
+      padding: 1rem 1.2rem;
+    }
+
+    /* ── Syntax highlighting ── */
+    .kw { color: #c678dd; }
+    .fn { color: #61afef; }
+    .str { color: #98c379; }
+    .cm { color: #5c6370; font-style: italic; }
+    .num { color: #d19a66; }
+    .op { color: #56b6c2; }
+
+    [data-theme="light"] .kw { color: #7c3aed; }
+    [data-theme="light"] .fn { color: #2563eb; }
+    [data-theme="light"] .str { color: #16a34a; }
+    [data-theme="light"] .cm { color: #6b7280; }
+    [data-theme="light"] .num { color: #d97706; }
+    [data-theme="light"] .op { color: #0891b2; }
+
+    /* ── Benchmark bars ── */
+    .bench-bar {
+      height: 22px;
+      border-radius: 4px;
+      display: inline-block;
+      min-width: 4px;
+      vertical-align: middle;
+    }
+    .bench-pg { background: #e06c75; }
+    .bench-duck { background: #61afef; }
+    .bench-label { font-size: 0.82em; color: var(--text-secondary); margin-left: 0.4rem; }
+
+    [data-theme="light"] .bench-pg { background: #dc2626; }
+    [data-theme="light"] .bench-duck { background: #2563eb; }
+
+    /* ── Winner badge ── */
+    .badge {
+      display: inline-block;
+      padding: 0.1em 0.5em;
+      border-radius: 4px;
+      font-size: 0.78em;
+      font-weight: 600;
+    }
+    .badge-duck { background: #1d4ed8; color: #fff; }
+    .badge-pg { background: #336791; color: #fff; }
+    .badge-warn { background: var(--callout-warn-border); color: #1a1a2e; }
+
+    /* ── Overflow table ── */
+    .table-wrap { overflow-x: auto; margin: 1rem 0; }
+
+    @media (max-width: 800px) {
+      .sidebar { display: none; }
+      .sidebar.open { display: block; position: fixed; z-index: 999; top: 0; left: 0; height: 100vh; width: 280px; box-shadow: 4px 0 20px rgba(0,0,0,0.3); }
+      .sidebar-toggle { display: block; }
+      header { padding: 1.5rem 1rem 1rem; flex-direction: column; }
+      main { padding: 0 1rem 2rem; }
+      footer { padding: 1.5rem 1rem; }
+      .card-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle navigation">&#9776;</button>
+  <div class="page-wrapper">
+    <nav class="sidebar" id="sidebar">
+      <h2>Topics</h2>
+      <ol>
+        <li><a href="01_warehousing_fundamentals.html"><span class="topic-num">1.</span> Warehousing Fundamentals</a></li>
+        <li><a href="02_columnar_storage.html"><span class="topic-num">2.</span> Columnar Storage</a></li>
+        <li><a href="03_medallion_and_dbt.html"><span class="topic-num">3.</span> Medallion Architecture + dbt</a></li>
+        <li><a href="04_precomputation_vs_runtime.html"><span class="topic-num">4.</span> Pre-computation vs Runtime</a></li>
+        <li><a href="05_dynamic_schema_eav.html"><span class="topic-num">5.</span> Dynamic Schema / EAV</a></li>
+        <li class="active"><a href="06_oltp_olap_spectrum.html"><span class="topic-num">6.</span> OLTP vs OLAP Spectrum</a></li>
+        <li><a href="07_suppression_access_control.html"><span class="topic-num">7.</span> Suppression &amp; Access Control</a></li>
+        <li><a href="08_frontier_survey_platforms.html"><span class="topic-num">8.</span> Frontier Survey Platforms</a></li>
+        <li><a href="09_agentic_data_access.html"><span class="topic-num">9.</span> Agentic Data Access</a></li>
+      </ol>
+    </nav>
+    <div class="content-area">
+      <header>
+        <h1>OLTP vs OLAP Spectrum</h1>
+        <div class="header-right">
+          <span class="meta-date">2026-08-23</span>
+          <button class="theme-btn" id="theme-toggle" aria-label="Toggle dark mode">
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+            </svg>
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+            <span class="label-light">Light</span>
+            <span class="label-dark">Dark</span>
+          </button>
+        </div>
+      </header>
+
+      <main>
+
+    <!-- ════════════════ TABLE OF CONTENTS ════════════════ -->
+    <nav class="toc">
+      <ul>
+        <li><a href="#spectrum">The OLTP / OLAP Spectrum</a></li>
+        <li><a href="#characteristics">Characteristics Comparison</a></li>
+        <li><a href="#architecture">Engine Architecture: PostgreSQL vs DuckDB</a></li>
+        <li><a href="#benchmarks">Lab Results: Benchmark Numbers</a></li>
+        <li><a href="#serving-layer">The Serving Layer Pattern</a></li>
+        <li><a href="#hybrid">PostgreSQL as a Hybrid Engine</a></li>
+        <li><a href="#caching">Caching Strategies</a></li>
+        <li><a href="#spectrum-engines">The Blurring Spectrum</a></li>
+        <li><a href="#decision-guide">When to Use What</a></li>
+      </ul>
+    </nav>
+
+    <!-- ════════════════ SPECTRUM DIAGRAM ════════════════ -->
+    <h2 id="spectrum">The OLTP / OLAP Spectrum</h2>
+
+    <p>Every database is optimized for one of two workload patterns. Understanding which you're dealing with &mdash; and when to use each &mdash; is the single most important architectural decision in data engineering.</p>
+
+    <svg viewBox="0 0 780 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:780px;margin:1.5rem auto;display:block;">
+      <!-- Spectrum bar -->
+      <defs>
+        <linearGradient id="specGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#336791"/>
+          <stop offset="50%" stop-color="#8b5cf6"/>
+          <stop offset="100%" stop-color="#61afef"/>
+        </linearGradient>
+      </defs>
+      <rect x="60" y="60" width="660" height="28" rx="14" fill="url(#specGrad)" opacity="0.85"/>
+
+      <!-- OLTP end -->
+      <text x="60" y="42" font-size="14" font-weight="700" fill="var(--text)">OLTP</text>
+      <text x="60" y="110" font-size="11" fill="var(--text-secondary)">Point lookups</text>
+      <text x="60" y="124" font-size="11" fill="var(--text-secondary)">Single-row writes</text>
+      <text x="60" y="138" font-size="11" fill="var(--text-secondary)">High concurrency</text>
+      <text x="60" y="152" font-size="11" fill="var(--text-secondary)">&lt;10ms latency</text>
+
+      <!-- Middle area -->
+      <text x="310" y="42" font-size="14" font-weight="700" fill="var(--text)" text-anchor="middle">Hybrid</text>
+      <text x="310" y="124" font-size="11" fill="var(--text-secondary)" text-anchor="middle">Materialized views</text>
+      <text x="310" y="138" font-size="11" fill="var(--text-secondary)" text-anchor="middle">Real-time OLAP</text>
+
+      <!-- OLAP end -->
+      <text x="720" y="42" font-size="14" font-weight="700" fill="var(--text)" text-anchor="end">OLAP</text>
+      <text x="720" y="110" font-size="11" fill="var(--text-secondary)" text-anchor="end">Full-table scans</text>
+      <text x="720" y="124" font-size="11" fill="var(--text-secondary)" text-anchor="end">Complex aggregations</text>
+      <text x="720" y="138" font-size="11" fill="var(--text-secondary)" text-anchor="end">Batch / few queries</text>
+      <text x="720" y="152" font-size="11" fill="var(--text-secondary)" text-anchor="end">Seconds-minutes</text>
+
+      <!-- Engine labels on the bar -->
+      <text x="100" y="80" font-size="10" fill="#fff" font-weight="600">PostgreSQL</text>
+      <text x="225" y="80" font-size="10" fill="#fff" font-weight="600">MySQL</text>
+      <text x="330" y="80" font-size="10" fill="#fff" font-weight="600">ClickHouse</text>
+      <text x="470" y="80" font-size="10" fill="#fff" font-weight="600">DuckDB</text>
+      <text x="580" y="80" font-size="10" fill="#fff" font-weight="600">Snowflake</text>
+      <text x="660" y="80" font-size="10" fill="#fff" font-weight="600">BQ</text>
+
+      <!-- Marker dots -->
+      <circle cx="100" cy="74" r="3" fill="#fff"/>
+      <circle cx="225" cy="74" r="3" fill="#fff"/>
+      <circle cx="360" cy="74" r="3" fill="#fff"/>
+      <circle cx="490" cy="74" r="3" fill="#fff"/>
+      <circle cx="600" cy="74" r="3" fill="#fff"/>
+      <circle cx="670" cy="74" r="3" fill="#fff"/>
+
+      <!-- Survey domain annotations -->
+      <line x1="100" y1="165" x2="100" y2="155" stroke="var(--text-secondary)" stroke-width="1" stroke-dasharray="3,3"/>
+      <text x="100" y="180" font-size="10" fill="var(--text-secondary)" text-anchor="middle">App DB: submit surveys</text>
+      <line x1="540" y1="165" x2="540" y2="155" stroke="var(--text-secondary)" stroke-width="1" stroke-dasharray="3,3"/>
+      <text x="540" y="180" font-size="10" fill="var(--text-secondary)" text-anchor="middle">Warehouse: engagement trends</text>
+    </svg>
+
+    <div class="card-grid">
+      <div class="card">
+        <h3>OLTP: Online Transaction Processing</h3>
+        <p>Serves your application. A user submits a survey response: INSERT one row. The app fetches an employee profile: SELECT one row by primary key.</p>
+        <ul>
+          <li><strong>Many small, fast operations</strong> &mdash; thousands per second</li>
+          <li><strong>Touches few rows</strong> &mdash; usually 1-10 per query</li>
+          <li><strong>Reads and writes interleaved</strong> &mdash; same table gets INSERTs while other connections SELECT</li>
+          <li><strong>ACID required</strong> &mdash; concurrent submissions must not corrupt each other</li>
+          <li><strong>Latency &lt;10ms</strong></li>
+        </ul>
+        <p style="margin-top:0.8rem;font-size:0.9em;color:var(--text-secondary)"><em>Survey domain:</em> the application DB where individual Q12 responses are stored as users submit them.</p>
+      </div>
+      <div class="card">
+        <h3>OLAP: Online Analytical Processing</h3>
+        <p>Answers analytical questions. "Mean engagement score by department for Q1 2025?" &mdash; scans hundreds of thousands of rows, joins dimensions, groups, aggregates.</p>
+        <ul>
+          <li><strong>Few complex queries</strong> &mdash; tens to hundreds per day</li>
+          <li><strong>Scans massive row ranges</strong> &mdash; full-table scans are normal</li>
+          <li><strong>Mostly reads</strong> &mdash; periodic bulk writes (batch loads)</li>
+          <li><strong>Eventual consistency OK</strong> &mdash; yesterday's data is fine</li>
+          <li><strong>Latency: seconds to minutes</strong></li>
+        </ul>
+        <p style="margin-top:0.8rem;font-size:0.9em;color:var(--text-secondary)"><em>Survey domain:</em> the warehouse computing engagement trends by department over 8 quarters across 500K+ rows.</p>
+      </div>
+    </div>
+
+    <!-- ════════════════ CHARACTERISTICS TABLE ════════════════ -->
+    <h2 id="characteristics">Characteristics Comparison</h2>
+
+    <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Characteristic</th><th>OLTP (PostgreSQL)</th><th>OLAP (DuckDB / Snowflake)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Typical row size per query</td><td>1-10 rows</td><td>100K-100M rows</td></tr>
+        <tr><td>Concurrency</td><td>Thousands of connections</td><td>Tens of queries</td></tr>
+        <tr><td>Latency target</td><td>&lt;10ms</td><td>5-30 seconds (interactive)</td></tr>
+        <tr><td>Index types</td><td>B-tree (PK/FK lookups), hash</td><td>Zone maps, min/max, bloom filters</td></tr>
+        <tr><td>Storage layout</td><td>Row-oriented (read full rows)</td><td>Column-oriented (read only needed columns)</td></tr>
+        <tr><td>Write pattern</td><td>Many small transactions</td><td>Periodic bulk loads</td></tr>
+        <tr><td>Consistency</td><td>Strong (ACID)</td><td>Eventual (batch refresh)</td></tr>
+        <tr><td>Execution model</td><td>Row-by-row (tuple at a time)</td><td>Vectorized (1024+ values per batch)</td></tr>
+        <tr><td>Parallelism</td><td>Limited (per-query workers)</td><td>Automatic (scans split across cores)</td></tr>
+        <tr><td>Compression</td><td>Minimal (TOAST for large values)</td><td>Heavy (RLE, dictionary, delta encoding)</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <!-- ════════════════ ARCHITECTURE DIAGRAM ════════════════ -->
+    <h2 id="architecture">Engine Architecture: PostgreSQL vs DuckDB</h2>
+
+    <p>The two engines spend their optimization budget on fundamentally different things.</p>
+
+    <svg viewBox="0 0 780 340" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:780px;margin:1.5rem auto;display:block;">
+      <!-- PostgreSQL side -->
+      <rect x="20" y="10" width="350" height="320" rx="10" fill="none" stroke="var(--border)" stroke-width="1.5"/>
+      <text x="195" y="36" font-size="15" font-weight="700" fill="#336791" text-anchor="middle">PostgreSQL (OLTP)</text>
+
+      <!-- PG Components -->
+      <rect x="40" y="55" width="140" height="40" rx="6" fill="#336791" opacity="0.15" stroke="#336791" stroke-width="1"/>
+      <text x="110" y="80" font-size="11" fill="var(--text)" text-anchor="middle" font-weight="600">B-tree Indexes</text>
+
+      <rect x="200" y="55" width="150" height="40" rx="6" fill="#336791" opacity="0.15" stroke="#336791" stroke-width="1"/>
+      <text x="275" y="80" font-size="11" fill="var(--text)" text-anchor="middle" font-weight="600">Row-level Locking</text>
+
+      <rect x="40" y="110" width="140" height="40" rx="6" fill="#336791" opacity="0.15" stroke="#336791" stroke-width="1"/>
+      <text x="110" y="135" font-size="11" fill="var(--text)" text-anchor="middle" font-weight="600">Write-Ahead Log</text>
+
+      <rect x="200" y="110" width="150" height="40" rx="6" fill="#336791" opacity="0.15" stroke="#336791" stroke-width="1"/>
+      <text x="275" y="135" font-size="11" fill="var(--text)" text-anchor="middle" font-weight="600">Buffer Pool</text>
+
+      <rect x="40" y="165" width="310" height="40" rx="6" fill="#336791" opacity="0.15" stroke="#336791" stroke-width="1"/>
+      <text x="195" y="190" font-size="11" fill="var(--text)" text-anchor="middle" font-weight="600">Row-Oriented Storage (Heap Pages)</text>
+
+      <rect x="40" y="220" width="310" height="40" rx="6" fill="#336791" opacity="0.15" stroke="#336791" stroke-width="1"/>
+      <text x="195" y="245" font-size="11" fill="var(--text)" text-anchor="middle" font-weight="600">MVCC: Multi-Version Concurrency</text>
+
+      <text x="195" y="285" font-size="10" fill="var(--text-secondary)" text-anchor="middle">Optimized for: find 1 row by PK in O(log n)</text>
+      <text x="195" y="300" font-size="10" fill="var(--text-secondary)" text-anchor="middle">concurrent reads + writes without blocking</text>
+      <text x="195" y="315" font-size="10" fill="var(--text-secondary)" text-anchor="middle">every commit is durable (crash-safe)</text>
+
+      <!-- DuckDB side -->
+      <rect x="410" y="10" width="350" height="320" rx="10" fill="none" stroke="var(--border)" stroke-width="1.5"/>
+      <text x="585" y="36" font-size="15" font-weight="700" fill="#61afef" text-anchor="middle">DuckDB (OLAP)</text>
+
+      <rect x="430" y="55" width="140" height="40" rx="6" fill="#61afef" opacity="0.15" stroke="#61afef" stroke-width="1"/>
+      <text x="500" y="80" font-size="11" fill="var(--text)" text-anchor="middle" font-weight="600">Columnar Storage</text>
+
+      <rect x="590" y="55" width="150" height="40" rx="6" fill="#61afef" opacity="0.15" stroke="#61afef" stroke-width="1"/>
+      <text x="665" y="80" font-size="11" fill="var(--text)" text-anchor="middle" font-weight="600">Vectorized Execution</text>
+
+      <rect x="430" y="110" width="140" height="40" rx="6" fill="#61afef" opacity="0.15" stroke="#61afef" stroke-width="1"/>
+      <text x="500" y="135" font-size="11" fill="var(--text)" text-anchor="middle" font-weight="600">Compression</text>
+
+      <rect x="590" y="110" width="150" height="40" rx="6" fill="#61afef" opacity="0.15" stroke="#61afef" stroke-width="1"/>
+      <text x="665" y="135" font-size="11" fill="var(--text)" text-anchor="middle" font-weight="600">Auto-Parallelism</text>
+
+      <rect x="430" y="165" width="310" height="40" rx="6" fill="#61afef" opacity="0.15" stroke="#61afef" stroke-width="1"/>
+      <text x="585" y="190" font-size="11" fill="var(--text)" text-anchor="middle" font-weight="600">Zone Maps (Min/Max Indexes)</text>
+
+      <rect x="430" y="220" width="310" height="40" rx="6" fill="#61afef" opacity="0.15" stroke="#61afef" stroke-width="1"/>
+      <text x="585" y="245" font-size="11" fill="var(--text)" text-anchor="middle" font-weight="600">In-Process Embedded (No Server)</text>
+
+      <text x="585" y="285" font-size="10" fill="var(--text-secondary)" text-anchor="middle">Optimized for: scan millions of rows, read only</text>
+      <text x="585" y="300" font-size="10" fill="var(--text-secondary)" text-anchor="middle">needed columns, process in batches of 1024+</text>
+      <text x="585" y="315" font-size="10" fill="var(--text-secondary)" text-anchor="middle">compress aggressively, parallelize across cores</text>
+    </svg>
+
+    <div class="callout callout-info">
+      <strong>Key Insight</strong>
+      Running an OLAP query on an OLTP engine <em>works</em> but wastes resources &mdash; PostgreSQL reads entire rows from disk even if you only need 2 columns. Running OLTP workloads on an OLAP engine works but lacks concurrency primitives. Neither is "better" &mdash; they're different tools optimized for different access patterns.
+    </div>
+
+    <!-- ════════════════ BENCHMARKS ════════════════ -->
+    <h2 id="benchmarks">Lab Results: Benchmark Numbers</h2>
+
+    <h3>Lab 01: OLTP vs OLAP Query Patterns</h3>
+    <p>108,000 rows loaded into both PostgreSQL and DuckDB. Same data, same schema, different engine architectures.</p>
+
+    <h3 style="margin-top:1.2rem">OLTP Queries</h3>
+    <div class="callout callout-warn">
+      <strong>Why DuckDB "Wins" OLTP Here</strong>
+      DuckDB runs <strong>in-process</strong> (no network hop) while PostgreSQL is accessed over a <strong>TCP socket</strong>. This benchmark compares apples to oranges for OLTP workloads. At production scale with concurrent users, PostgreSQL's B-tree indexes, row-level locking, and MVCC give it the OLTP advantage DuckDB cannot match. The asterisk (*) on DuckDB's "wins" flags this misleading result.
+    </div>
+    <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Query</th><th>PostgreSQL</th><th>DuckDB</th><th>Winner</th><th>Visual</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Point lookup (1 row by PK)</td>
+          <td>0.409 ms</td>
+          <td>0.207 ms</td>
+          <td><span class="badge badge-warn">Duck*</span></td>
+          <td><span class="bench-bar bench-pg" style="width:80px"></span><span class="bench-bar bench-duck" style="width:40px;margin-left:4px"></span></td>
+        </tr>
+        <tr>
+          <td>INSERT 1 row</td>
+          <td>0.515 ms</td>
+          <td>0.333 ms</td>
+          <td><span class="badge badge-warn">Duck*</span></td>
+          <td><span class="bench-bar bench-pg" style="width:80px"></span><span class="bench-bar bench-duck" style="width:52px;margin-left:4px"></span></td>
+        </tr>
+        <tr>
+          <td>UPDATE 1 row</td>
+          <td>0.576 ms</td>
+          <td>0.326 ms</td>
+          <td><span class="badge badge-warn">Duck*</span></td>
+          <td><span class="bench-bar bench-pg" style="width:80px"></span><span class="bench-bar bench-duck" style="width:45px;margin-left:4px"></span></td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+    <p style="font-size:0.88em;color:var(--text-secondary)">* Misleading: DuckDB is in-process (no network hop), PostgreSQL is over TCP. In production with concurrent users, PostgreSQL has the architectural advantage for OLTP.</p>
+
+    <h3 style="margin-top:1.5rem">OLAP Queries</h3>
+    <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Query</th><th>PostgreSQL</th><th>DuckDB</th><th>Speedup</th><th>Visual</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Full-table AVG by category</td>
+          <td>16.64 ms</td>
+          <td>1.82 ms</td>
+          <td><span class="badge badge-duck">9.1x</span></td>
+          <td><span class="bench-bar bench-pg" style="width:160px"></span><span class="bench-bar bench-duck" style="width:18px;margin-left:4px"></span></td>
+        </tr>
+        <tr>
+          <td>Filtered AGG (5 teams x cat)</td>
+          <td>14.32 ms</td>
+          <td>2.10 ms</td>
+          <td><span class="badge badge-duck">6.8x</span></td>
+          <td><span class="bench-bar bench-pg" style="width:140px"></span><span class="bench-bar bench-duck" style="width:21px;margin-left:4px"></span></td>
+        </tr>
+        <tr>
+          <td>Window: RANK teams by score</td>
+          <td>16.28 ms</td>
+          <td>1.70 ms</td>
+          <td><span class="badge badge-duck">9.6x</span></td>
+          <td><span class="bench-bar bench-pg" style="width:160px"></span><span class="bench-bar bench-duck" style="width:17px;margin-left:4px"></span></td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+
+    <div class="callout callout-tip">
+      <strong>The Real OLAP Story</strong>
+      At 108K rows, DuckDB is already 7-10x faster for analytical queries. The advantage grows with data volume: at 10M rows the gap becomes dramatic because columnar storage reads only the 2-3 columns needed (not all 5+), vectorized execution processes 1024+ values per CPU operation, and automatic parallelism splits work across all cores.
+    </div>
+
+    <details>
+      <summary>Lab 01 Code: Benchmarking Both Engines</summary>
+      <div class="details-body">
+<pre><code><span class="cm"># Same query, both engines:</span>
+<span class="kw">def</span> <span class="fn">bench_pg</span>(sql, params=<span class="kw">None</span>, runs=<span class="num">10</span>):
+    times, result = [], <span class="kw">None</span>
+    <span class="kw">with</span> pg_conn() <span class="kw">as</span> pg:
+        cur = pg.cursor()
+        <span class="kw">for</span> _ <span class="kw">in</span> range(runs):
+            s = time.perf_counter()
+            cur.execute(sql, params)
+            result = cur.fetchall()
+            times.append((time.perf_counter() - s) * <span class="num">1000</span>)
+    <span class="kw">return</span> sum(times) / len(times)
+
+<span class="cm"># OLAP query: 3-way JOIN + GROUP BY + AVG</span>
+olap_sql = <span class="str">"""SELECT q.category, ROUND(AVG(r.score), 2), COUNT(*)
+FROM responses r
+JOIN questions q ON r.question_id = q.q_id
+GROUP BY q.category ORDER BY q.category"""</span></code></pre>
+      </div>
+    </details>
+
+    <!-- ──── Lab 02: Serving Layer ──── -->
+    <h3 style="margin-top:2rem">Lab 02: Serving Layer Benchmarks</h3>
+    <p>48,000 rows. 50 teams, 12 questions, 80 respondents each.</p>
+
+    <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Stage</th><th>Engine</th><th>Latency</th><th>Purpose</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Heavy aggregation</td>
+          <td><span class="badge badge-duck">DuckDB</span></td>
+          <td>3.11 ms</td>
+          <td>Columnar scan, vectorized batches</td>
+        </tr>
+        <tr>
+          <td>Heavy aggregation</td>
+          <td><span class="badge badge-pg">PostgreSQL</span></td>
+          <td>125.74 ms</td>
+          <td>Full-row reads, row-by-row processing</td>
+        </tr>
+        <tr style="border-top: 2px solid var(--border)">
+          <td>Serving (point lookup)</td>
+          <td><span class="badge badge-pg">PostgreSQL</span></td>
+          <td>0.34 ms avg</td>
+          <td>B-tree index on gold_serving table</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+
+    <p><strong>DuckDB is 40.4x faster</strong> for the heavy aggregation. But the real win is the serving layer: 48,000 raw rows become 200 aggregated Gold rows. Serving those 200 rows by index takes <strong>0.34ms</strong> &mdash; trivially fast on any engine.</p>
+
+    <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Task</th><th>Right Engine</th><th>Wrong Engine</th><th>Mismatch Penalty</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Serve 1 team overview</td>
+          <td>PG serving table: 0.345 ms</td>
+          <td>DuckDB runtime agg: 1.04 ms</td>
+          <td>3x slower</td>
+        </tr>
+        <tr>
+          <td>Heavy analytical scan</td>
+          <td>DuckDB: 2.51 ms</td>
+          <td>PostgreSQL: 18.59 ms</td>
+          <td>7.4x slower</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+
+    <!-- ════════════════ SERVING LAYER ════════════════ -->
+    <h2 id="serving-layer">The Serving Layer Pattern</h2>
+
+    <p>The most practically important pattern in this topic. Your analytics warehouse can answer any question &mdash; but queries take 5-30 seconds. Your dashboard / AI agent / API endpoint needs answers in &lt;100ms. The solution: separate <strong>computation</strong> from <strong>serving</strong>.</p>
+
+    <svg viewBox="0 0 780 170" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:780px;margin:1.5rem auto;display:block;">
+      <!-- Stage 1: OLAP -->
+      <rect x="20" y="30" width="200" height="100" rx="10" fill="#61afef" opacity="0.15" stroke="#61afef" stroke-width="1.5"/>
+      <text x="120" y="58" font-size="13" font-weight="700" fill="var(--text)" text-anchor="middle">OLAP Engine</text>
+      <text x="120" y="76" font-size="11" fill="var(--text-secondary)" text-anchor="middle">DuckDB / Snowflake</text>
+      <text x="120" y="95" font-size="10" fill="var(--text-secondary)" text-anchor="middle">Batch computation</text>
+      <text x="120" y="109" font-size="10" fill="var(--text-secondary)" text-anchor="middle">Runs on schedule</text>
+      <text x="120" y="123" font-size="10" fill="var(--text-secondary)" text-anchor="middle">Seconds per query</text>
+
+      <!-- Arrow 1 -->
+      <line x1="225" y1="80" x2="285" y2="80" stroke="var(--accent)" stroke-width="2" marker-end="url(#arrowhead)"/>
+      <text x="255" y="70" font-size="9" fill="var(--text-secondary)" text-anchor="middle">PUSH</text>
+
+      <!-- Stage 2: OLTP -->
+      <rect x="290" y="30" width="200" height="100" rx="10" fill="#336791" opacity="0.15" stroke="#336791" stroke-width="1.5"/>
+      <text x="390" y="58" font-size="13" font-weight="700" fill="var(--text)" text-anchor="middle">OLTP Store</text>
+      <text x="390" y="76" font-size="11" fill="var(--text-secondary)" text-anchor="middle">PostgreSQL / Redis</text>
+      <text x="390" y="95" font-size="10" fill="var(--text-secondary)" text-anchor="middle">Indexed serving table</text>
+      <text x="390" y="109" font-size="10" fill="var(--text-secondary)" text-anchor="middle">Handles concurrency</text>
+      <text x="390" y="123" font-size="10" fill="var(--text-secondary)" text-anchor="middle">Sub-ms per query</text>
+
+      <!-- Arrow 2 -->
+      <line x1="495" y1="80" x2="555" y2="80" stroke="var(--accent)" stroke-width="2" marker-end="url(#arrowhead)"/>
+      <text x="525" y="70" font-size="9" fill="var(--text-secondary)" text-anchor="middle">SERVE</text>
+
+      <!-- Stage 3: App -->
+      <rect x="560" y="30" width="200" height="100" rx="10" fill="var(--accent)" opacity="0.12" stroke="var(--accent)" stroke-width="1.5"/>
+      <text x="660" y="58" font-size="13" font-weight="700" fill="var(--text)" text-anchor="middle">Application</text>
+      <text x="660" y="76" font-size="11" fill="var(--text-secondary)" text-anchor="middle">Dashboard / Agent</text>
+      <text x="660" y="95" font-size="10" fill="var(--text-secondary)" text-anchor="middle">Point lookups</text>
+      <text x="660" y="109" font-size="10" fill="var(--text-secondary)" text-anchor="middle">&lt;10ms per query</text>
+
+      <!-- Arrow definition -->
+      <defs>
+        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+          <polygon points="0 0, 10 3.5, 0 7" fill="var(--accent)"/>
+        </marker>
+      </defs>
+
+      <!-- Volume annotation -->
+      <text x="120" y="155" font-size="10" fill="var(--accent)" text-anchor="middle" font-weight="600">48,000 rows</text>
+      <text x="390" y="155" font-size="10" fill="var(--accent)" text-anchor="middle" font-weight="600">200 rows</text>
+      <text x="660" y="155" font-size="10" fill="var(--accent)" text-anchor="middle" font-weight="600">4 rows/request</text>
+    </svg>
+
+    <h3>Why This Works: Volume Mismatch</h3>
+    <p>Raw data: 48,000 rows. Aggregated result: 200 rows. Reading 200 pre-computed rows by index is trivially fast on any engine. The expensive computation already happened offline.</p>
+
+    <h3>The Survey Data Case</h3>
+    <ul>
+      <li><strong>Overview screen</strong> (<code>get_team_overview</code>): serving layer problem. Pre-compute in DuckDB, push to PostgreSQL, serve by <code>team_id</code>. User sees results in &lt;100ms.</li>
+      <li><strong>Drill-down screen</strong> (<code>get_drill_down</code>): possibly a runtime OLAP problem. Too many dimension combinations to pre-compute all of them. Options: accept 2-5s latency, use embedded DuckDB for &lt;1s response, or pre-compute common paths and fall back to runtime for rare ones.</li>
+    </ul>
+
+    <div class="callout callout-info">
+      <strong>This is how analytics SaaS works</strong>
+      Looker caches query results. Sigma sends live queries but caches aggressively. Hex materializes datasets during notebook runs. Mode caches results in application storage. None of them make the user wait 15 seconds for every dashboard view. They all use compute-once-serve-many.
+    </div>
+
+    <details>
+      <summary>Lab 02 Code: The Three-Stage Pipeline</summary>
+      <div class="details-body">
+<pre><code><span class="cm"># Stage 1: Compute in DuckDB (OLAP)</span>
+gold_sql = <span class="str">"""SELECT t.team_id, t.name, t.department, q.category,
+       ROUND(AVG(r.score), 2), COUNT(*)
+FROM responses r
+JOIN teams t ON r.team_id = t.team_id
+JOIN questions q ON r.question_id = q.q_id
+GROUP BY t.team_id, t.name, t.department, q.category"""</span>
+gold_rows = duck.execute(gold_sql).fetchall()  <span class="cm"># 3.11ms</span>
+
+<span class="cm"># Stage 2: Push to PostgreSQL (OLTP)</span>
+cur.execute(<span class="str">"""CREATE TABLE gold_serving (
+    team_id INT, team_name VARCHAR, department VARCHAR,
+    category VARCHAR, mean_score NUMERIC(4,2), n INT,
+    PRIMARY KEY (team_id, category))"""</span>)
+cur.execute(<span class="str">"CREATE INDEX idx_gold_team ON gold_serving (team_id)"</span>)
+<span class="kw">for</span> row <span class="kw">in</span> gold_rows:
+    cur.execute(<span class="str">"INSERT INTO gold_serving VALUES (%s,%s,%s,%s,%s,%s)"</span>, row)
+
+<span class="cm"># Stage 3: Serve from PostgreSQL (point lookups)</span>
+cur.execute(<span class="str">"SELECT * FROM gold_serving WHERE team_id = %s"</span>, (<span class="num">42</span>,))
+<span class="cm"># 0.34ms &mdash; B-tree index lookup</span></code></pre>
+      </div>
+    </details>
+
+    <!-- ════════════════ HYBRID ════════════════ -->
+    <h2 id="hybrid">PostgreSQL as a Hybrid Engine</h2>
+
+    <p>PostgreSQL can handle light analytics via materialized views &mdash; pre-computed aggregations stored as tables, refreshed on demand. Lab 03 tests whether you can avoid a separate OLAP engine entirely.</p>
+
+    <h3>Lab 03 Results: 9,000 Rows (15 teams x 12 questions x 50 respondents)</h3>
+
+    <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Operation</th><th>Latency</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>INSERT 1 response</td><td>0.302 ms</td></tr>
+        <tr><td>UPDATE 1 response</td><td>0.247 ms</td></tr>
+        <tr><td>DELETE 1 response</td><td>0.259 ms</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Approach</th><th>Query Latency</th><th>Build Cost</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Runtime aggregation</td><td>5.00 ms</td><td>0 (computed on demand)</td></tr>
+        <tr><td>Materialized view</td><td>0.42 ms</td><td>6.2 ms (one-time)</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <p>The materialized view is <strong>12x faster</strong> to query than runtime aggregation. But it has a cost: <strong>staleness</strong>.</p>
+
+    <h3>The Staleness Problem</h3>
+    <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Source</th><th>Basic Needs Mean</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Materialized View</td><td>3.98</td><td style="color:#e6a817;font-weight:600">STALE &mdash; doesn't see new data</td></tr>
+        <tr><td>Runtime Query</td><td>4.27</td><td style="color:#27ae60;font-weight:600">FRESH &mdash; always current</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p>After inserting 240 new responses (all score=5.0), the materialized view still returns the old mean. <code>REFRESH MATERIALIZED VIEW</code> costs 6.5ms at 9K rows &mdash; fast enough. At 100M rows, refresh can take minutes and blocks reads (unless you use <code>REFRESH MATERIALIZED VIEW CONCURRENTLY</code>).</p>
+
+    <div class="callout callout-tip">
+      <strong>When Is Hybrid "Good Enough"?</strong>
+      PostgreSQL + materialized views works when ALL of these hold:
+      <ol style="margin-top:0.5rem">
+        <li><strong>Dataset &lt;10M rows</strong> &mdash; MV refresh takes seconds, not minutes</li>
+        <li><strong>Staleness is acceptable</strong> &mdash; surveys update quarterly; hourly/daily refresh is fine</li>
+        <li><strong>Query patterns are predictable</strong> &mdash; you know which aggregations to materialize</li>
+        <li><strong>No heavy concurrent analytical load</strong> &mdash; a few dashboard queries per minute</li>
+      </ol>
+      When you outgrow any of these: move analytical workload to DuckDB/Snowflake.
+    </div>
+
+    <details>
+      <summary>Lab 03 Code: Materialized View Lifecycle</summary>
+      <div class="details-body">
+<pre><code><span class="cm"># Create the materialized view</span>
+cur.execute(<span class="str">"""CREATE MATERIALIZED VIEW mv_team_scores AS
+    SELECT t.team_id, t.name, t.department, q.category,
+           ROUND(AVG(r.score)::numeric, 2) AS mean_score,
+           COUNT(*) AS response_count
+    FROM survey_responses r
+    JOIN survey_teams t ON r.team_id = t.team_id
+    JOIN survey_questions q ON r.question_id = q.q_id
+    GROUP BY t.team_id, t.name, t.department, q.category"""</span>)
+cur.execute(<span class="str">"CREATE INDEX idx_mv_team ON mv_team_scores (team_id)"</span>)
+
+<span class="cm"># Query the MV: 0.42ms (vs 5.00ms runtime)</span>
+cur.execute(<span class="str">"SELECT * FROM mv_team_scores ORDER BY team_name, category"</span>)
+
+<span class="cm"># After new data arrives... MV is STALE</span>
+<span class="cm"># Fix: REFRESH (re-runs full query)</span>
+cur.execute(<span class="str">"REFRESH MATERIALIZED VIEW mv_team_scores"</span>)  <span class="cm"># 6.5ms at 9K rows</span></code></pre>
+      </div>
+    </details>
+
+    <!-- ════════════════ CACHING ════════════════ -->
+    <h2 id="caching">Caching Strategies</h2>
+
+    <p>Lab 04 benchmarks three strategies for serving pre-computed survey data. All three share the same fundamental tradeoff: fast reads, but stale after writes until refreshed.</p>
+
+    <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th></th><th>In-Memory Dict</th><th>Materialized View</th><th>Gold Summary Table</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Read latency</strong></td><td>~0 ns</td><td>~0.3 ms</td><td>~0.3 ms</td></tr>
+        <tr><td><strong>Build cost</strong></td><td>99 ms</td><td>101 ms</td><td>98 ms</td></tr>
+        <tr><td><strong>Refresh cost</strong></td><td>103 ms</td><td>5 ms</td><td>106 ms</td></tr>
+        <tr><td><strong>Auto-invalidation</strong></td><td>No</td><td>No</td><td>No</td></tr>
+        <tr><td><strong>Survives restart</strong></td><td>No</td><td>Yes</td><td>Yes</td></tr>
+        <tr><td><strong>Concurrent access</strong></td><td>In-process only</td><td>Multi-connection</td><td>Multi-connection</td></tr>
+        <tr><td><strong>Best for</strong></td><td>Single-process / Redis</td><td>"Good enough" hybrid</td><td>Serving layer pattern</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <h3>Staleness Demo</h3>
+    <p>After inserting 600 new low-score responses (Team_01, all score=1.0), all three caches returned 3.97 while the correct value was 2.32. None auto-invalidated. All required explicit refresh to sync.</p>
+
+    <details>
+      <summary>Lab 04 Code: Comparing Cache Strategies</summary>
+      <div class="details-body">
+<pre><code><span class="cm"># Strategy A: In-memory dict cache (simulates Redis)</span>
+cache = {}
+cur.execute(AGG_SQL)
+<span class="kw">for</span> tid, name, cat, mean, n <span class="kw">in</span> cur.fetchall():
+    cache.setdefault(tid, []).append((name, cat, <span class="fn">float</span>(mean), n))
+<span class="cm"># Read: cache.get(team_id)  -- ~0ns, but lost on restart</span>
+
+<span class="cm"># Strategy B: Materialized view</span>
+cur.execute(<span class="str">f"CREATE MATERIALIZED VIEW mv_cache_scores AS {AGG_SQL}"</span>)
+<span class="cm"># Read: SELECT ... WHERE team_id = %s  -- ~0.3ms</span>
+<span class="cm"># Refresh: REFRESH MATERIALIZED VIEW mv_cache_scores  -- 5ms</span>
+
+<span class="cm"># Strategy C: Gold summary table (from OLAP engine)</span>
+cur.execute(<span class="str">f"CREATE TABLE gold_summary AS {AGG_SQL}"</span>)
+cur.execute(<span class="str">"CREATE INDEX ... ON gold_summary (team_id)"</span>)
+<span class="cm"># Read: SELECT ... WHERE team_id = %s  -- ~0.3ms</span>
+<span class="cm"># Refresh: DROP + recreate from OLAP computation</span></code></pre>
+      </div>
+    </details>
+
+    <!-- ════════════════ BLURRING SPECTRUM ════════════════ -->
+    <h2 id="spectrum-engines">The Blurring Spectrum</h2>
+
+    <p>The clean OLTP/OLAP split is a useful mental model, but several forces are pushing engines toward each other.</p>
+
+    <div class="card-grid">
+      <div class="card">
+        <h3>DuckDB: Embedded OLAP</h3>
+        <p>SQLite for analytics. Runs in-process, no server. Columnar engine with vectorized execution, compression, parallel scans &mdash; all in a library.</p>
+        <ul>
+          <li><strong>Use case:</strong> local analytics, pipeline transforms, embedded app dashboards</li>
+          <li><strong>Limitation:</strong> no row-level locking, no concurrent write transactions, no replication</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>PostgreSQL + Extensions</h3>
+        <p>OLTP reaching toward OLAP with parallel query (v9.6+), partitioning (v10+), materialized views, BRIN indexes, and columnar extensions (Citus/Hydra).</p>
+        <ul>
+          <li><strong>Still:</strong> fundamentally row-oriented at the storage layer</li>
+          <li><strong>Good for:</strong> small-medium datasets (&lt;10M rows) where you want one engine</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Snowflake Hybrid Tables</h3>
+        <p>OLAP reaching toward OLTP. ACID transactions, unique constraints, foreign keys, single-digit ms point lookups &mdash; inside a columnar warehouse.</p>
+        <ul>
+          <li><strong>Catch:</strong> expensive. Warehouse compute prices for workloads PostgreSQL handles cheaply.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Real-Time OLAP</h3>
+        <p>ClickHouse, Apache Pinot, Apache Druid: high-throughput writes (100K+ events/sec) + sub-second analytical queries.</p>
+        <ul>
+          <li><strong>ClickHouse:</strong> columnar, append-optimized. Observability.</li>
+          <li><strong>Pinot:</strong> real-time ingestion from Kafka. LinkedIn's analytics.</li>
+          <li><strong>Not:</strong> general-purpose OLTP &mdash; no row-level updates, no general transactions.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ════════════════ DECISION GUIDE ════════════════ -->
+    <h2 id="decision-guide">When to Use What</h2>
+
+    <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Category</th><th>Engine(s)</th><th>Use When</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Pure OLTP</strong></td>
+          <td>PostgreSQL, MySQL</td>
+          <td>App database (auth, forms, CRUD). Serving layer for pre-computed results.</td>
+        </tr>
+        <tr>
+          <td><strong>Pure OLAP</strong></td>
+          <td>Snowflake, BigQuery, Redshift</td>
+          <td>Warehouse. Batch computation, historical analysis, complex joins over large datasets.</td>
+        </tr>
+        <tr>
+          <td><strong>Embedded OLAP</strong></td>
+          <td>DuckDB</td>
+          <td>Local dev/test. Pipeline transforms. App-embedded drill-downs that need sub-second latency.</td>
+        </tr>
+        <tr>
+          <td><strong>Hybrid / Real-time OLAP</strong></td>
+          <td>ClickHouse, Pinot, Druid</td>
+          <td>High-volume event ingestion + low-latency dashboards. Observability, real-time analytics.</td>
+        </tr>
+        <tr>
+          <td><strong>PG as "good enough" hybrid</strong></td>
+          <td>PostgreSQL + materialized views</td>
+          <td>&lt;10M rows, predictable query patterns, staleness acceptable, no heavy concurrent analytics.</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+
+    <div class="callout callout-info">
+      <strong>Try It Yourself</strong>
+      Run the labs to see these numbers on your own hardware:
+<pre style="background:var(--code-bg);border:1px solid var(--border);border-radius:6px;padding:0.6rem 1rem;margin-top:0.5rem"><code>cd ~/Development/GithubRepo/ravi_engineering/dev_workspace/data-engineering-learning
+uv run python labs/06_oltp_olap_spectrum/01_oltp_vs_olap_queries.py
+uv run python labs/06_oltp_olap_spectrum/02_serving_layer.py
+uv run python labs/06_oltp_olap_spectrum/03_hybrid_patterns.py
+uv run python labs/06_oltp_olap_spectrum/04_caching_strategies.py</code></pre>
+    </div>
+
+      </main>
+
+      <footer>
+        <h2>Sources</h2>
+        <div class="source"><code>notes/06_oltp_olap_spectrum.md</code></div>
+        <div class="source"><code>labs/06_oltp_olap_spectrum/01_oltp_vs_olap_queries.py</code></div>
+        <div class="source"><code>labs/06_oltp_olap_spectrum/02_serving_layer.py</code></div>
+        <div class="source"><code>labs/06_oltp_olap_spectrum/03_hybrid_patterns.py</code></div>
+        <div class="source"><code>labs/06_oltp_olap_spectrum/04_caching_strategies.py</code></div>
+      </footer>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      var toggle = document.getElementById('theme-toggle');
+      var KEY = 'synthesis-theme';
+
+      function setTheme(t) {
+        document.documentElement.setAttribute('data-theme', t);
+        toggle.setAttribute('aria-label',
+          t === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+        try { localStorage.setItem(KEY, t); } catch(e) {}
+      }
+
+      var saved = null;
+      try { saved = localStorage.getItem(KEY); } catch(e) {}
+
+      if (saved) {
+        setTheme(saved);
+      } else {
+        setTheme(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      }
+
+      toggle.addEventListener('click', function() {
+        var current = document.documentElement.getAttribute('data-theme');
+        setTheme(current === 'dark' ? 'light' : 'dark');
+      });
+    })();
+  </script>
+</body>
+</html>

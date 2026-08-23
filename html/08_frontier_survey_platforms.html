@@ -1,0 +1,1224 @@
+<!--
+  Synthesis Page: Frontier Survey Platforms
+  Generated: 2026-08-23
+  Sources:
+  notes/08_frontier_survey_platforms.md
+  labs/08_frontier_survey_platforms/01_architecture_patterns.py
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Frontier Survey Platforms</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --bg-secondary: #f5f7fa;
+      --text: #1a1a2e;
+      --text-secondary: #555770;
+      --border: #e0e0e8;
+      --accent: #4a6cf7;
+      --accent-soft: #eef0ff;
+      --code-bg: #f0f2f8;
+      --card-bg: #ffffff;
+      --card-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      --callout-info: #e8f0fe;
+      --callout-warn: #fef7e0;
+      --callout-tip: #e6f9ef;
+      --callout-info-border: #4a6cf7;
+      --callout-warn-border: #e6a817;
+      --callout-tip-border: #27ae60;
+      --sidebar-width: 240px;
+      --svg-text: #1a1a2e;
+      --svg-bg: #f5f7fa;
+      --svg-line: #ccc;
+      --qualtrics-color: #1565c0;
+      --cultureamp-color: #e74c3c;
+      --medallia-color: #2e7d32;
+      --qualtrics-bg: #e8f0fe;
+      --cultureamp-bg: #fef0ef;
+      --medallia-bg: #e6f9ef;
+      --tier-cache: #27ae60;
+      --tier-serving: #e6a817;
+      --tier-analytical: #e74c3c;
+    }
+
+    [data-theme="dark"] {
+      --bg: #0f0f1a;
+      --bg-secondary: #1a1a2e;
+      --text: #e0e0ec;
+      --text-secondary: #9999b0;
+      --border: #2a2a40;
+      --accent: #6b8cff;
+      --accent-soft: #1a1a3e;
+      --code-bg: #1e1e32;
+      --card-bg: #16162a;
+      --card-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      --callout-info: #141430;
+      --callout-warn: #1e1a10;
+      --callout-tip: #0e1e14;
+      --callout-info-border: #6b8cff;
+      --callout-warn-border: #d4a017;
+      --callout-tip-border: #2ecc71;
+      --svg-text: #e0e0ec;
+      --svg-bg: #1a1a2e;
+      --svg-line: #444;
+      --qualtrics-bg: #141430;
+      --cultureamp-bg: #2a1515;
+      --medallia-bg: #0e1e14;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      transition: background 0.3s ease, color 0.3s ease;
+      display: flex;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      position: fixed;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: var(--sidebar-width);
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border);
+      padding: 1.5rem 0;
+      overflow-y: auto;
+      z-index: 100;
+      transition: background 0.3s ease, border-color 0.3s ease;
+    }
+
+    .sidebar h2 {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-secondary);
+      padding: 0 1.2rem;
+      margin-bottom: 0.8rem;
+    }
+
+    .sidebar a {
+      display: block;
+      padding: 0.4rem 1.2rem;
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      text-decoration: none;
+      border-bottom: none;
+      border-left: 3px solid transparent;
+      transition: all 0.15s ease;
+      line-height: 1.5;
+    }
+
+    .sidebar a:hover {
+      color: var(--accent);
+      background: var(--accent-soft);
+      border-bottom: none;
+    }
+
+    .sidebar a.active {
+      color: var(--accent);
+      border-left-color: var(--accent);
+      background: var(--accent-soft);
+      font-weight: 600;
+    }
+
+    .sidebar .topic-num {
+      display: inline-block;
+      width: 1.4em;
+      color: var(--text-secondary);
+      opacity: 0.6;
+      font-size: 0.78rem;
+    }
+
+    /* ── Main content area ── */
+    .content-wrapper {
+      margin-left: var(--sidebar-width);
+      flex: 1;
+      min-width: 0;
+    }
+
+    header {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 2.5rem 2rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    header h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.3;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-shrink: 0;
+      padding-top: 0.35rem;
+    }
+
+    .meta-date {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+
+    /* ── Theme button ── */
+    .theme-btn {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg-secondary);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.7rem;
+      flex-shrink: 0;
+      transition: background 0.2s ease, border-color 0.2s ease;
+      color: var(--text-secondary);
+      font-family: inherit;
+      font-size: 0.8rem;
+      font-weight: 500;
+      line-height: 1;
+    }
+
+    .theme-btn:hover {
+      background: var(--border);
+      color: var(--text);
+    }
+
+    .theme-btn:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .theme-btn svg { width: 16px; height: 16px; }
+
+    .theme-btn .icon-sun,
+    .theme-btn .icon-moon,
+    .theme-btn .label-light,
+    .theme-btn .label-dark { display: none; }
+
+    [data-theme="dark"] .theme-btn .icon-sun { display: block; }
+    [data-theme="dark"] .theme-btn .label-dark { display: inline; }
+    :root:not([data-theme="dark"]) .theme-btn .icon-moon { display: block; }
+    :root:not([data-theme="dark"]) .theme-btn .label-light { display: inline; }
+    [data-theme="light"] .theme-btn .icon-moon { display: block; }
+    [data-theme="light"] .theme-btn .label-light { display: inline; }
+
+    /* ── Main ── */
+    main {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 2rem 3rem;
+    }
+
+    main h2 {
+      font-size: 1.35rem;
+      font-weight: 600;
+      margin: 2.5rem 0 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 2px solid var(--border);
+      letter-spacing: -0.01em;
+    }
+
+    main h2:first-child { margin-top: 0.5rem; }
+
+    main h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin: 1.8rem 0 0.6rem;
+    }
+
+    main p { margin: 0.8rem 0; }
+
+    main ul, main ol {
+      margin: 0.8rem 0;
+      padding-left: 1.6rem;
+    }
+
+    main li { margin: 0.35rem 0; }
+    main li strong { color: var(--accent); }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.2s;
+    }
+
+    a:hover { border-bottom-color: var(--accent); }
+
+    code {
+      font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+      font-size: 0.88em;
+      background: var(--code-bg);
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+    }
+
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      overflow-x: auto;
+      margin: 1rem 0;
+    }
+
+    pre code {
+      background: none;
+      padding: 0;
+      font-size: 0.85em;
+      line-height: 1.6;
+    }
+
+    blockquote {
+      border-left: 3px solid var(--accent);
+      padding: 0.6rem 1rem;
+      margin: 1rem 0;
+      background: var(--accent-soft);
+      border-radius: 0 6px 6px 0;
+      color: var(--text-secondary);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.92em;
+    }
+
+    th, td {
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      font-weight: 600;
+      background: var(--bg-secondary);
+      white-space: nowrap;
+    }
+
+    tr:hover td { background: var(--bg-secondary); }
+
+    .table-wrap {
+      overflow-x: auto;
+      margin: 1rem 0;
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.2rem 1.4rem;
+      margin: 1rem 0;
+      box-shadow: var(--card-shadow);
+      transition: box-shadow 0.2s ease, transform 0.2s ease;
+    }
+
+    .card:hover {
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+      transform: translateY(-1px);
+    }
+
+    [data-theme="dark"] .card:hover {
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    }
+
+    .card h3 { margin-top: 0; }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+
+    .card-grid .card { margin: 0; }
+
+    /* ── Callouts ── */
+    .callout {
+      padding: 0.8rem 1rem;
+      border-radius: 8px;
+      margin: 1rem 0;
+      border-left: 4px solid;
+    }
+
+    .callout-info {
+      background: var(--callout-info);
+      border-left-color: var(--callout-info-border);
+    }
+
+    .callout-warn {
+      background: var(--callout-warn);
+      border-left-color: var(--callout-warn-border);
+    }
+
+    .callout-tip {
+      background: var(--callout-tip);
+      border-left-color: var(--callout-tip-border);
+    }
+
+    .callout strong {
+      display: block;
+      margin-bottom: 0.3rem;
+    }
+
+    /* ── Collapsible details ── */
+    details {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin: 1rem 0;
+      overflow: hidden;
+    }
+
+    summary {
+      padding: 0.8rem 1.2rem;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.95rem;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid transparent;
+      transition: background 0.15s ease;
+      list-style: none;
+    }
+
+    summary::-webkit-details-marker { display: none; }
+
+    summary::before {
+      content: "\25B6";
+      display: inline-block;
+      margin-right: 0.5rem;
+      font-size: 0.7em;
+      transition: transform 0.2s ease;
+    }
+
+    details[open] > summary::before {
+      transform: rotate(90deg);
+    }
+
+    details[open] > summary {
+      border-bottom-color: var(--border);
+    }
+
+    summary:hover { background: var(--border); }
+
+    details .details-body {
+      padding: 1rem 1.2rem;
+    }
+
+    /* ── Table of contents ── */
+    nav.toc {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.4rem;
+      margin: 1.5rem 0;
+    }
+
+    nav.toc ul { list-style: none; padding-left: 0; }
+    nav.toc li { margin: 0.3rem 0; }
+
+    nav.toc a {
+      color: var(--text-secondary);
+      font-size: 0.92em;
+    }
+
+    nav.toc a:hover { color: var(--accent); }
+
+    /* ── Platform accent borders ── */
+    .platform-qualtrics { border-left: 4px solid var(--qualtrics-color); }
+    .platform-cultureamp { border-left: 4px solid var(--cultureamp-color); }
+    .platform-medallia { border-left: 4px solid var(--medallia-color); }
+
+    /* ── Tier badges ── */
+    .tier-badge {
+      display: inline-block;
+      padding: 0.15em 0.5em;
+      border-radius: 4px;
+      font-size: 0.82em;
+      font-weight: 600;
+      color: #fff;
+    }
+    .tier-cache { background: var(--tier-cache); }
+    .tier-serving { background: var(--tier-serving); color: #1a1a2e; }
+    .tier-analytical { background: var(--tier-analytical); }
+
+    /* ── SVG diagrams ── */
+    svg text { fill: var(--svg-text); }
+    svg .stroke { stroke: var(--border); }
+
+    .diagram-container {
+      background: var(--svg-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      margin: 1rem 0;
+      overflow-x: auto;
+      text-align: center;
+    }
+
+    .diagram-container svg {
+      max-width: 100%;
+      height: auto;
+    }
+
+    /* ── Latency bar chart ── */
+    .latency-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin: 0.3rem 0;
+    }
+    .latency-bar .label {
+      width: 140px;
+      font-size: 0.85em;
+      text-align: right;
+      flex-shrink: 0;
+    }
+    .latency-bar .bar {
+      height: 22px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      padding: 0 0.5rem;
+      font-size: 0.75em;
+      font-weight: 600;
+      color: #fff;
+      min-width: 40px;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      .sidebar { display: none; }
+      .content-wrapper { margin-left: 0; }
+    }
+
+    @media (max-width: 600px) {
+      header { padding: 1.5rem 1rem 1rem; flex-direction: column; }
+      main { padding: 0 1rem 2rem; }
+      footer { padding: 1.5rem 1rem; }
+      .card-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar Navigation -->
+  <nav class="sidebar">
+    <h2>Topics</h2>
+    <a href="01_warehousing_fundamentals.html"><span class="topic-num">1.</span> Warehousing Fundamentals</a>
+    <a href="02_columnar_storage.html"><span class="topic-num">2.</span> Columnar Storage</a>
+    <a href="03_medallion_and_dbt.html"><span class="topic-num">3.</span> Medallion Architecture + dbt</a>
+    <a href="04_precomputation_vs_runtime.html"><span class="topic-num">4.</span> Pre-computation vs Runtime</a>
+    <a href="05_dynamic_schema_eav.html"><span class="topic-num">5.</span> Dynamic Schema / EAV</a>
+    <a href="06_oltp_olap_spectrum.html"><span class="topic-num">6.</span> OLTP vs OLAP Spectrum</a>
+    <a href="07_suppression_access_control.html"><span class="topic-num">7.</span> Suppression &amp; Access Control</a>
+    <a href="08_frontier_survey_platforms.html" class="active"><span class="topic-num">8.</span> Frontier Survey Platforms</a>
+    <a href="09_agentic_data_access.html"><span class="topic-num">9.</span> Agentic Data Access</a>
+  </nav>
+
+  <div class="content-wrapper">
+    <header>
+      <h1>Frontier Survey Platforms</h1>
+      <div class="header-right">
+        <span class="meta-date">2026-08-23</span>
+        <button class="theme-btn" id="theme-toggle" aria-label="Toggle dark mode">
+          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+          </svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+          <span class="label-light">Light</span>
+          <span class="label-dark">Dark</span>
+        </button>
+      </div>
+    </header>
+
+    <main>
+
+      <p>The patterns from Topics 1-7 -- star schemas, columnar storage, medallion pipelines, pre-computation, dynamic schemas, OLTP/OLAP separation, suppression -- are the building blocks of production survey analytics at scale. This topic examines how three major platforms implement these patterns, what they've added on top, and what that means for the architecture you're building.</p>
+
+      <nav class="toc">
+        <ul>
+          <li><a href="#architecture">Multi-Tier Architecture Pattern</a></li>
+          <li><a href="#qualtrics">Qualtrics: The Full-Stack Survey Engine</a></li>
+          <li><a href="#cultureamp">Culture Amp: People Science + Engineering</a></li>
+          <li><a href="#medallia">Medallia: Real-Time Signals at Scale</a></li>
+          <li><a href="#common-patterns">Common Patterns Across All Three</a></li>
+          <li><a href="#comparison">Platform Comparison</a></li>
+          <li><a href="#lab-results">Lab Results: Request Trace</a></li>
+          <li><a href="#implications">Implications for Your Design</a></li>
+        </ul>
+      </nav>
+
+      <!-- ═══════════════════════════════════════════════════════ -->
+      <h2 id="architecture">Multi-Tier Architecture Pattern</h2>
+
+      <p>Every production survey platform converges on the same multi-tier serving pattern. Raw data flows through transformation tiers (Bronze, Silver, Gold), then gets pushed to a serving layer and cached in memory. The reason is simple: the same data must serve both heavy analytical workloads (regression, NLP, aggregation) and sub-200ms dashboard queries. No single system does both well.</p>
+
+      <div class="diagram-container">
+        <svg viewBox="0 0 780 200" xmlns="http://www.w3.org/2000/svg">
+          <!-- Bronze -->
+          <rect x="10" y="60" width="100" height="80" rx="8" fill="#e67e22" opacity="0.15" stroke="#e67e22" stroke-width="2"/>
+          <text x="60" y="95" text-anchor="middle" font-size="13" font-weight="600" fill="var(--svg-text)">Bronze</text>
+          <text x="60" y="115" text-anchor="middle" font-size="10" fill="var(--text-secondary)">Raw ingest</text>
+
+          <!-- Arrow -->
+          <line x1="115" y1="100" x2="145" y2="100" stroke="var(--svg-line)" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+          <!-- Silver -->
+          <rect x="150" y="60" width="100" height="80" rx="8" fill="#95a5a6" opacity="0.15" stroke="#95a5a6" stroke-width="2"/>
+          <text x="200" y="95" text-anchor="middle" font-size="13" font-weight="600" fill="var(--svg-text)">Silver</text>
+          <text x="200" y="115" text-anchor="middle" font-size="10" fill="var(--text-secondary)">Clean + enrich</text>
+
+          <!-- Arrow -->
+          <line x1="255" y1="100" x2="285" y2="100" stroke="var(--svg-line)" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+          <!-- Gold -->
+          <rect x="290" y="60" width="100" height="80" rx="8" fill="#f1c40f" opacity="0.15" stroke="#d4a017" stroke-width="2"/>
+          <text x="340" y="95" text-anchor="middle" font-size="13" font-weight="600" fill="var(--svg-text)">Gold</text>
+          <text x="340" y="115" text-anchor="middle" font-size="10" fill="var(--text-secondary)">Pre-aggregated</text>
+
+          <!-- Arrow -->
+          <line x1="395" y1="100" x2="425" y2="100" stroke="var(--svg-line)" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+          <!-- Serving -->
+          <rect x="430" y="60" width="110" height="80" rx="8" fill="#3498db" opacity="0.15" stroke="#3498db" stroke-width="2"/>
+          <text x="485" y="95" text-anchor="middle" font-size="13" font-weight="600" fill="var(--svg-text)">Serving</text>
+          <text x="485" y="115" text-anchor="middle" font-size="10" fill="var(--text-secondary)">Indexed tables</text>
+
+          <!-- Arrow -->
+          <line x1="545" y1="100" x2="575" y2="100" stroke="var(--svg-line)" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+          <!-- Cache -->
+          <rect x="580" y="60" width="90" height="80" rx="8" fill="#27ae60" opacity="0.15" stroke="#27ae60" stroke-width="2"/>
+          <text x="625" y="95" text-anchor="middle" font-size="13" font-weight="600" fill="var(--svg-text)">Cache</text>
+          <text x="625" y="115" text-anchor="middle" font-size="10" fill="var(--text-secondary)">In-memory</text>
+
+          <!-- Arrow -->
+          <line x1="675" y1="100" x2="705" y2="100" stroke="var(--svg-line)" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+          <!-- API -->
+          <rect x="710" y="60" width="60" height="80" rx="8" fill="var(--accent)" opacity="0.15" stroke="var(--accent)" stroke-width="2"/>
+          <text x="740" y="95" text-anchor="middle" font-size="13" font-weight="600" fill="var(--svg-text)">API</text>
+          <text x="740" y="115" text-anchor="middle" font-size="10" fill="var(--text-secondary)">Clients</text>
+
+          <!-- Latency annotations -->
+          <text x="340" y="170" text-anchor="middle" font-size="10" fill="var(--text-secondary)">Analytical: seconds</text>
+          <text x="485" y="170" text-anchor="middle" font-size="10" fill="var(--text-secondary)">Serving: &lt;50ms</text>
+          <text x="625" y="170" text-anchor="middle" font-size="10" fill="var(--text-secondary)">Cache: &lt;1ms</text>
+
+          <!-- Labels above -->
+          <text x="200" y="40" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text-secondary)">DuckDB / Columnar (OLAP)</text>
+          <text x="555" y="40" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text-secondary)">PostgreSQL (OLTP-style)</text>
+
+          <defs>
+            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+              <polygon points="0 0, 10 3.5, 0 7" fill="var(--svg-line)"/>
+            </marker>
+          </defs>
+        </svg>
+      </div>
+
+      <div class="callout callout-info">
+        <strong>The 500x speedup</strong>
+        A query that takes 45 seconds against the analytical layer takes ~90ms from cache. Sub-200ms is the target for core dashboard queries. Every platform in this topic implements some variation of this pipeline.
+      </div>
+
+
+      <!-- ═══════════════════════════════════════════════════════ -->
+      <h2 id="qualtrics">Qualtrics: The Full-Stack Survey Engine</h2>
+
+      <p>Qualtrics is the largest dedicated experience management platform, running CX, EX, and market research on the same infrastructure with 20,000+ enterprise customers.</p>
+
+      <details class="platform-qualtrics">
+        <summary>Dynamic Schema at Scale -- fieldsets and the Kafka pipeline</summary>
+        <div class="details-body">
+          <p>Every Qualtrics survey defines a unique set of questions -- different types (multiple choice, matrix, slider, open-text), different branching logic, different embedded data fields. The platform stores and queries across millions of survey definitions without per-survey schema migrations.</p>
+
+          <p>The solution: <strong>flattened data schema</strong> called <strong>fieldsets</strong>. Raw incoming data is stored normalized, then transformed into a typed downstream format general-purpose for all analytics. This is conceptually the EAV pattern from Topic 5, but with a critical optimization: fieldsets are pre-typed and pre-flattened for the analytics layer, so queries don't pay the EAV pivot cost at read time.</p>
+
+          <h3>Pipeline</h3>
+          <ul>
+            <li>Survey responses submitted over HTTPS</li>
+            <li>Written to short-term response storage</li>
+            <li>Streamed through <strong>Kafka</strong> to Spark-based transformations</li>
+            <li>Produced as flattened analytical representation in <strong>Parquet</strong> (columnar -- Topic 2)</li>
+            <li>Hub-and-spoke model: data processed in the hub, surveys available on redundant spokes for HA</li>
+          </ul>
+
+          <div class="diagram-container">
+            <svg viewBox="0 0 700 160" xmlns="http://www.w3.org/2000/svg">
+              <rect x="10" y="50" width="90" height="60" rx="6" fill="#1565c0" opacity="0.12" stroke="#1565c0" stroke-width="1.5"/>
+              <text x="55" y="82" text-anchor="middle" font-size="11" font-weight="600" fill="var(--svg-text)">HTTPS</text>
+              <text x="55" y="96" text-anchor="middle" font-size="9" fill="var(--text-secondary)">Response</text>
+
+              <line x1="105" y1="80" x2="135" y2="80" stroke="var(--svg-line)" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+
+              <rect x="140" y="50" width="90" height="60" rx="6" fill="#e67e22" opacity="0.12" stroke="#e67e22" stroke-width="1.5"/>
+              <text x="185" y="82" text-anchor="middle" font-size="11" font-weight="600" fill="var(--svg-text)">Short-term</text>
+              <text x="185" y="96" text-anchor="middle" font-size="9" fill="var(--text-secondary)">Storage</text>
+
+              <line x1="235" y1="80" x2="265" y2="80" stroke="var(--svg-line)" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+
+              <rect x="270" y="50" width="90" height="60" rx="6" fill="#8e44ad" opacity="0.12" stroke="#8e44ad" stroke-width="1.5"/>
+              <text x="315" y="82" text-anchor="middle" font-size="11" font-weight="600" fill="var(--svg-text)">Kafka</text>
+              <text x="315" y="96" text-anchor="middle" font-size="9" fill="var(--text-secondary)">Stream</text>
+
+              <line x1="365" y1="80" x2="395" y2="80" stroke="var(--svg-line)" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+
+              <rect x="400" y="50" width="90" height="60" rx="6" fill="#e74c3c" opacity="0.12" stroke="#e74c3c" stroke-width="1.5"/>
+              <text x="445" y="82" text-anchor="middle" font-size="11" font-weight="600" fill="var(--svg-text)">Spark</text>
+              <text x="445" y="96" text-anchor="middle" font-size="9" fill="var(--text-secondary)">Transform</text>
+
+              <line x1="495" y1="80" x2="525" y2="80" stroke="var(--svg-line)" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+
+              <rect x="530" y="50" width="110" height="60" rx="6" fill="#27ae60" opacity="0.12" stroke="#27ae60" stroke-width="1.5"/>
+              <text x="585" y="76" text-anchor="middle" font-size="11" font-weight="600" fill="var(--svg-text)">Fieldsets</text>
+              <text x="585" y="92" text-anchor="middle" font-size="9" fill="var(--text-secondary)">Parquet / Columnar</text>
+              <text x="585" y="104" text-anchor="middle" font-size="9" fill="var(--text-secondary)">Pre-typed, flattened</text>
+
+              <text x="350" y="145" text-anchor="middle" font-size="10" fill="var(--text-secondary)">EAV flexibility at ingest -- columnar performance at query time</text>
+            </svg>
+          </div>
+        </div>
+      </details>
+
+      <details class="platform-qualtrics">
+        <summary>Dashboard and Caching Architecture</summary>
+        <div class="details-body">
+          <ul>
+            <li><strong>Response Cache</strong> -- in-memory cache in front of the response database, serving hot queries</li>
+            <li><strong>Response Database</strong> -- persistent analytical store (flattened fieldsets in columnar format)</li>
+            <li><strong>Real-time engine</strong> -- Kafka + Spark + fast data stores for streaming dashboards</li>
+          </ul>
+          <p>This maps directly to the pre-computation vs. runtime tradeoff from Topic 4: common dashboard views are pre-aggregated (pre-computation), while ad-hoc slicing falls through to the analytical engine (runtime).</p>
+        </div>
+      </details>
+
+      <details class="platform-qualtrics">
+        <summary>AI Features: Stats iQ, Text iQ, Predict iQ</summary>
+        <div class="details-body">
+          <h3>Stats iQ -- automated test selection</h3>
+          <p>Stats iQ inspects column types and cardinalities, selects the appropriate statistical test, runs it, and translates results into plain language. It is a direct consumer of the typed fieldset schema -- the system knows "this field is a 5-point Likert scale" vs. "this field is a text response" because schema metadata is preserved through the pipeline.</p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Variable Combination</th><th>Test Selected</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Two categories vs. numbers</td><td>T-test</td></tr>
+                <tr><td>Three+ categories vs. numbers</td><td>ANOVA with Games-Howell post-hoc</td></tr>
+                <tr><td>Numbers vs. numbers</td><td>Pearson correlation</td></tr>
+                <tr><td>Categories vs. categories</td><td>Chi-squared / Fisher's exact</td></tr>
+                <tr><td>Regression (continuous)</td><td>Linear with relative importance</td></tr>
+                <tr><td>Regression (binary)</td><td>Logistic with relative importance</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>Text iQ -- NLP over open-ended responses</h3>
+          <ul>
+            <li>5-level sentiment (Very Negative to Very Positive, plus Mixed)</li>
+            <li>Sentiment intensity (-10 to +10) and polarity (0 to 10)</li>
+            <li>Topic detection: automatic (ML-recommended) and bottom-up (user-defined)</li>
+            <li>Per-topic sentiment scoring -- a single response can have multiple topic sentiments</li>
+            <li>14+ languages including English, Spanish, German, French, Japanese, Chinese, Korean</li>
+          </ul>
+
+          <h3>Predict iQ -- churn and attrition</h3>
+          <ul>
+            <li>Builds candidate models using both neural networks and regression</li>
+            <li>Learns from survey responses + embedded operational data (tenure, role, prior scores)</li>
+            <li>Scores new responses as they arrive in real-time</li>
+          </ul>
+
+          <div class="callout callout-info">
+            <strong>Architectural insight</strong>
+            All three iQ features read from the same flattened analytical store. They don't have separate data pipelines -- they're downstream consumers of the fieldset infrastructure, which is why they can operate on any survey without configuration. The schema metadata tells the AI layer what it's looking at.
+          </div>
+        </div>
+      </details>
+
+
+      <!-- ═══════════════════════════════════════════════════════ -->
+      <h2 id="cultureamp">Culture Amp: People Science + Engineering</h2>
+
+      <p>Purpose-built for employee engagement and performance. Over 1 billion data points powering benchmarks, running on AWS + GCP. Smaller than Qualtrics but deeply specialized in the people analytics domain.</p>
+
+      <details class="platform-cultureamp">
+        <summary>Confidentiality Architecture -- confidential, not anonymous</summary>
+        <div class="details-body">
+          <p>Culture Amp draws a careful distinction: surveys are <strong>confidential</strong>, not anonymous. Every response is tied to an employee record (the system knows who said what), but confidentiality protections prevent anyone from identifying individual responses in reports.</p>
+
+          <h3>Two protection levels</h3>
+          <div class="card-grid">
+            <div class="card">
+              <h3>Basic Protection (default)</h3>
+              <p>If a reporting group has just one participant, the next-smallest group's results are also hidden -- even if that group exceeds the minimum threshold.</p>
+              <p><strong>Why:</strong> prevents inference attacks. If you know the department average and every sub-group except one, you can back-calculate the hidden group.</p>
+            </div>
+            <div class="card">
+              <h3>Strong Protection</h3>
+              <p>Any group with fewer responses than the reporting group minimum is hidden, <em>plus</em> the indirect-identification protection from Basic mode.</p>
+              <p><strong>Why:</strong> handles scenarios where multiple small groups could collectively reveal individual responses through elimination.</p>
+            </div>
+          </div>
+
+          <p>This is the same k-anonymity principle from Topic 7, but with the "adjacent group suppression" layer on top that most simple implementations miss. HR administrators can see which feedback traces back to summarized insights (for bias correction), while individual response confidentiality is maintained -- the data-engineering version of role-based access.</p>
+        </div>
+      </details>
+
+      <details class="platform-cultureamp">
+        <summary>Impact -- driver analysis as a product feature</summary>
+        <div class="details-body">
+          <p>Culture Amp's Impact feature is a productized version of engagement driver analysis. It uses regression-based statistical analysis to answer: <em>"Which survey questions have the most impact on engagement outcomes?"</em></p>
+
+          <ul>
+            <li><strong>Dependent variable:</strong> engagement score (composite of engagement questions)</li>
+            <li><strong>Independent variables:</strong> all other survey questions</li>
+            <li>Identifies which questions engaged people are most positive about and disengaged people are most negative about</li>
+            <li>Results ranked by predictive power -- true drivers vs. correlated noise</li>
+            <li><strong>Recalculates dynamically</strong> when demographic filters are applied -- different drivers for different teams/locations/tenures</li>
+          </ul>
+
+          <div class="callout callout-warn">
+            <strong>The hard part: filter-aware recalculation</strong>
+            This is a direct application of pre-computation + runtime query patterns: the regression model can be pre-fit on the full population (pre-computation), but re-fitting for filtered subgroups happens at query time (runtime). It's not a static report, it's a parameterized model.
+          </div>
+
+          <p>Extends to attrition prediction: historical engagement + performance data combined to predict which employees are at risk of leaving, surfacing specific drivers (manager relationship, growth opportunity, recognition) ranked by attrition correlation.</p>
+        </div>
+      </details>
+
+      <details class="platform-cultureamp">
+        <summary>AI-Powered Features (2025+)</summary>
+        <div class="details-body">
+          <ul>
+            <li><strong>AI Coach</strong> -- conversational interface combining people science with AI for personalized leadership coaching</li>
+            <li><strong>AI-Suggested Improvements</strong> -- guides managers in writing actionable, balanced performance feedback</li>
+            <li><strong>AI-Powered Role Comparison</strong> -- summarizes job role similarities and transferable skills</li>
+            <li><strong>AI Highlights &amp; Opportunities</strong> -- summarizes extensive feedback to identify common themes, minimizing bias in performance discussions</li>
+            <li><strong>Heatmap Explorer</strong> -- drill from heatmaps into trends, demographic spreads, and comment analysis</li>
+            <li><strong>Multi-Account Reporting</strong> -- unified surveys across entities (the data federation problem)</li>
+          </ul>
+        </div>
+      </details>
+
+
+      <!-- ═══════════════════════════════════════════════════════ -->
+      <h2 id="medallia">Medallia: Real-Time Signals at Enterprise Scale</h2>
+
+      <p>Medallia operates at a different scale point: billions of experience signals across voice, video, digital, IoT, social media, and messaging. Over 1 million weekly AI users. Core differentiator: real-time signal processing and routing.</p>
+
+      <details class="platform-medallia">
+        <summary>Signal Processing Architecture -- beyond surveys</summary>
+        <div class="details-body">
+          <p>Medallia ingests from every touchpoint: surveys, call center recordings, chat logs, web behavior, social media, employee feedback. These are unified through an integration layer connecting operational data (Salesforce, Adobe, ServiceNow) with experience data.</p>
+
+          <div class="diagram-container">
+            <svg viewBox="0 0 700 220" xmlns="http://www.w3.org/2000/svg">
+              <!-- Signal sources -->
+              <text x="55" y="20" text-anchor="middle" font-size="10" font-weight="600" fill="var(--text-secondary)">Signal Sources</text>
+              <rect x="10" y="30" width="90" height="35" rx="5" fill="#2e7d32" opacity="0.1" stroke="#2e7d32" stroke-width="1"/>
+              <text x="55" y="52" text-anchor="middle" font-size="10" fill="var(--svg-text)">Surveys</text>
+              <rect x="10" y="70" width="90" height="35" rx="5" fill="#2e7d32" opacity="0.1" stroke="#2e7d32" stroke-width="1"/>
+              <text x="55" y="92" text-anchor="middle" font-size="10" fill="var(--svg-text)">Call Center</text>
+              <rect x="10" y="110" width="90" height="35" rx="5" fill="#2e7d32" opacity="0.1" stroke="#2e7d32" stroke-width="1"/>
+              <text x="55" y="132" text-anchor="middle" font-size="10" fill="var(--svg-text)">Chat / Web</text>
+              <rect x="10" y="150" width="90" height="35" rx="5" fill="#2e7d32" opacity="0.1" stroke="#2e7d32" stroke-width="1"/>
+              <text x="55" y="172" text-anchor="middle" font-size="10" fill="var(--svg-text)">Social / IoT</text>
+
+              <!-- Arrows to unified -->
+              <line x1="105" y1="47" x2="165" y2="100" stroke="var(--svg-line)" stroke-width="1" marker-end="url(#arrowhead)"/>
+              <line x1="105" y1="87" x2="165" y2="100" stroke="var(--svg-line)" stroke-width="1" marker-end="url(#arrowhead)"/>
+              <line x1="105" y1="127" x2="165" y2="100" stroke="var(--svg-line)" stroke-width="1" marker-end="url(#arrowhead)"/>
+              <line x1="105" y1="167" x2="165" y2="100" stroke="var(--svg-line)" stroke-width="1" marker-end="url(#arrowhead)"/>
+
+              <!-- Unified layer -->
+              <rect x="170" y="70" width="120" height="60" rx="8" fill="#8e44ad" opacity="0.12" stroke="#8e44ad" stroke-width="1.5"/>
+              <text x="230" y="96" text-anchor="middle" font-size="11" font-weight="600" fill="var(--svg-text)">Unified Signal</text>
+              <text x="230" y="112" text-anchor="middle" font-size="9" fill="var(--text-secondary)">Integration Layer</text>
+
+              <line x1="295" y1="100" x2="335" y2="100" stroke="var(--svg-line)" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+
+              <!-- Athena AI -->
+              <rect x="340" y="70" width="110" height="60" rx="8" fill="#1565c0" opacity="0.12" stroke="#1565c0" stroke-width="1.5"/>
+              <text x="395" y="96" text-anchor="middle" font-size="11" font-weight="600" fill="var(--svg-text)">Athena AI</text>
+              <text x="395" y="112" text-anchor="middle" font-size="9" fill="var(--text-secondary)">NLU + Analytics</text>
+
+              <line x1="455" y1="100" x2="495" y2="100" stroke="var(--svg-line)" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+
+              <!-- Routing -->
+              <rect x="500" y="70" width="100" height="60" rx="8" fill="#e74c3c" opacity="0.12" stroke="#e74c3c" stroke-width="1.5"/>
+              <text x="550" y="96" text-anchor="middle" font-size="11" font-weight="600" fill="var(--svg-text)">Routing</text>
+              <text x="550" y="112" text-anchor="middle" font-size="9" fill="var(--text-secondary)">Role-aware</text>
+
+              <!-- Output roles -->
+              <line x1="605" y1="80" x2="640" y2="55" stroke="var(--svg-line)" stroke-width="1" marker-end="url(#arrowhead)"/>
+              <line x1="605" y1="100" x2="640" y2="100" stroke="var(--svg-line)" stroke-width="1" marker-end="url(#arrowhead)"/>
+              <line x1="605" y1="120" x2="640" y2="145" stroke="var(--svg-line)" stroke-width="1" marker-end="url(#arrowhead)"/>
+
+              <text x="680" y="58" text-anchor="middle" font-size="10" fill="var(--svg-text)">Executives</text>
+              <text x="680" y="103" text-anchor="middle" font-size="10" fill="var(--svg-text)">Managers</text>
+              <text x="680" y="148" text-anchor="middle" font-size="10" fill="var(--svg-text)">Frontline</text>
+
+              <text x="350" y="210" text-anchor="middle" font-size="10" fill="var(--text-secondary)">All signal types flow through the same pipeline -- not just survey responses</text>
+            </svg>
+          </div>
+
+          <p>The key architectural difference from survey-only platforms: Medallia treats all inputs as <strong>signals</strong>, not just survey responses. A call center transcript, a website click path, and a survey response all flow through the same analytical pipeline. This requires:</p>
+          <ul>
+            <li><strong>Schema flexibility</strong> far beyond fixed survey schemas (Topic 5's EAV/dynamic schema patterns)</li>
+            <li><strong>Real-time processing</strong> -- signals analyzed and routed within seconds, not batch-processed overnight</li>
+            <li><strong>Multi-modal analysis</strong> -- text, audio, video, structured data all feed the same downstream models</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="platform-medallia">
+        <summary>Athena AI Engine</summary>
+        <div class="details-body">
+          <ul>
+            <li><strong>Natural Language Understanding</strong> -- intent detection without complex setup or constant retraining; models pre-trained on experience data, fine-tuned per deployment</li>
+            <li><strong>Athena Studio</strong> -- no-code/low-code platform for building custom AI models; hundreds of pre-built industry-specific models available</li>
+            <li><strong>Intelligent Summaries</strong> -- GenAI-powered summarization (multilingual: English, French, German, Spanish)</li>
+            <li><strong>Root Cause Assist</strong> -- AI identifies root causes behind experience patterns</li>
+            <li><strong>Smart Response</strong> -- automated response generation for customer feedback</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="platform-medallia">
+        <summary>Role-Based Access Control -- beyond "who can see what"</summary>
+        <div class="details-body">
+          <p>Medallia's RBAC is hierarchical and role-specific:</p>
+          <ul>
+            <li>Organizational hierarchy defines access rights</li>
+            <li>Role-specific dashboards: frontline employees see immediate customer feedback, managers see team patterns, executives see strategic trends</li>
+            <li>Insights embedded in workflows -- routed to the accountable party automatically</li>
+            <li>Action Plans launched directly from any report, with real-time performance tracking</li>
+          </ul>
+          <p>This is the production version of Topic 7's row-level security patterns, with the addition of <strong>workflow routing</strong>: suppression and access control aren't just about hiding data, they're about showing the right data to the right person at the right time and prompting action.</p>
+        </div>
+      </details>
+
+
+      <!-- ═══════════════════════════════════════════════════════ -->
+      <h2 id="common-patterns">Common Patterns Across All Three</h2>
+
+      <p>Despite different market positions and scale points, these platforms converge on the same architectural patterns. This convergence is the signal -- these aren't arbitrary design choices, they're solutions forced by the problem domain.</p>
+
+      <div class="card-grid">
+        <div class="card">
+          <h3>1. Dynamic Schemas with Pre-Typed Analytics</h3>
+          <p>Store raw data flexibly (EAV-like or document-oriented), then transform into a typed, flattened analytical representation. Schema metadata travels with the data so downstream systems know what they're working with.</p>
+          <p style="font-size:0.85em; color:var(--text-secondary)">Topic 5 (EAV flexibility) + Topic 3 (medallion transformation)</p>
+        </div>
+
+        <div class="card">
+          <h3>2. Multi-Tier Serving with Cache</h3>
+          <p><span class="tier-badge tier-cache">Cache &lt;1ms</span> in-memory for repeat queries. <span class="tier-badge tier-serving">Serving &lt;50ms</span> pre-aggregated tables. <span class="tier-badge tier-analytical">Analytical: seconds</span> columnar store for ad-hoc.</p>
+          <p style="font-size:0.85em; color:var(--text-secondary)">Topic 4's pre-computation hierarchy with real caching infrastructure</p>
+        </div>
+
+        <div class="card">
+          <h3>3. AI as Downstream Consumer</h3>
+          <p>None run AI on separate data copies. Stats iQ, Impact, Athena all read from the same analytical store. Schema metadata (type, scale, question text) flows through the pipeline so AI features work on any survey without per-survey configuration.</p>
+          <p style="font-size:0.85em; color:var(--text-secondary)">Data model must serve both human dashboards and ML models</p>
+        </div>
+      </div>
+
+      <div class="card-grid">
+        <div class="card">
+          <h3>4. Suppression as First-Class Concern</h3>
+          <ul style="margin-top:0.5rem">
+            <li><strong>Basic:</strong> hide groups below a count threshold (Topic 7 baseline)</li>
+            <li><strong>Adjacent group:</strong> hide the next-smallest group to prevent inference (Culture Amp)</li>
+            <li><strong>Role-aware:</strong> different thresholds for different user roles (Medallia)</li>
+            <li><strong>Dynamic:</strong> computed per query, never pre-flagged on rows</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>5. Analytical / Serving Separation</h3>
+          <p>Analytical engine for heavy computation (aggregation, regression, NLP). Serving layer for interactive dashboards and APIs. Pre-computed aggregates bridge them.</p>
+          <p style="font-size:0.85em; color:var(--text-secondary)">Topic 6 (OLTP/OLAP spectrum) in production</p>
+        </div>
+      </div>
+
+
+      <!-- ═══════════════════════════════════════════════════════ -->
+      <h2 id="comparison">Platform Comparison</h2>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Dimension</th>
+              <th>Qualtrics</th>
+              <th>Culture Amp</th>
+              <th>Medallia</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Market focus</strong></td>
+              <td>CX + EX + Research</td>
+              <td>Employee engagement</td>
+              <td>Omni-channel signals</td>
+            </tr>
+            <tr>
+              <td><strong>Schema approach</strong></td>
+              <td>Fieldsets (typed EAV)</td>
+              <td>Survey-oriented</td>
+              <td>Signal-agnostic</td>
+            </tr>
+            <tr>
+              <td><strong>Processing</strong></td>
+              <td>Kafka + Spark</td>
+              <td>AWS + GCP pipeline</td>
+              <td>Real-time streaming</td>
+            </tr>
+            <tr>
+              <td><strong>AI layer</strong></td>
+              <td>Stats/Text/Predict iQ</td>
+              <td>Impact + AI Coach</td>
+              <td>Athena NLU + Studio</td>
+            </tr>
+            <tr>
+              <td><strong>AI data source</strong></td>
+              <td>Same analytical store</td>
+              <td>Same analytical store</td>
+              <td>Same analytical store</td>
+            </tr>
+            <tr>
+              <td><strong>Anonymity model</strong></td>
+              <td>Configurable thresholds</td>
+              <td>Confidential (not anon) + adjacent group suppression</td>
+              <td>Role-aware RBAC + workflow routing</td>
+            </tr>
+            <tr>
+              <td><strong>Scale indicator</strong></td>
+              <td>20K+ enterprise customers</td>
+              <td>1B+ data points</td>
+              <td>1M+ weekly AI users</td>
+            </tr>
+            <tr>
+              <td><strong>Key differentiator</strong></td>
+              <td>Auto test selection (Stats iQ)</td>
+              <td>Adjacent group suppression + parameterized regression</td>
+              <td>Multi-modal signal unification + action routing</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout callout-tip">
+        <strong>The convergence is the point</strong>
+        The "AI data source" row is the same across all three. None of these platforms built a separate data pipeline for AI. The analytical store is rich enough to serve both human dashboards and ML models. This is the architectural decision that matters most: get the data model right, and AI features become downstream consumers, not separate systems.
+      </div>
+
+
+      <!-- ═══════════════════════════════════════════════════════ -->
+      <h2 id="lab-results">Lab Results: Request Trace</h2>
+
+      <p>The lab implements the multi-tier serving pattern end-to-end: Bronze (raw ingest) through Silver (group-size enrichment + suppression) through Gold (pre-aggregated scores) pushed to a PostgreSQL serving table with a composite index, fronted by an in-memory cache. A request is traced through all tiers.</p>
+
+      <h3>Pipeline Output</h3>
+      <div class="card-grid">
+        <div class="card">
+          <h3>Bronze</h3>
+          <p><strong>528</strong> raw rows ingested</p>
+          <p style="font-size:0.85em; color:var(--text-secondary)">5 team/location groups, 12 questions each, varying group sizes</p>
+        </div>
+        <div class="card">
+          <h3>Silver</h3>
+          <p>Suppression check: <strong>Product/Austin (n=3)</strong> below threshold</p>
+          <p style="font-size:0.85em; color:var(--text-secondary)">Group size computed via window function, threshold = 4</p>
+        </div>
+        <div class="card">
+          <h3>Gold</h3>
+          <p><strong>60</strong> rows, <strong>12 suppressed</strong> (NULL scores)</p>
+          <p style="font-size:0.85em; color:var(--text-secondary)">Pre-aggregated AVG + STDDEV per team/location/question</p>
+        </div>
+        <div class="card">
+          <h3>Serving</h3>
+          <p><strong>60</strong> rows pushed to PostgreSQL with composite index</p>
+          <p style="font-size:0.85em; color:var(--text-secondary)">idx_serving_team on (team, location, question_id)</p>
+        </div>
+      </div>
+
+      <h3>Request Trace: Cache, Serving Table, and Analytical Fallback</h3>
+
+      <p>Four queries demonstrate each tier. The cache is pre-warmed with 48 entries (all non-suppressed Gold rows), then one entry is evicted to exercise the serving-table path.</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Group</th><th>Q</th><th>Tier Hit</th><th>Latency</th><th>Score</th><th>Note</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Engineering/New York</td>
+              <td>Q01</td>
+              <td><span class="tier-badge tier-cache">cache</span></td>
+              <td>0.001ms</td>
+              <td>2.33</td>
+              <td>Cached (large group)</td>
+            </tr>
+            <tr>
+              <td>Engineering/New York</td>
+              <td>Q01</td>
+              <td><span class="tier-badge tier-cache">cache</span></td>
+              <td>0.000ms</td>
+              <td>2.33</td>
+              <td>Cache hit (repeat)</td>
+            </tr>
+            <tr>
+              <td>Engineering/Austin</td>
+              <td>Q01</td>
+              <td><span class="tier-badge tier-serving">serving_table</span></td>
+              <td>95.070ms</td>
+              <td>2.75</td>
+              <td>Serving table (cache evicted)</td>
+            </tr>
+            <tr>
+              <td>Product/Austin</td>
+              <td>Q01</td>
+              <td><span class="tier-badge tier-analytical">analytical</span></td>
+              <td>5.353ms</td>
+              <td>NULL (suppressed)</td>
+              <td>Suppressed (n=3)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Latency Comparison</h3>
+
+      <div style="margin: 1rem 0;">
+        <div class="latency-bar">
+          <span class="label">Cache (hit)</span>
+          <div class="bar" style="width: 40px; background: var(--tier-cache);">~0ms</div>
+        </div>
+        <div class="latency-bar">
+          <span class="label">Serving table</span>
+          <div class="bar" style="width: 280px; background: var(--tier-serving); color: #1a1a2e;">~95ms</div>
+        </div>
+        <div class="latency-bar">
+          <span class="label">Analytical fallback</span>
+          <div class="bar" style="width: 100px; background: var(--tier-analytical);">~5ms*</div>
+        </div>
+      </div>
+      <p style="font-size:0.82em; color:var(--text-secondary)">* Analytical latency is artificially low here because the DuckDB in-memory database is small. In production with billions of rows, analytical queries take seconds -- hence the 500x speedup from caching. The serving table latency (95ms) includes a fresh PostgreSQL connection; with connection pooling, production targets are &lt;50ms.</p>
+
+      <div class="callout callout-tip">
+        <strong>Try it yourself</strong>
+        Run the lab to see the full pipeline in action:<br>
+        <code>cd ~/Development/GithubRepo/ravi_engineering/dev_workspace/data-engineering-learning &amp;&amp; uv run python labs/08_frontier_survey_platforms/01_architecture_patterns.py</code><br><br>
+        Things to experiment with: change the suppression threshold from 4 to 5 (Gold query), add a new team with exactly 4 members to see the boundary case, or clear the cache dictionary mid-trace to force all queries through the serving table.
+      </div>
+
+
+      <!-- ═══════════════════════════════════════════════════════ -->
+      <h2 id="implications">Implications for Your Design</h2>
+
+      <h3>Where You're Already Adequate</h3>
+      <p>The architecture from Topics 1-7 covers the structural foundations:</p>
+      <ul>
+        <li><strong>Star schema</strong> (Topic 1) -- core fact + dimension model</li>
+        <li><strong>Columnar storage</strong> (Topic 2) -- analytical query performance</li>
+        <li><strong>Medallion pipeline</strong> (Topic 3) -- raw-to-analytics transformation</li>
+        <li><strong>Pre-computation</strong> (Topic 4) -- common dashboard cuts</li>
+        <li><strong>Dynamic schema</strong> (Topic 5) -- question flexibility</li>
+        <li><strong>OLTP/OLAP separation</strong> (Topic 6) -- analytical vs. serving split</li>
+        <li><strong>Suppression</strong> (Topic 7) -- privacy and group-size constraints</li>
+      </ul>
+
+      <h3>Where These Platforms Go Further</h3>
+
+      <div class="card-grid">
+        <div class="card">
+          <h3>Multi-Tier Cache</h3>
+          <p>The architecture so far pre-computes to serving tables but doesn't implement an in-memory cache layer. For an AI agent use case: cache the most common tool call results in memory, fall back to pre-computed tables, fall back to analytical queries.</p>
+        </div>
+        <div class="card">
+          <h3>Schema Metadata in Pipeline</h3>
+          <p>The fieldset / typed-schema approach means AI features get column semantics for free. The AI agent needs to understand what Q01-Q12 mean -- that metadata should flow through the pipeline, not be hardcoded in the agent's prompts.</p>
+        </div>
+        <div class="card">
+          <h3>Dynamic Driver Analysis</h3>
+          <p>Culture Amp's Impact feature (regression re-computed per filter) is a pattern the agent could implement: given a filtered population, which questions are most predictive of engagement? Requires parameterized regression, not just pre-computed averages.</p>
+        </div>
+        <div class="card">
+          <h3>Real-Time Routing</h3>
+          <p>Medallia's signal-to-action loop (detect pattern, route to owner, track action) represents where survey analytics eventually goes -- from "show me the data" to "tell the right person what to do."</p>
+        </div>
+      </div>
+
+      <h3>Where to Focus Engineering Effort</h3>
+      <ol>
+        <li><strong>Cache layer</strong> -- add in-memory caching to the serving path; highest ROI for response time</li>
+        <li><strong>Schema metadata</strong> -- ensure question semantics (text, type, scale, category) are available to the AI agent without hardcoding</li>
+        <li><strong>Parameterized aggregation</strong> -- support filter-aware pre-computation so the agent can answer "what drives engagement for Team X" without a full table scan</li>
+        <li><strong>Adjacent-group suppression</strong> -- upgrade from simple threshold suppression to Culture Amp's inference-prevention model</li>
+      </ol>
+
+    </main>
+
+    <footer>
+      <h2>Sources</h2>
+      <div class="source"><code>notes/08_frontier_survey_platforms.md</code></div>
+      <div class="source"><code>labs/08_frontier_survey_platforms/01_architecture_patterns.py</code></div>
+    </footer>
+  </div>
+
+  <script>
+    (function() {
+      var toggle = document.getElementById('theme-toggle');
+      var KEY = 'synthesis-theme';
+
+      function setTheme(t) {
+        document.documentElement.setAttribute('data-theme', t);
+        toggle.setAttribute('aria-label',
+          t === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+        try { localStorage.setItem(KEY, t); } catch(e) {}
+      }
+
+      var saved = null;
+      try { saved = localStorage.getItem(KEY); } catch(e) {}
+
+      if (saved) {
+        setTheme(saved);
+      } else {
+        setTheme(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      }
+
+      toggle.addEventListener('click', function() {
+        var current = document.documentElement.getAttribute('data-theme');
+        setTheme(current === 'dark' ? 'light' : 'dark');
+      });
+    })();
+  </script>
+</body>
+</html>

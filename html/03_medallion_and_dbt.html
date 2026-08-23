@@ -1,0 +1,1684 @@
+<!--
+  Synthesis Page: Medallion Architecture, dbt, and Airflow
+  Generated: 2026-08-23
+  Sources:
+    notes/03_medallion_and_dbt.md
+    labs/03_medallion_and_dbt/01_medallion_raw_sql.py
+    labs/03_medallion_and_dbt/02_dbt_init_guide.py
+    labs/03_medallion_and_dbt/03_dbt_seed_and_run.py
+    labs/03_medallion_and_dbt/04_dbt_incremental.py
+    labs/03_medallion_and_dbt/05_dbt_tests_and_contracts.py
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Medallion Architecture, dbt, and Airflow</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --bg-secondary: #f5f7fa;
+      --text: #1a1a2e;
+      --text-secondary: #555770;
+      --border: #e0e0e8;
+      --accent: #4a6cf7;
+      --accent-soft: #eef0ff;
+      --code-bg: #f0f2f8;
+      --card-bg: #ffffff;
+      --card-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      --callout-info: #e8f0fe;
+      --callout-warn: #fef7e0;
+      --callout-tip: #e6f9ef;
+      --callout-info-border: #4a6cf7;
+      --callout-warn-border: #e6a817;
+      --callout-tip-border: #27ae60;
+      --bronze: #cd7f32;
+      --bronze-bg: #fdf3e7;
+      --silver: #7b8a9e;
+      --silver-bg: #f0f2f8;
+      --gold: #d4a017;
+      --gold-bg: #fef7e0;
+      --sidebar-bg: #f8f9fc;
+      --sidebar-active: #e8ecff;
+      --nav-text: #555770;
+      --nav-active: #4a6cf7;
+      --details-bg: #fafbfd;
+    }
+
+    [data-theme="dark"] {
+      --bg: #0f0f1a;
+      --bg-secondary: #1a1a2e;
+      --text: #e0e0ec;
+      --text-secondary: #9999b0;
+      --border: #2a2a40;
+      --accent: #6b8cff;
+      --accent-soft: #1a1a3e;
+      --code-bg: #1e1e32;
+      --card-bg: #16162a;
+      --card-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      --callout-info: #141430;
+      --callout-warn: #1e1a10;
+      --callout-tip: #0e1e14;
+      --callout-info-border: #6b8cff;
+      --callout-warn-border: #d4a017;
+      --callout-tip-border: #2ecc71;
+      --bronze: #daa06d;
+      --bronze-bg: #201810;
+      --silver: #a0aec0;
+      --silver-bg: #161625;
+      --gold: #f0c040;
+      --gold-bg: #1e1a10;
+      --sidebar-bg: #12122a;
+      --sidebar-active: #1a1a3e;
+      --nav-text: #9999b0;
+      --nav-active: #6b8cff;
+      --details-bg: #14142a;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      transition: background 0.3s ease, color 0.3s ease;
+      display: flex;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 240px;
+      min-width: 240px;
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100vh;
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      padding: 1.5rem 0;
+      z-index: 100;
+      transition: background 0.3s ease, border-color 0.3s ease, transform 0.3s ease;
+    }
+
+    .sidebar-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-secondary);
+      padding: 0 1.2rem;
+      margin-bottom: 0.8rem;
+    }
+
+    .sidebar nav a {
+      display: block;
+      padding: 0.4rem 1.2rem;
+      font-size: 0.82rem;
+      color: var(--nav-text);
+      text-decoration: none;
+      line-height: 1.4;
+      border-left: 3px solid transparent;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+
+    .sidebar nav a:hover {
+      background: var(--sidebar-active);
+      color: var(--text);
+      border-bottom: none;
+    }
+
+    .sidebar nav a.active {
+      background: var(--sidebar-active);
+      color: var(--nav-active);
+      font-weight: 600;
+      border-left-color: var(--nav-active);
+    }
+
+    .sidebar nav a .topic-num {
+      display: inline-block;
+      width: 1.5em;
+      color: var(--text-secondary);
+      font-size: 0.78em;
+    }
+
+    .sidebar-toggle {
+      display: none;
+      position: fixed;
+      top: 0.8rem;
+      left: 0.8rem;
+      z-index: 200;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.4rem 0.6rem;
+      cursor: pointer;
+      color: var(--text);
+      font-size: 1.1rem;
+      line-height: 1;
+    }
+
+    /* ── Content area ── */
+    .content-wrapper {
+      margin-left: 240px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    header {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 2.5rem 2rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    header h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.3;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-shrink: 0;
+      padding-top: 0.35rem;
+    }
+
+    .meta-date {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+
+    /* ── Theme button ── */
+    .theme-btn {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg-secondary);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.7rem;
+      flex-shrink: 0;
+      transition: background 0.2s ease, border-color 0.2s ease;
+      color: var(--text-secondary);
+      font-family: inherit;
+      font-size: 0.8rem;
+      font-weight: 500;
+      line-height: 1;
+    }
+
+    .theme-btn:hover {
+      background: var(--border);
+      color: var(--text);
+    }
+
+    .theme-btn:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .theme-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .theme-btn .icon-sun,
+    .theme-btn .icon-moon,
+    .theme-btn .label-light,
+    .theme-btn .label-dark {
+      display: none;
+    }
+
+    [data-theme="dark"] .theme-btn .icon-sun { display: block; }
+    [data-theme="dark"] .theme-btn .label-dark { display: inline; }
+    :root:not([data-theme="dark"]) .theme-btn .icon-moon { display: block; }
+    :root:not([data-theme="dark"]) .theme-btn .label-light { display: inline; }
+    [data-theme="light"] .theme-btn .icon-moon { display: block; }
+    [data-theme="light"] .theme-btn .label-light { display: inline; }
+
+    /* ── Main ── */
+    main {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 2rem 3rem;
+    }
+
+    main h2 {
+      font-size: 1.35rem;
+      font-weight: 600;
+      margin: 2.5rem 0 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 2px solid var(--border);
+      letter-spacing: -0.01em;
+    }
+
+    main h2:first-child {
+      margin-top: 0.5rem;
+    }
+
+    main h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin: 1.8rem 0 0.6rem;
+    }
+
+    main p { margin: 0.8rem 0; }
+
+    main ul, main ol {
+      margin: 0.8rem 0;
+      padding-left: 1.6rem;
+    }
+
+    main li { margin: 0.35rem 0; }
+    main li strong { color: var(--accent); }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.2s;
+    }
+
+    a:hover { border-bottom-color: var(--accent); }
+
+    code {
+      font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+      font-size: 0.88em;
+      background: var(--code-bg);
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+    }
+
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      overflow-x: auto;
+      margin: 1rem 0;
+    }
+
+    pre code {
+      background: none;
+      padding: 0;
+      font-size: 0.85em;
+      line-height: 1.6;
+    }
+
+    blockquote {
+      border-left: 3px solid var(--accent);
+      padding: 0.6rem 1rem;
+      margin: 1rem 0;
+      background: var(--accent-soft);
+      border-radius: 0 6px 6px 0;
+      color: var(--text-secondary);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.92em;
+    }
+
+    th, td {
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      font-weight: 600;
+      background: var(--bg-secondary);
+      white-space: nowrap;
+    }
+
+    tr:hover td { background: var(--bg-secondary); }
+
+    .table-scroll {
+      overflow-x: auto;
+      margin: 1rem 0;
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.2rem 1.4rem;
+      margin: 1rem 0;
+      box-shadow: var(--card-shadow);
+      transition: box-shadow 0.2s ease, transform 0.2s ease;
+    }
+
+    .card:hover {
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+      transform: translateY(-1px);
+    }
+
+    [data-theme="dark"] .card:hover {
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    }
+
+    .card h3 { margin-top: 0; }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+
+    .card-grid .card { margin: 0; }
+
+    /* ── Layer cards ── */
+    .layer-bronze { border-left: 4px solid var(--bronze); }
+    .layer-bronze h3 { color: var(--bronze); }
+    .layer-silver { border-left: 4px solid var(--silver); }
+    .layer-silver h3 { color: var(--silver); }
+    .layer-gold { border-left: 4px solid var(--gold); }
+    .layer-gold h3 { color: var(--gold); }
+
+    /* ── Callouts ── */
+    .callout {
+      padding: 0.8rem 1rem;
+      border-radius: 8px;
+      margin: 1rem 0;
+      border-left: 4px solid;
+    }
+
+    .callout-info {
+      background: var(--callout-info);
+      border-left-color: var(--callout-info-border);
+    }
+
+    .callout-warn {
+      background: var(--callout-warn);
+      border-left-color: var(--callout-warn-border);
+    }
+
+    .callout-tip {
+      background: var(--callout-tip);
+      border-left-color: var(--callout-tip-border);
+    }
+
+    .callout strong {
+      display: block;
+      margin-bottom: 0.3rem;
+    }
+
+    /* ── Details / collapsible ── */
+    details {
+      background: var(--details-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin: 1rem 0;
+      transition: background 0.2s;
+    }
+
+    details[open] {
+      background: var(--card-bg);
+    }
+
+    summary {
+      padding: 0.8rem 1.2rem;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--accent);
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    summary::-webkit-details-marker { display: none; }
+
+    summary::before {
+      content: "";
+      display: inline-block;
+      width: 0;
+      height: 0;
+      border-left: 6px solid var(--accent);
+      border-top: 4px solid transparent;
+      border-bottom: 4px solid transparent;
+      transition: transform 0.2s;
+      flex-shrink: 0;
+    }
+
+    details[open] summary::before {
+      transform: rotate(90deg);
+    }
+
+    details .detail-content {
+      padding: 0 1.2rem 1.2rem;
+    }
+
+    /* ── Table of contents ── */
+    nav.toc {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.4rem;
+      margin: 1.5rem 0;
+    }
+
+    nav.toc ul { list-style: none; padding-left: 0; }
+    nav.toc li { margin: 0.3rem 0; }
+
+    nav.toc a {
+      color: var(--text-secondary);
+      font-size: 0.92em;
+    }
+
+    nav.toc a:hover { color: var(--accent); }
+
+    /* ── SVG diagrams ── */
+    .diagram-container {
+      margin: 1.5rem 0;
+      overflow-x: auto;
+    }
+
+    .diagram-container svg {
+      display: block;
+      margin: 0 auto;
+      max-width: 100%;
+      height: auto;
+    }
+
+    /* ── Try-it callout ── */
+    .try-it {
+      background: var(--callout-tip);
+      border: 1px solid var(--callout-tip-border);
+      border-left: 4px solid var(--callout-tip-border);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin: 1.2rem 0;
+    }
+
+    .try-it .try-label {
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: var(--callout-tip-border);
+      margin-bottom: 0.4rem;
+    }
+
+    .try-it code {
+      font-size: 0.85em;
+    }
+
+    /* ── Comparison pill ── */
+    .comparison-row {
+      display: flex;
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+
+    .comparison-row .col {
+      flex: 1;
+      min-width: 0;
+    }
+
+    /* ── Footer ── */
+    footer {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 2rem;
+      border-top: 1px solid var(--border);
+    }
+
+    footer h2 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    footer .source {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin: 0.25rem 0;
+    }
+
+    footer .source code { font-size: 0.85em; }
+
+    @media (max-width: 800px) {
+      .sidebar {
+        transform: translateX(-100%);
+      }
+
+      .sidebar.open {
+        transform: translateX(0);
+      }
+
+      .sidebar-toggle {
+        display: block;
+      }
+
+      .content-wrapper {
+        margin-left: 0;
+      }
+
+      header { padding: 1.5rem 1rem 1rem; flex-direction: column; padding-top: 3rem; }
+      main { padding: 0 1rem 2rem; }
+      footer { padding: 1.5rem 1rem; }
+      .card-grid { grid-template-columns: 1fr; }
+      .comparison-row { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar toggle (mobile) -->
+  <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle navigation">&#9776;</button>
+
+  <!-- Sidebar navigation -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-title">Data Engineering Topics</div>
+    <nav>
+      <a href="01_warehousing_fundamentals.html"><span class="topic-num">1.</span> Warehousing Fundamentals</a>
+      <a href="02_columnar_storage.html"><span class="topic-num">2.</span> Columnar Storage</a>
+      <a href="03_medallion_and_dbt.html" class="active"><span class="topic-num">3.</span> Medallion + dbt + Airflow</a>
+      <a href="04_precomputation_vs_runtime.html"><span class="topic-num">4.</span> Pre-computation vs Runtime</a>
+      <a href="05_dynamic_schema_eav.html"><span class="topic-num">5.</span> Dynamic Schema / EAV</a>
+      <a href="06_oltp_olap_spectrum.html"><span class="topic-num">6.</span> OLTP vs OLAP Spectrum</a>
+      <a href="07_suppression_access_control.html"><span class="topic-num">7.</span> Suppression &amp; Access Control</a>
+      <a href="08_frontier_survey_platforms.html"><span class="topic-num">8.</span> Frontier Survey Platforms</a>
+      <a href="09_agentic_data_access.html"><span class="topic-num">9.</span> Agentic Data Access</a>
+    </nav>
+  </aside>
+
+  <div class="content-wrapper">
+    <header>
+      <h1>Medallion Architecture, dbt, and Airflow</h1>
+      <div class="header-right">
+        <span class="meta-date">2026-08-23</span>
+        <button class="theme-btn" id="theme-toggle" aria-label="Toggle dark mode">
+          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+          </svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+          <span class="label-light">Light</span>
+          <span class="label-dark">Dark</span>
+        </button>
+      </div>
+    </header>
+
+    <main>
+
+      <!-- ── Table of Contents ── -->
+      <nav class="toc">
+        <ul>
+          <li><a href="#problem">What Problem Are We Solving?</a></li>
+          <li><a href="#medallion">Medallion Architecture: Bronze, Silver, Gold</a></li>
+          <li><a href="#data-flow">Data Flow: Before and After</a></li>
+          <li><a href="#what-is-dbt">What Is dbt?</a></li>
+          <li><a href="#dbt-project">dbt Project Structure</a></li>
+          <li><a href="#dbt-concepts">dbt Core Concepts</a></li>
+          <li><a href="#dbt-dag">The dbt DAG</a></li>
+          <li><a href="#tests">Data Contracts and Testing</a></li>
+          <li><a href="#airflow">What Is Airflow?</a></li>
+          <li><a href="#together">Airflow + dbt Together</a></li>
+          <li><a href="#labs">Labs: Try It Yourself</a></li>
+        </ul>
+      </nav>
+
+
+      <!-- ════════════════════════════════════════════════════════════ -->
+      <h2 id="problem">What Problem Are We Solving?</h2>
+
+      <p>Raw data lands in your warehouse from various sources -- survey responses, HR systems, project trackers. The data is messy: duplicate records from retries, inconsistent types, missing values, questions that need reverse-scoring. You need a systematic way to clean, transform, and aggregate so analysts can trust the data.</p>
+
+      <p>Two problems, actually:</p>
+
+      <div class="card-grid">
+        <div class="card">
+          <h3>1. How do you organize transformations?</h3>
+          <p>A giant SQL script that does everything becomes a 500-line monolith nobody can debug. When the reverse-scoring logic changes, you grep through that script and hope you found every place.</p>
+          <p><strong>Solution: Medallion architecture</strong> -- organize into layers with clear guarantees.</p>
+        </div>
+        <div class="card">
+          <h3>2. How do you make them reproducible?</h3>
+          <p>Transformations in a notebook or manual SQL commands mean no version control, no tests, no way to re-run reliably.</p>
+          <p><strong>Solution: dbt</strong> -- version-controlled SQL models with built-in testing. <strong>Airflow</strong> handles scheduling.</p>
+        </div>
+      </div>
+
+
+      <!-- ════════════════════════════════════════════════════════════ -->
+      <h2 id="medallion">Medallion Architecture: Bronze, Silver, Gold</h2>
+
+      <p>The medallion architecture organizes your data warehouse into three layers, each with specific guarantees about data quality and shape.</p>
+
+      <!-- Medallion Architecture Flow Diagram -->
+      <div class="diagram-container">
+        <svg viewBox="0 0 780 340" xmlns="http://www.w3.org/2000/svg" style="max-width:780px;">
+          <!-- Background rects -->
+          <rect x="10" y="30" width="220" height="280" rx="12" fill="var(--bronze-bg)" stroke="var(--bronze)" stroke-width="2"/>
+          <rect x="280" y="30" width="220" height="280" rx="12" fill="var(--silver-bg)" stroke="var(--silver)" stroke-width="2"/>
+          <rect x="550" y="30" width="220" height="280" rx="12" fill="var(--gold-bg)" stroke="var(--gold)" stroke-width="2"/>
+
+          <!-- Layer titles -->
+          <text x="120" y="62" text-anchor="middle" font-weight="700" font-size="15" fill="var(--bronze)">BRONZE</text>
+          <text x="120" y="80" text-anchor="middle" font-size="11" fill="var(--text-secondary)">Raw Ingestion</text>
+          <text x="390" y="62" text-anchor="middle" font-weight="700" font-size="15" fill="var(--silver)">SILVER</text>
+          <text x="390" y="80" text-anchor="middle" font-size="11" fill="var(--text-secondary)">Cleaned &amp; Conformed</text>
+          <text x="660" y="62" text-anchor="middle" font-weight="700" font-size="15" fill="var(--gold)">GOLD</text>
+          <text x="660" y="80" text-anchor="middle" font-size="11" fill="var(--text-secondary)">Dashboard-Ready</text>
+
+          <!-- Bronze items -->
+          <rect x="30" y="100" width="180" height="28" rx="5" fill="var(--card-bg)" stroke="var(--border)"/>
+          <text x="120" y="119" text-anchor="middle" font-size="11" fill="var(--text)">raw_survey_responses</text>
+          <rect x="30" y="138" width="180" height="28" rx="5" fill="var(--card-bg)" stroke="var(--border)"/>
+          <text x="120" y="157" text-anchor="middle" font-size="11" fill="var(--text)">raw_question_config</text>
+          <rect x="30" y="176" width="180" height="28" rx="5" fill="var(--card-bg)" stroke="var(--border)"/>
+          <text x="120" y="195" text-anchor="middle" font-size="11" fill="var(--text)">raw_team_hierarchy</text>
+
+          <!-- Bronze attributes -->
+          <text x="120" y="230" text-anchor="middle" font-size="10" fill="var(--text-secondary)">111 rows (3 duplicates)</text>
+          <text x="120" y="245" text-anchor="middle" font-size="10" fill="var(--text-secondary)">Types as-is from CSV</text>
+          <text x="120" y="260" text-anchor="middle" font-size="10" fill="var(--text-secondary)">Score as VARCHAR</text>
+          <text x="120" y="280" text-anchor="middle" font-size="10" font-style="italic" fill="var(--bronze)">Guarantee: nothing lost</text>
+
+          <!-- Silver items -->
+          <rect x="300" y="100" width="180" height="28" rx="5" fill="var(--card-bg)" stroke="var(--border)"/>
+          <text x="390" y="119" text-anchor="middle" font-size="11" fill="var(--text)">survey_responses_cleaned</text>
+          <rect x="300" y="138" width="180" height="28" rx="5" fill="var(--card-bg)" stroke="var(--border)"/>
+          <text x="390" y="157" text-anchor="middle" font-size="11" fill="var(--text)">team_hierarchy_scd</text>
+          <rect x="300" y="176" width="180" height="28" rx="5" fill="var(--card-bg)" stroke="var(--border)"/>
+          <text x="390" y="195" text-anchor="middle" font-size="11" fill="var(--text)">suppression_flags</text>
+
+          <!-- Silver attributes -->
+          <text x="390" y="230" text-anchor="middle" font-size="10" fill="var(--text-secondary)">108 rows (deduped)</text>
+          <text x="390" y="245" text-anchor="middle" font-size="10" fill="var(--text-secondary)">Reverse-scale applied</text>
+          <text x="390" y="260" text-anchor="middle" font-size="10" fill="var(--text-secondary)">Suppression computed</text>
+          <text x="390" y="280" text-anchor="middle" font-size="10" font-style="italic" fill="var(--silver)">Guarantee: one clean record</text>
+
+          <!-- Gold items -->
+          <rect x="570" y="100" width="180" height="28" rx="5" fill="var(--card-bg)" stroke="var(--border)"/>
+          <text x="660" y="119" text-anchor="middle" font-size="11" fill="var(--text)">team_overview_metrics</text>
+          <rect x="570" y="138" width="180" height="28" rx="5" fill="var(--card-bg)" stroke="var(--border)"/>
+          <text x="660" y="157" text-anchor="middle" font-size="11" fill="var(--text)">category_summary</text>
+
+          <!-- Gold attributes -->
+          <text x="660" y="200" text-anchor="middle" font-size="10" fill="var(--text-secondary)">20 team-category rows</text>
+          <text x="660" y="215" text-anchor="middle" font-size="10" fill="var(--text-secondary)">4 org-wide category rows</text>
+          <text x="660" y="235" text-anchor="middle" font-size="10" fill="var(--text-secondary)">Pre-computed AVG(score)</text>
+          <text x="660" y="250" text-anchor="middle" font-size="10" fill="var(--text-secondary)">Suppression-aware</text>
+          <text x="660" y="280" text-anchor="middle" font-size="10" font-style="italic" fill="var(--gold)">Guarantee: fast, consistent</text>
+
+          <!-- Arrows -->
+          <defs>
+            <marker id="arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+              <path d="M0,0 L8,3 L0,6" fill="var(--text-secondary)"/>
+            </marker>
+          </defs>
+          <!-- Bronze -> Silver -->
+          <line x1="230" y1="155" x2="275" y2="155" stroke="var(--text-secondary)" stroke-width="2" marker-end="url(#arrow)"/>
+          <text x="253" y="145" text-anchor="middle" font-size="8" fill="var(--text-secondary)">dedup</text>
+          <text x="253" y="170" text-anchor="middle" font-size="8" fill="var(--text-secondary)">clean</text>
+          <!-- Silver -> Gold -->
+          <line x1="500" y1="155" x2="545" y2="155" stroke="var(--text-secondary)" stroke-width="2" marker-end="url(#arrow)"/>
+          <text x="523" y="145" text-anchor="middle" font-size="8" fill="var(--text-secondary)">agg</text>
+          <text x="523" y="170" text-anchor="middle" font-size="8" fill="var(--text-secondary)">join</text>
+        </svg>
+      </div>
+
+      <!-- Layer detail cards -->
+      <div class="card layer-bronze">
+        <h3>Bronze Layer (Raw Ingestion)</h3>
+        <p>The raw data exactly as it arrived. Nothing is lost, nothing is changed. If the source system sent duplicates, bronze has duplicates. If a score field came in as a string, bronze stores it as a string.</p>
+        <ul>
+          <li>Raw CSV/JSON dumps loaded as-is</li>
+          <li>Add metadata: <code>_loaded_at</code> timestamp, <code>_source_file</code> name</li>
+          <li>Never delete, never update -- append only</li>
+          <li>Insurance policy: when a transformation bug corrupts silver, rebuild from bronze</li>
+        </ul>
+      </div>
+
+      <div class="card layer-silver">
+        <h3>Silver Layer (Cleaned and Conformed)</h3>
+        <p>Cleaned, deduplicated, typed, business-rule-applied data. The "single source of truth" for analysts.</p>
+        <ul>
+          <li><strong>Deduplication:</strong> <code>ROW_NUMBER() OVER (PARTITION BY response_id ORDER BY submitted_at DESC)</code></li>
+          <li><strong>Type enforcement:</strong> cast score to INTEGER, submitted_at to TIMESTAMP</li>
+          <li><strong>Reverse-scale correction:</strong> Q06 is treated as reverse-scored (for demonstration). Raw score 2 becomes <code>6 - 2 = 4</code></li>
+          <li><strong>Suppression flags:</strong> teams with &lt; 4 respondents are suppressed to protect anonymity</li>
+          <li><strong>Validation:</strong> reject rows with scores outside 1-5</li>
+        </ul>
+      </div>
+
+      <div class="card layer-gold">
+        <h3>Gold Layer (Aggregated, Dashboard-Ready)</h3>
+        <p>Pre-computed aggregates designed for specific analytical use cases. These tables map directly to dashboard widgets.</p>
+        <ul>
+          <li>Mean score per team per question category</li>
+          <li>Response rates by department</li>
+          <li>Pre-joined wide tables -- no joins, no aggregations needed by consumers</li>
+        </ul>
+      </div>
+
+      <div class="callout callout-info">
+        <strong>Where do business rules live?</strong>
+        Business rules are encoded in silver models, version-controlled and tested. Reverse-scoring logic, suppression thresholds, deduplication strategy, category mappings -- all live in silver. When the business rule changes, you change one model, the test suite validates it, and the audit trail is a git commit.
+      </div>
+
+
+      <!-- ════════════════════════════════════════════════════════════ -->
+      <h2 id="data-flow">Data Flow: Before and After</h2>
+
+      <p>Here is exactly what happens to the data at each layer. These are actual values from the lab runs.</p>
+
+      <h3>Bronze: Raw Data (11 rows in simplified lab)</h3>
+      <p>Includes 1 duplicate (R001 appears twice), 1 invalid score (R010 score='X'), and scores stored as strings.</p>
+
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr><th>response_id</th><th>respondent_id</th><th>team_id</th><th>question_id</th><th>score</th><th>submitted_at</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>R001</td><td>EMP01</td><td>T001</td><td>Q01</td><td><code>'4'</code> (string)</td><td>2025-03-15 09:12</td></tr>
+            <tr><td>R002</td><td>EMP01</td><td>T001</td><td>Q02</td><td><code>'5'</code></td><td>2025-03-15 09:12</td></tr>
+            <tr><td>R003</td><td>EMP01</td><td>T001</td><td>Q06</td><td><code>'2'</code></td><td>2025-03-15 09:14</td></tr>
+            <tr style="background:var(--callout-warn);"><td>R001</td><td>EMP01</td><td>T001</td><td>Q01</td><td><code>'4'</code></td><td>2025-03-15 09:12</td></tr>
+            <tr><td>R004</td><td>EMP02</td><td>T001</td><td>Q01</td><td><code>'5'</code></td><td>2025-03-15 10:00</td></tr>
+            <tr><td>R005</td><td>EMP02</td><td>T001</td><td>Q06</td><td><code>'3'</code></td><td>2025-03-15 10:02</td></tr>
+            <tr><td>R006</td><td>EMP03</td><td>T002</td><td>Q01</td><td><code>'3'</code></td><td>2025-03-16 14:20</td></tr>
+            <tr><td>R007</td><td>EMP03</td><td>T002</td><td>Q06</td><td><code>'4'</code></td><td>2025-03-16 14:22</td></tr>
+            <tr><td>R008</td><td>EMP04</td><td>T002</td><td>Q01</td><td><code>'4'</code></td><td>2025-03-16 15:00</td></tr>
+            <tr><td>R009</td><td>EMP04</td><td>T002</td><td>Q06</td><td><code>'3'</code></td><td>2025-03-16 15:02</td></tr>
+            <tr style="background:var(--callout-warn);"><td>R010</td><td>EMP05</td><td>T003</td><td>Q01</td><td><code>'X'</code></td><td>2025-03-17 11:00</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="font-size:0.85em; color:var(--text-secondary);">Highlighted rows: duplicate R001 (ingestion retry) and invalid R010 (non-numeric score).</p>
+
+      <h3>Silver: Cleaned Data (9 valid rows)</h3>
+      <p>Duplicate R001 removed. Invalid R010 rejected. Scores cast to integer. Reverse-scale applied to Q06.</p>
+
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr><th>response_id</th><th>team_id</th><th>question_id</th><th>raw_score</th><th>score</th><th>is_reverse_scored</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>R001</td><td>T001</td><td>Q01</td><td>4</td><td>4</td><td>false</td></tr>
+            <tr><td>R002</td><td>T001</td><td>Q02</td><td>5</td><td>5</td><td>false</td></tr>
+            <tr style="background:var(--callout-info);"><td>R003</td><td>T001</td><td>Q06</td><td>2</td><td>4</td><td>true</td></tr>
+            <tr><td>R004</td><td>T001</td><td>Q01</td><td>5</td><td>5</td><td>false</td></tr>
+            <tr style="background:var(--callout-info);"><td>R005</td><td>T001</td><td>Q06</td><td>3</td><td>3</td><td>true</td></tr>
+            <tr><td>R006</td><td>T002</td><td>Q01</td><td>3</td><td>3</td><td>false</td></tr>
+            <tr style="background:var(--callout-info);"><td>R007</td><td>T002</td><td>Q06</td><td>4</td><td>2</td><td>true</td></tr>
+            <tr><td>R008</td><td>T002</td><td>Q01</td><td>4</td><td>4</td><td>false</td></tr>
+            <tr style="background:var(--callout-info);"><td>R009</td><td>T002</td><td>Q06</td><td>3</td><td>3</td><td>true</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="font-size:0.85em; color:var(--text-secondary);">Blue-highlighted rows: Q06, treated as reverse-scored for demonstration. Formula: <code>score = 6 - raw_score</code>. R003 raw=2 becomes score=4; R007 raw=4 becomes score=2.</p>
+
+      <h3>Gold: Pre-Aggregated Metrics (4 rows, from 9 Silver rows)</h3>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr><th>team_id</th><th>category</th><th>mean_score</th><th>response_count</th><th>is_suppressed</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>T001</td><td>Basic Needs</td><td>4.67</td><td>3</td><td>true</td></tr>
+            <tr><td>T001</td><td>Individual</td><td>3.50</td><td>2</td><td>true</td></tr>
+            <tr><td>T002</td><td>Basic Needs</td><td>3.50</td><td>2</td><td>true</td></tr>
+            <tr><td>T002</td><td>Individual</td><td>2.50</td><td>2</td><td>true</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout callout-info">
+        <strong>Row reduction: 11 &rarr; 9 &rarr; 4</strong>
+        Bronze kept everything (11 rows). Silver removed 2 rows (1 duplicate + 1 invalid) and applied business rules. Gold aggregated 9 remaining rows into 4 pre-computed metrics. A dashboard reads Gold directly -- no joins or aggregations needed.
+      </div>
+
+      <h3>Full dbt Pipeline: Row Counts</h3>
+      <p>With the full 111-row seed dataset (not the simplified lab above):</p>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Layer</th><th>Table</th><th>Rows</th></tr></thead>
+          <tbody>
+            <tr><td>Seeds</td><td>raw_survey_responses</td><td>111</td></tr>
+            <tr><td>Seeds</td><td>raw_question_config</td><td>12</td></tr>
+            <tr><td>Seeds</td><td>raw_team_hierarchy</td><td>5</td></tr>
+            <tr><td>Bronze</td><td>stg_survey_responses</td><td>111</td></tr>
+            <tr><td>Silver</td><td>survey_responses_cleaned</td><td>108</td></tr>
+            <tr><td>Silver</td><td>suppression_flags</td><td>5</td></tr>
+            <tr><td>Gold</td><td>team_overview_metrics</td><td>20</td></tr>
+            <tr><td>Gold</td><td>category_summary</td><td>4</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>111 raw rows &rarr; 108 cleaned rows (3 removed by dedup/validation) &rarr; 20 team-category metrics + 4 org-wide category aggregates.</p>
+
+
+      <!-- ════════════════════════════════════════════════════════════ -->
+      <h2 id="what-is-dbt">What Is dbt?</h2>
+
+      <blockquote><strong>dbt is <code>make</code> for your data warehouse.</strong> <code>make</code> compiles source code into executables by running build commands in dependency order. dbt compiles SQL templates into executable queries and runs them against your warehouse in dependency order.</blockquote>
+
+      <h3>What dbt Does</h3>
+      <ol>
+        <li>You write SQL files (called "models") that define transformations: <code>SELECT ... FROM ... JOIN ... WHERE ...</code></li>
+        <li>dbt figures out the dependency order from <code>{{ ref() }}</code> calls between models</li>
+        <li>dbt runs each model's SQL against the warehouse, creating tables or views</li>
+        <li>dbt runs tests you defined to validate the results</li>
+      </ol>
+
+      <h3>What dbt Does NOT Do</h3>
+      <div class="card-grid">
+        <div class="card">
+          <h3>Not Extract or Load</h3>
+          <p>dbt does not read CSVs from S3, hit APIs, or move data between systems. That is what Fivetran, Airbyte, or custom scripts do.</p>
+        </div>
+        <div class="card">
+          <h3>Not Schedule Itself</h3>
+          <p>It runs when you (or Airflow) tell it to. dbt has no built-in scheduler.</p>
+        </div>
+        <div class="card">
+          <h3>Not Store Data</h3>
+          <p>Your warehouse (DuckDB, Snowflake, BigQuery) stores data. dbt just writes SQL that creates/updates tables in it.</p>
+        </div>
+      </div>
+
+      <div class="callout callout-warn">
+        <strong>dbt's tagline: "Transform data already in your warehouse."</strong>
+        Take that literally. dbt is the T in ELT. It assumes data is already loaded; it handles only transformation.
+      </div>
+
+
+      <!-- ════════════════════════════════════════════════════════════ -->
+      <h2 id="dbt-project">dbt Project Structure</h2>
+
+      <!-- dbt Project Structure Diagram -->
+      <div class="diagram-container">
+        <svg viewBox="0 0 680 360" xmlns="http://www.w3.org/2000/svg" style="max-width:680px;">
+          <!-- Root -->
+          <text x="20" y="24" font-weight="700" font-size="14" fill="var(--accent)">dbt_project/</text>
+
+          <!-- Config files -->
+          <line x1="30" y1="32" x2="30" y2="48" stroke="var(--border)" stroke-width="1.5"/>
+          <line x1="30" y1="48" x2="50" y2="48" stroke="var(--border)" stroke-width="1.5"/>
+          <text x="55" y="52" font-size="12" fill="var(--text)">dbt_project.yml</text>
+          <text x="200" y="52" font-size="10" fill="var(--text-secondary)">-- project config: name, paths, materializations</text>
+
+          <line x1="30" y1="48" x2="30" y2="70" stroke="var(--border)" stroke-width="1.5"/>
+          <line x1="30" y1="70" x2="50" y2="70" stroke="var(--border)" stroke-width="1.5"/>
+          <text x="55" y="74" font-size="12" fill="var(--text)">profiles.yml</text>
+          <text x="200" y="74" font-size="10" fill="var(--text-secondary)">-- connection config: duckdb path, credentials</text>
+
+          <!-- models/ -->
+          <line x1="30" y1="70" x2="30" y2="100" stroke="var(--border)" stroke-width="1.5"/>
+          <line x1="30" y1="100" x2="50" y2="100" stroke="var(--border)" stroke-width="1.5"/>
+          <text x="55" y="104" font-weight="600" font-size="13" fill="var(--accent)">models/</text>
+
+          <!-- bronze/ -->
+          <line x1="60" y1="110" x2="60" y2="130" stroke="var(--border)" stroke-width="1.5"/>
+          <line x1="60" y1="130" x2="80" y2="130" stroke="var(--border)" stroke-width="1.5"/>
+          <rect x="84" y="119" width="80" height="20" rx="4" fill="var(--bronze-bg)" stroke="var(--bronze)" stroke-width="1"/>
+          <text x="124" y="133" text-anchor="middle" font-size="11" font-weight="600" fill="var(--bronze)">bronze/</text>
+          <text x="175" y="133" font-size="10" fill="var(--text-secondary)">views -- light type casting</text>
+
+          <line x1="90" y1="140" x2="90" y2="155" stroke="var(--border)" stroke-width="1"/>
+          <line x1="90" y1="155" x2="105" y2="155" stroke="var(--border)" stroke-width="1"/>
+          <text x="110" y="159" font-size="10" font-family="monospace" fill="var(--text-secondary)">stg_survey_responses.sql</text>
+          <line x1="90" y1="155" x2="90" y2="170" stroke="var(--border)" stroke-width="1"/>
+          <line x1="90" y1="170" x2="105" y2="170" stroke="var(--border)" stroke-width="1"/>
+          <text x="110" y="174" font-size="10" font-family="monospace" fill="var(--text-secondary)">stg_question_config.sql</text>
+          <line x1="90" y1="170" x2="90" y2="185" stroke="var(--border)" stroke-width="1"/>
+          <line x1="90" y1="185" x2="105" y2="185" stroke="var(--border)" stroke-width="1"/>
+          <text x="110" y="189" font-size="10" font-family="monospace" fill="var(--text-secondary)">schema.yml</text>
+
+          <!-- silver/ -->
+          <line x1="60" y1="130" x2="60" y2="210" stroke="var(--border)" stroke-width="1.5"/>
+          <line x1="60" y1="210" x2="80" y2="210" stroke="var(--border)" stroke-width="1.5"/>
+          <rect x="84" y="199" width="80" height="20" rx="4" fill="var(--silver-bg)" stroke="var(--silver)" stroke-width="1"/>
+          <text x="124" y="213" text-anchor="middle" font-size="11" font-weight="600" fill="var(--silver)">silver/</text>
+          <text x="175" y="213" font-size="10" fill="var(--text-secondary)">tables -- business rules applied</text>
+
+          <line x1="90" y1="220" x2="90" y2="235" stroke="var(--border)" stroke-width="1"/>
+          <line x1="90" y1="235" x2="105" y2="235" stroke="var(--border)" stroke-width="1"/>
+          <text x="110" y="239" font-size="10" font-family="monospace" fill="var(--text-secondary)">survey_responses_cleaned.sql</text>
+          <line x1="90" y1="235" x2="90" y2="250" stroke="var(--border)" stroke-width="1"/>
+          <line x1="90" y1="250" x2="105" y2="250" stroke="var(--border)" stroke-width="1"/>
+          <text x="110" y="254" font-size="10" font-family="monospace" fill="var(--text-secondary)">suppression_flags.sql</text>
+          <line x1="90" y1="250" x2="90" y2="265" stroke="var(--border)" stroke-width="1"/>
+          <line x1="90" y1="265" x2="105" y2="265" stroke="var(--border)" stroke-width="1"/>
+          <text x="110" y="269" font-size="10" font-family="monospace" fill="var(--text-secondary)">schema.yml</text>
+
+          <!-- gold/ -->
+          <line x1="60" y1="210" x2="60" y2="290" stroke="var(--border)" stroke-width="1.5"/>
+          <line x1="60" y1="290" x2="80" y2="290" stroke="var(--border)" stroke-width="1.5"/>
+          <rect x="84" y="279" width="80" height="20" rx="4" fill="var(--gold-bg)" stroke="var(--gold)" stroke-width="1"/>
+          <text x="124" y="293" text-anchor="middle" font-size="11" font-weight="600" fill="var(--gold)">gold/</text>
+          <text x="175" y="293" font-size="10" fill="var(--text-secondary)">tables -- pre-aggregated dashboards</text>
+
+          <line x1="90" y1="300" x2="90" y2="315" stroke="var(--border)" stroke-width="1"/>
+          <line x1="90" y1="315" x2="105" y2="315" stroke="var(--border)" stroke-width="1"/>
+          <text x="110" y="319" font-size="10" font-family="monospace" fill="var(--text-secondary)">team_overview_metrics.sql</text>
+          <line x1="90" y1="315" x2="90" y2="330" stroke="var(--border)" stroke-width="1"/>
+          <line x1="90" y1="330" x2="105" y2="330" stroke="var(--border)" stroke-width="1"/>
+          <text x="110" y="334" font-size="10" font-family="monospace" fill="var(--text-secondary)">category_summary.sql</text>
+
+          <!-- seeds/ -->
+          <line x1="30" y1="100" x2="30" y2="350" stroke="var(--border)" stroke-width="1.5"/>
+          <line x1="30" y1="350" x2="50" y2="350" stroke="var(--border)" stroke-width="1.5"/>
+          <text x="55" y="354" font-weight="600" font-size="13" fill="var(--accent)">seeds/</text>
+          <text x="115" y="354" font-size="10" fill="var(--text-secondary)">-- CSV files loaded by <tspan font-family="monospace">dbt seed</tspan></text>
+
+          <!-- Right side: config explanations -->
+          <rect x="420" y="38" width="250" height="90" rx="8" fill="var(--bg-secondary)" stroke="var(--border)"/>
+          <text x="435" y="58" font-weight="600" font-size="11" fill="var(--accent)">dbt_project.yml</text>
+          <text x="435" y="75" font-size="10" font-family="monospace" fill="var(--text-secondary)">name: 'survey_analytics'</text>
+          <text x="435" y="90" font-size="10" font-family="monospace" fill="var(--text-secondary)">bronze: +materialized: view</text>
+          <text x="435" y="105" font-size="10" font-family="monospace" fill="var(--text-secondary)">silver: +materialized: table</text>
+          <text x="435" y="120" font-size="10" font-family="monospace" fill="var(--text-secondary)">gold:   +materialized: table</text>
+
+          <rect x="420" y="145" width="250" height="75" rx="8" fill="var(--bg-secondary)" stroke="var(--border)"/>
+          <text x="435" y="165" font-weight="600" font-size="11" fill="var(--accent)">profiles.yml</text>
+          <text x="435" y="182" font-size="10" font-family="monospace" fill="var(--text-secondary)">type: duckdb</text>
+          <text x="435" y="197" font-size="10" font-family="monospace" fill="var(--text-secondary)">path: './dev.duckdb'</text>
+          <text x="435" y="212" font-size="10" font-family="monospace" fill="var(--text-secondary)">threads: 4</text>
+        </svg>
+      </div>
+
+
+      <!-- ════════════════════════════════════════════════════════════ -->
+      <h2 id="dbt-concepts">dbt Core Concepts</h2>
+
+      <h3>Models</h3>
+      <p>A <strong>model</strong> is a SQL file that defines one transformation. Each file in <code>models/</code> becomes a table or view in your warehouse. The key insight: the model file contains a <code>SELECT</code> statement, not a <code>CREATE TABLE</code>. dbt wraps it in the appropriate DDL for you.</p>
+
+      <details>
+        <summary>Bronze model: stg_survey_responses.sql</summary>
+        <div class="detail-content">
+          <pre><code>-- Bronze: Stage raw survey responses with basic type casting.
+-- No dedup, no business rules -- just make the types usable.
+
+select
+    response_id,
+    respondent_id,
+    team_id,
+    project_id,
+    question_id,
+    cast(score as integer)          as score,
+    cast(submitted_at as timestamp) as submitted_at
+from {{ ref('raw_survey_responses') }}</code></pre>
+          <p>dbt turns this into <code>CREATE VIEW stg_survey_responses AS (SELECT ...)</code> because bronze is configured as <code>+materialized: view</code>.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>Silver model: survey_responses_cleaned.sql (the core transformation)</summary>
+        <div class="detail-content">
+          <pre><code>-- Silver: Deduplicated, typed, reverse-scale-corrected survey responses.
+-- Three things happen here:
+-- 1. Dedup: ROW_NUMBER picks the first occurrence of each response_id
+-- 2. Reverse-scale: Q06 is treated as reverse-scored for demonstration (raw 5 -> corrected 1)
+-- 3. Validation: only scores 1-5 survive
+
+with deduped as (
+    select
+        *,
+        row_number() over (
+            partition by response_id
+            order by submitted_at desc
+        ) as row_num
+    from {{ ref('stg_survey_responses') }}
+),
+
+unique_responses as (
+    select
+        r.response_id,
+        r.respondent_id,
+        r.team_id,
+        r.project_id,
+        r.question_id,
+        r.score       as raw_score,
+        r.submitted_at,
+        q.is_reverse_scored,
+        q.category,
+        case
+            when q.is_reverse_scored then 6 - r.score
+            else r.score
+        end as score
+    from deduped r
+    join {{ ref('stg_question_config') }} q using (question_id)
+    where r.row_num = 1
+      and r.score between 1 and 5
+)
+
+select
+    response_id, respondent_id, team_id, project_id,
+    question_id, category, raw_score, score,
+    is_reverse_scored, submitted_at
+from unique_responses</code></pre>
+          <p>This is the heart of the pipeline. Three operations in one model: dedup via <code>ROW_NUMBER</code>, reverse-scale via <code>CASE WHEN</code>, validation via <code>WHERE score BETWEEN 1 AND 5</code>.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>Gold model: team_overview_metrics.sql</summary>
+        <div class="detail-content">
+          <pre><code>-- Gold: Mean score per team per question category.
+-- Joins suppression flags so consumers know which teams can be reported.
+
+select
+    r.team_id,
+    t.team_name,
+    t.department,
+    r.category,
+    round(avg(r.score), 2)             as mean_score,
+    count(*)                           as response_count,
+    count(distinct r.respondent_id)    as respondent_count,
+    s.is_suppressed
+from {{ ref('survey_responses_cleaned') }} r
+join {{ ref('team_hierarchy_scd') }}       t using (team_id)
+join {{ ref('suppression_flags') }}        s using (team_id)
+group by
+    r.team_id, t.team_name, t.department,
+    r.category, s.is_suppressed</code></pre>
+          <p>Note the three <code>{{ ref() }}</code> calls: this model depends on <code>survey_responses_cleaned</code>, <code>team_hierarchy_scd</code>, and <code>suppression_flags</code>. dbt knows to build all three before this one.</p>
+        </div>
+      </details>
+
+      <h3>Seeds</h3>
+      <p><strong>Seeds</strong> are CSV files committed to your dbt project. Running <code>dbt seed</code> loads them into the warehouse as tables. Use for small, slowly-changing reference data.</p>
+      <pre><code>seeds/
+  raw_survey_responses.csv   -- 111 rows -> table raw_survey_responses
+  raw_question_config.csv    -- 12 rows  -> table raw_question_config
+  raw_team_hierarchy.csv     -- 5 rows   -> table raw_team_hierarchy</code></pre>
+
+      <h3>Refs: The Dependency Graph</h3>
+      <p><code>{{ ref('model_name') }}</code> does two things: resolves the table name, and declares a dependency. dbt builds a DAG from all <code>ref()</code> calls and runs models in topological order. You never specify the order manually.</p>
+
+      <h3>Materializations</h3>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr><th>Type</th><th>DDL</th><th>When to Use</th><th>Tradeoff</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>view</code></td>
+              <td><code>CREATE VIEW AS ...</code></td>
+              <td>Bronze staging. Small transforms.</td>
+              <td>Fast to build, always current. Slow to query on large data.</td>
+            </tr>
+            <tr>
+              <td><code>table</code></td>
+              <td><code>CREATE TABLE AS ...</code></td>
+              <td>Silver, Gold. Most models.</td>
+              <td>Fast to query. Full rebuild on every <code>dbt run</code>.</td>
+            </tr>
+            <tr>
+              <td><code>incremental</code></td>
+              <td><code>INSERT INTO ... WHERE new</code></td>
+              <td>Large fact tables. Append-heavy data.</td>
+              <td>Fast (only new rows). Complex. Needs periodic <code>--full-refresh</code>.</td>
+            </tr>
+            <tr>
+              <td><code>ephemeral</code></td>
+              <td>Inlined as CTE</td>
+              <td>Simple helper transforms.</td>
+              <td>No table created. Cannot be queried directly.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <details>
+        <summary>Incremental models: how they work</summary>
+        <div class="detail-content">
+          <pre><code>{{ config(materialized='incremental', unique_key='response_id') }}
+
+WITH deduped AS (
+    SELECT *, row_number() OVER (
+        PARTITION BY response_id ORDER BY submitted_at DESC
+    ) AS row_num
+    FROM {{ ref('stg_survey_responses') }}
+
+    {% if is_incremental() %}
+    WHERE submitted_at > (SELECT max(submitted_at) FROM {{ this }})
+    {% endif %}
+)
+SELECT ... FROM deduped WHERE row_num = 1</code></pre>
+
+          <ul>
+            <li><strong>First run:</strong> <code>is_incremental()</code> is false, WHERE clause skipped. Full load.</li>
+            <li><strong>Subsequent runs:</strong> only rows newer than the current max timestamp are selected.</li>
+            <li><strong>unique_key:</strong> tells dbt to MERGE (upsert) rather than append, preventing duplicates.</li>
+          </ul>
+
+          <div class="callout callout-warn">
+            <strong>The tradeoff:</strong> If old data gets corrected in the source, an incremental model won't pick up the correction. You must run <code>dbt run --full-refresh</code> to rebuild from scratch.
+          </div>
+
+          <p><strong>Rule of thumb:</strong> Start with <code>table</code>, switch to <code>incremental</code> when rebuild time becomes a problem.</p>
+        </div>
+      </details>
+
+
+      <!-- ════════════════════════════════════════════════════════════ -->
+      <h2 id="dbt-dag">The dbt DAG</h2>
+
+      <p>dbt builds a directed acyclic graph from <code>{{ ref() }}</code> calls. Each node is a model or seed; each edge is a dependency. dbt executes nodes in topological order -- upstream models always finish before downstream ones start.</p>
+
+      <!-- dbt DAG Visualization -->
+      <div class="diagram-container">
+        <svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg" style="max-width:760px;">
+          <defs>
+            <marker id="dag-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+              <path d="M0,0 L8,3 L0,6" fill="var(--text-secondary)"/>
+            </marker>
+          </defs>
+
+          <!-- Column labels -->
+          <text x="70" y="20" text-anchor="middle" font-size="11" font-weight="700" fill="var(--text-secondary)">SEEDS</text>
+          <text x="250" y="20" text-anchor="middle" font-size="11" font-weight="700" fill="var(--bronze)">BRONZE</text>
+          <text x="460" y="20" text-anchor="middle" font-size="11" font-weight="700" fill="var(--silver)">SILVER</text>
+          <text x="670" y="20" text-anchor="middle" font-size="11" font-weight="700" fill="var(--gold)">GOLD</text>
+
+          <!-- Seeds -->
+          <rect x="5" y="45" width="130" height="32" rx="6" fill="var(--card-bg)" stroke="var(--border)" stroke-width="1.5"/>
+          <text x="70" y="66" text-anchor="middle" font-size="10" fill="var(--text)">raw_survey_responses</text>
+
+          <rect x="5" y="100" width="130" height="32" rx="6" fill="var(--card-bg)" stroke="var(--border)" stroke-width="1.5"/>
+          <text x="70" y="121" text-anchor="middle" font-size="10" fill="var(--text)">raw_question_config</text>
+
+          <rect x="5" y="155" width="130" height="32" rx="6" fill="var(--card-bg)" stroke="var(--border)" stroke-width="1.5"/>
+          <text x="70" y="176" text-anchor="middle" font-size="10" fill="var(--text)">raw_team_hierarchy</text>
+
+          <!-- Bronze -->
+          <rect x="185" y="45" width="130" height="32" rx="6" fill="var(--bronze-bg)" stroke="var(--bronze)" stroke-width="1.5"/>
+          <text x="250" y="66" text-anchor="middle" font-size="10" fill="var(--text)">stg_survey_responses</text>
+
+          <rect x="185" y="100" width="130" height="32" rx="6" fill="var(--bronze-bg)" stroke="var(--bronze)" stroke-width="1.5"/>
+          <text x="250" y="121" text-anchor="middle" font-size="10" fill="var(--text)">stg_question_config</text>
+
+          <rect x="185" y="155" width="130" height="32" rx="6" fill="var(--bronze-bg)" stroke="var(--bronze)" stroke-width="1.5"/>
+          <text x="250" y="176" text-anchor="middle" font-size="10" fill="var(--text)">stg_team_hierarchy</text>
+
+          <!-- Silver -->
+          <rect x="385" y="55" width="150" height="32" rx="6" fill="var(--silver-bg)" stroke="var(--silver)" stroke-width="1.5"/>
+          <text x="460" y="76" text-anchor="middle" font-size="10" fill="var(--text)">survey_responses_cleaned</text>
+
+          <rect x="385" y="130" width="150" height="32" rx="6" fill="var(--silver-bg)" stroke="var(--silver)" stroke-width="1.5"/>
+          <text x="460" y="151" text-anchor="middle" font-size="10" fill="var(--text)">team_hierarchy_scd</text>
+
+          <rect x="385" y="205" width="150" height="32" rx="6" fill="var(--silver-bg)" stroke="var(--silver)" stroke-width="1.5"/>
+          <text x="460" y="226" text-anchor="middle" font-size="10" fill="var(--text)">suppression_flags</text>
+
+          <!-- Gold -->
+          <rect x="595" y="80" width="150" height="32" rx="6" fill="var(--gold-bg)" stroke="var(--gold)" stroke-width="1.5"/>
+          <text x="670" y="101" text-anchor="middle" font-size="10" fill="var(--text)">team_overview_metrics</text>
+
+          <rect x="595" y="175" width="150" height="32" rx="6" fill="var(--gold-bg)" stroke="var(--gold)" stroke-width="1.5"/>
+          <text x="670" y="196" text-anchor="middle" font-size="10" fill="var(--text)">category_summary</text>
+
+          <!-- Seed -> Bronze arrows -->
+          <line x1="135" y1="61" x2="180" y2="61" stroke="var(--text-secondary)" stroke-width="1.5" marker-end="url(#dag-arrow)"/>
+          <line x1="135" y1="116" x2="180" y2="116" stroke="var(--text-secondary)" stroke-width="1.5" marker-end="url(#dag-arrow)"/>
+          <line x1="135" y1="171" x2="180" y2="171" stroke="var(--text-secondary)" stroke-width="1.5" marker-end="url(#dag-arrow)"/>
+
+          <!-- Bronze -> Silver arrows -->
+          <!-- stg_survey_responses -> survey_responses_cleaned -->
+          <line x1="315" y1="61" x2="380" y2="68" stroke="var(--text-secondary)" stroke-width="1.5" marker-end="url(#dag-arrow)"/>
+          <!-- stg_question_config -> survey_responses_cleaned -->
+          <line x1="315" y1="116" x2="380" y2="75" stroke="var(--text-secondary)" stroke-width="1.5" marker-end="url(#dag-arrow)"/>
+          <!-- stg_team_hierarchy -> team_hierarchy_scd -->
+          <line x1="315" y1="171" x2="380" y2="148" stroke="var(--text-secondary)" stroke-width="1.5" marker-end="url(#dag-arrow)"/>
+
+          <!-- Silver -> Silver -->
+          <!-- survey_responses_cleaned -> suppression_flags -->
+          <line x1="460" y1="87" x2="460" y2="200" stroke="var(--text-secondary)" stroke-width="1.5" marker-end="url(#dag-arrow)" stroke-dasharray="4 3"/>
+
+          <!-- Silver -> Gold -->
+          <!-- survey_responses_cleaned -> team_overview_metrics -->
+          <line x1="535" y1="68" x2="590" y2="92" stroke="var(--text-secondary)" stroke-width="1.5" marker-end="url(#dag-arrow)"/>
+          <!-- team_hierarchy_scd -> team_overview_metrics -->
+          <line x1="535" y1="146" x2="590" y2="100" stroke="var(--text-secondary)" stroke-width="1.5" marker-end="url(#dag-arrow)"/>
+          <!-- suppression_flags -> team_overview_metrics -->
+          <line x1="535" y1="218" x2="590" y2="103" stroke="var(--text-secondary)" stroke-width="1.5" marker-end="url(#dag-arrow)"/>
+
+          <!-- survey_responses_cleaned -> category_summary -->
+          <line x1="535" y1="74" x2="590" y2="188" stroke="var(--text-secondary)" stroke-width="1.5" marker-end="url(#dag-arrow)"/>
+
+          <!-- Legend -->
+          <rect x="5" y="250" width="750" height="60" rx="8" fill="var(--bg-secondary)" stroke="var(--border)"/>
+          <text x="25" y="275" font-size="10" font-weight="600" fill="var(--text-secondary)">EXECUTION ORDER:</text>
+          <text x="25" y="298" font-size="11" fill="var(--text)">seeds (3)  &rarr;  bronze views (3)  &rarr;  silver tables: cleaned, hierarchy, suppression  &rarr;  gold tables: metrics, summary</text>
+          <text x="625" y="275" font-size="10" fill="var(--text-secondary)">dbt build: 38 steps</text>
+          <text x="625" y="298" font-size="10" fill="var(--text-secondary)">(3 seeds + 8 models + 27 tests)</text>
+        </svg>
+      </div>
+
+      <p>The dashed arrow from <code>survey_responses_cleaned</code> to <code>suppression_flags</code> shows an intra-layer dependency -- suppression needs the cleaned responses to count respondents per team.</p>
+
+
+      <!-- ════════════════════════════════════════════════════════════ -->
+      <h2 id="tests">Data Contracts and Testing</h2>
+
+      <p>Data contracts are formal guarantees about what a model's output looks like. In dbt, you express them through <code>schema.yml</code> tests and custom SQL test files. <code>dbt test</code> runs SQL queries that return failing rows -- zero rows returned means the test passes.</p>
+
+      <h3>Schema Tests (in schema.yml)</h3>
+      <pre><code>version: 2
+
+models:
+  - name: survey_responses_cleaned
+    columns:
+      - name: response_id
+        data_tests:
+          - unique         # no duplicate response_ids survived dedup
+          - not_null       # every row has a response_id
+      - name: score
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3, 4, 5]   # Likert scale only
+                quote: false
+      - name: team_id
+        data_tests:
+          - not_null       # every response has a team
+      - name: category
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['Basic Needs', 'Individual', 'Teamwork', 'Growth']</code></pre>
+
+      <h3>Test Types</h3>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr><th>Test</th><th>What It Checks</th><th>Example Failure</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>unique</code></td><td>No duplicate values in column</td><td>Dedup failed, R001 appears twice</td></tr>
+            <tr><td><code>not_null</code></td><td>No NULL values</td><td>A row missing its team_id</td></tr>
+            <tr><td><code>accepted_values</code></td><td>All values in a known list</td><td>Score of 7 in a 1-5 scale</td></tr>
+            <tr><td><code>relationships</code></td><td>FK exists in another table</td><td>question_id 'Q99' not in config</td></tr>
+            <tr><td>Custom SQL</td><td>Any business rule</td><td>Team with 2 respondents not suppressed</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Custom Test: Suppression Logic</h3>
+      <pre><code>-- tests/assert_suppressed_teams_low_count.sql
+-- Returns FAILING rows: teams that should be suppressed but aren't.
+
+select
+    team_id,
+    respondent_count,
+    is_suppressed
+from {{ ref('suppression_flags') }}
+where respondent_count &lt; 4
+  and is_suppressed = false</code></pre>
+      <p>Zero rows returned = the suppression logic is correct. Any rows returned = a team with too few respondents is leaking unsuppressed data.</p>
+
+      <details>
+        <summary>What a test failure looks like (from Lab 05)</summary>
+        <div class="detail-content">
+          <p>Lab 05 injects a row with <code>score=7</code> into the silver table, then runs <code>dbt test</code>:</p>
+          <pre><code>-- Injected: R999, EMP99, T001, Q01, score=7
+
+$ dbt test
+  3 of 27 FAIL 1
+    accepted_values_survey_responses_cleaned_score__1__2__3__4__5
+    Got 1 result, configured to fail if != 0
+
+  Done. PASS=26 WARN=0 ERROR=1 SKIP=0 TOTAL=27</code></pre>
+          <p>The <code>accepted_values</code> test caught the invalid score. Without this test, the score=7 would have inflated team T001's average in the Gold layer and silently corrupted dashboard numbers.</p>
+          <p>After rebuilding models from seeds (<code>dbt run</code>), all 27 tests pass again.</p>
+        </div>
+      </details>
+
+      <div class="callout callout-info">
+        <strong>Test-driven data quality</strong>
+        <ol>
+          <li>Write the test (what SHOULD be true about the data)</li>
+          <li>Build the model (make it true)</li>
+          <li>Run tests on every pipeline execution</li>
+          <li>If tests fail, the pipeline stops -- bad data never ships to dashboards</li>
+        </ol>
+      </div>
+
+      <h3>All 27 Tests in the Project</h3>
+      <details>
+        <summary>Full test inventory by layer</summary>
+        <div class="detail-content">
+          <div class="table-scroll">
+            <table>
+              <thead><tr><th>Layer</th><th>Test Name</th><th>Type</th></tr></thead>
+              <tbody>
+                <tr><td>Bronze</td><td>unique_stg_question_config_question_id</td><td>unique</td></tr>
+                <tr><td>Bronze</td><td>unique_stg_team_hierarchy_team_id</td><td>unique</td></tr>
+                <tr><td>Bronze</td><td>not_null_stg_survey_responses_response_id</td><td>not_null</td></tr>
+                <tr><td>Bronze</td><td>not_null_stg_survey_responses_question_id</td><td>not_null</td></tr>
+                <tr><td>Bronze</td><td>not_null_stg_survey_responses_score</td><td>not_null</td></tr>
+                <tr><td>Bronze</td><td>not_null_stg_question_config_question_id</td><td>not_null</td></tr>
+                <tr><td>Bronze</td><td>not_null_stg_team_hierarchy_team_id</td><td>not_null</td></tr>
+                <tr><td>Bronze</td><td>accepted_values_stg_question_config_category</td><td>accepted_values</td></tr>
+                <tr><td>Silver</td><td>unique_survey_responses_cleaned_response_id</td><td>unique</td></tr>
+                <tr><td>Silver</td><td>unique_suppression_flags_team_id</td><td>unique</td></tr>
+                <tr><td>Silver</td><td>unique_team_hierarchy_scd_team_id</td><td>unique</td></tr>
+                <tr><td>Silver</td><td>not_null_survey_responses_cleaned_response_id</td><td>not_null</td></tr>
+                <tr><td>Silver</td><td>not_null_survey_responses_cleaned_score</td><td>not_null</td></tr>
+                <tr><td>Silver</td><td>not_null_survey_responses_cleaned_team_id</td><td>not_null</td></tr>
+                <tr><td>Silver</td><td>not_null_survey_responses_cleaned_question_id</td><td>not_null</td></tr>
+                <tr><td>Silver</td><td>not_null_suppression_flags_team_id</td><td>not_null</td></tr>
+                <tr><td>Silver</td><td>not_null_suppression_flags_is_suppressed</td><td>not_null</td></tr>
+                <tr><td>Silver</td><td>not_null_team_hierarchy_scd_team_id</td><td>not_null</td></tr>
+                <tr><td>Silver</td><td>accepted_values_survey_responses_cleaned_score</td><td>accepted_values</td></tr>
+                <tr><td>Silver</td><td>accepted_values_survey_responses_cleaned_category</td><td>accepted_values</td></tr>
+                <tr><td>Gold</td><td>not_null_team_overview_metrics_team_id</td><td>not_null</td></tr>
+                <tr><td>Gold</td><td>not_null_team_overview_metrics_mean_score</td><td>not_null</td></tr>
+                <tr><td>Gold</td><td>not_null_category_summary_category</td><td>not_null</td></tr>
+                <tr><td>Gold</td><td>not_null_category_summary_mean_score</td><td>not_null</td></tr>
+                <tr><td>Gold</td><td>unique_category_summary_category</td><td>unique</td></tr>
+                <tr><td>Gold</td><td>accepted_values_team_overview_metrics_category</td><td>accepted_values</td></tr>
+                <tr><td>Project</td><td>assert_suppressed_teams_low_count</td><td>custom SQL</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </details>
+
+
+      <!-- ════════════════════════════════════════════════════════════ -->
+      <h2 id="airflow">What Is Airflow?</h2>
+
+      <blockquote><strong>Airflow is <code>cron</code> that knows about task dependencies and has a monitoring UI.</strong> <code>cron</code> can schedule a script to run at 2 AM, but it doesn't retry on failure, doesn't know about dependencies between scripts, and gives you no visibility into what ran or why it failed.</blockquote>
+
+      <h3>Core Concepts</h3>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Concept</th><th>What It Is</th><th>Example</th></tr></thead>
+          <tbody>
+            <tr><td><strong>DAG</strong></td><td>A workflow defined in Python. What tasks to run and their dependencies.</td><td><code>survey_pipeline</code>, runs daily</td></tr>
+            <tr><td><strong>Task</strong></td><td>A single unit of work within a DAG.</td><td>"Run dbt seed", "Send Slack notification"</td></tr>
+            <tr><td><strong>Operator</strong></td><td>The type of work a task performs.</td><td><code>BashOperator</code>, <code>PythonOperator</code></td></tr>
+            <tr><td><strong>Schedule</strong></td><td>When the DAG runs.</td><td><code>@daily</code>, <code>0 2 * * *</code></td></tr>
+            <tr><td><strong>Sensor</strong></td><td>A task that waits for a condition before proceeding.</td><td>"Wait until CSV appears in S3"</td></tr>
+            <tr><td><strong>Connection</strong></td><td>Stored credentials for external systems.</td><td>Database URL, API key</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout callout-warn">
+        <strong>Two different DAGs:</strong> Airflow's DAG is about <em>task scheduling</em> (run dbt seed, then dbt run, then dbt test). dbt's DAG is about <em>SQL model dependencies</em> (build stg_survey_responses before survey_responses_cleaned). They are separate concepts at different levels of abstraction.
+      </div>
+
+      <h3>A Typical Airflow DAG</h3>
+      <pre><code>from airflow import DAG
+from airflow.operators.bash import BashOperator
+from datetime import datetime
+
+dag = DAG(
+    'survey_pipeline',
+    schedule='@daily',
+    start_date=datetime(2025, 1, 1),
+    catchup=False
+)
+
+extract = BashOperator(
+    task_id='extract',
+    bash_command='python extract.py',
+    dag=dag
+)
+
+dbt_seed = BashOperator(
+    task_id='dbt_seed',
+    bash_command='dbt seed --profiles-dir .',
+    dag=dag
+)
+
+dbt_run = BashOperator(
+    task_id='dbt_run',
+    bash_command='dbt run --profiles-dir .',
+    dag=dag
+)
+
+dbt_test = BashOperator(
+    task_id='dbt_test',
+    bash_command='dbt test --profiles-dir .',
+    dag=dag
+)
+
+notify = BashOperator(
+    task_id='notify',
+    bash_command='python notify.py',
+    dag=dag
+)
+
+# The >> operator: "runs after"
+extract >> dbt_seed >> dbt_run >> dbt_test >> notify</code></pre>
+
+      <p>The <code>&gt;&gt;</code> operator means "runs after." Airflow guarantees <code>dbt_run</code> won't start until <code>dbt_seed</code> succeeds. If <code>dbt_test</code> fails, <code>notify</code> doesn't run (or can be configured to send a failure alert instead).</p>
+
+
+      <!-- ════════════════════════════════════════════════════════════ -->
+      <h2 id="together">Airflow + dbt Together</h2>
+
+      <p>The split of responsibilities is clean: dbt owns the transformations, Airflow owns the schedule.</p>
+
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Concern</th><th>Tool</th><th>How</th></tr></thead>
+          <tbody>
+            <tr><td>What transformations?</td><td>dbt</td><td>SQL model files</td></tr>
+            <tr><td>In what order?</td><td>dbt</td><td><code>ref()</code>-based DAG</td></tr>
+            <tr><td>Are results correct?</td><td>dbt</td><td>Data tests (schema.yml + custom SQL)</td></tr>
+            <tr><td>When does it run?</td><td>Airflow</td><td>Schedule (<code>@daily</code>, cron)</td></tr>
+            <tr><td>What if it fails?</td><td>Airflow</td><td>Retry, alerting, failure callbacks</td></tr>
+            <tr><td>What ran yesterday?</td><td>Airflow</td><td>UI, execution logs</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>Airflow doesn't know or care what dbt does internally. It just runs <code>dbt build</code> as a shell command and checks the exit code. dbt doesn't know or care who invoked it. This separation means you can run dbt locally during development and let Airflow run it in production -- same transformations, different trigger.</p>
+
+      <!-- Airflow + dbt orchestration diagram -->
+      <div class="diagram-container">
+        <svg viewBox="0 0 700 180" xmlns="http://www.w3.org/2000/svg" style="max-width:700px;">
+          <defs>
+            <marker id="orch-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+              <path d="M0,0 L8,3 L0,6" fill="var(--accent)"/>
+            </marker>
+          </defs>
+
+          <!-- Airflow container -->
+          <rect x="5" y="25" width="690" height="100" rx="10" fill="none" stroke="var(--accent)" stroke-width="2" stroke-dasharray="6 3"/>
+          <text x="15" y="18" font-size="12" font-weight="700" fill="var(--accent)">AIRFLOW DAG: survey_pipeline  (@daily)</text>
+
+          <!-- Tasks -->
+          <rect x="20" y="50" width="100" height="50" rx="8" fill="var(--card-bg)" stroke="var(--border)" stroke-width="1.5"/>
+          <text x="70" y="72" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">extract</text>
+          <text x="70" y="88" text-anchor="middle" font-size="9" fill="var(--text-secondary)">BashOperator</text>
+
+          <rect x="155" y="50" width="100" height="50" rx="8" fill="var(--bronze-bg)" stroke="var(--bronze)" stroke-width="1.5"/>
+          <text x="205" y="72" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">dbt seed</text>
+          <text x="205" y="88" text-anchor="middle" font-size="9" fill="var(--text-secondary)">load CSVs</text>
+
+          <rect x="290" y="50" width="100" height="50" rx="8" fill="var(--silver-bg)" stroke="var(--silver)" stroke-width="1.5"/>
+          <text x="340" y="72" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">dbt run</text>
+          <text x="340" y="88" text-anchor="middle" font-size="9" fill="var(--text-secondary)">build models</text>
+
+          <rect x="425" y="50" width="100" height="50" rx="8" fill="var(--callout-tip)" stroke="var(--callout-tip-border)" stroke-width="1.5"/>
+          <text x="475" y="72" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">dbt test</text>
+          <text x="475" y="88" text-anchor="middle" font-size="9" fill="var(--text-secondary)">validate data</text>
+
+          <rect x="560" y="50" width="120" height="50" rx="8" fill="var(--card-bg)" stroke="var(--border)" stroke-width="1.5"/>
+          <text x="620" y="72" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">notify</text>
+          <text x="620" y="88" text-anchor="middle" font-size="9" fill="var(--text-secondary)">Slack / email</text>
+
+          <!-- Arrows between tasks -->
+          <line x1="120" y1="75" x2="150" y2="75" stroke="var(--accent)" stroke-width="2" marker-end="url(#orch-arrow)"/>
+          <line x1="255" y1="75" x2="285" y2="75" stroke="var(--accent)" stroke-width="2" marker-end="url(#orch-arrow)"/>
+          <line x1="390" y1="75" x2="420" y2="75" stroke="var(--accent)" stroke-width="2" marker-end="url(#orch-arrow)"/>
+          <line x1="525" y1="75" x2="555" y2="75" stroke="var(--accent)" stroke-width="2" marker-end="url(#orch-arrow)"/>
+
+          <!-- Labels -->
+          <text x="350" y="150" text-anchor="middle" font-size="10" fill="var(--text-secondary)">Airflow runs dbt commands as shell tasks and checks exit codes. dbt handles internal model ordering.</text>
+          <text x="350" y="170" text-anchor="middle" font-size="10" fill="var(--text-secondary)">Same dbt project runs locally during development and via Airflow in production.</text>
+        </svg>
+      </div>
+
+
+      <!-- ════════════════════════════════════════════════════════════ -->
+      <h2 id="labs">Labs: Try It Yourself</h2>
+
+      <div class="try-it">
+        <div class="try-label">Lab 01: Medallion Architecture in Raw SQL</div>
+        <p>Build Bronze &rarr; Silver &rarr; Gold layers using plain SQL. No dbt -- understand the concept before the tool.</p>
+        <pre><code>cd ~/Development/GithubRepo/ravi_engineering/dev_workspace/data-engineering-learning
+uv run python labs/03_medallion_and_dbt/01_medallion_raw_sql.py</code></pre>
+        <p>Demonstrates dedup via <code>ROW_NUMBER</code>, reverse-scale correction, suppression flags, and gold aggregation.</p>
+      </div>
+
+      <div class="try-it">
+        <div class="try-label">Lab 02: dbt Project Setup Guide</div>
+        <p>Walk through the dbt project structure, verify configuration, run <code>dbt debug</code> and <code>dbt build</code>.</p>
+        <pre><code>uv run python labs/03_medallion_and_dbt/02_dbt_init_guide.py</code></pre>
+        <p>Checks all 16 project files, explains each config key, runs the full build (3 seeds + 8 models + 27 tests).</p>
+      </div>
+
+      <div class="try-it">
+        <div class="try-label">Lab 03: dbt Seed, Run, and Test</div>
+        <p>Execute the full pipeline step by step, then query DuckDB directly to inspect data at each layer.</p>
+        <pre><code>uv run python labs/03_medallion_and_dbt/03_dbt_seed_and_run.py</code></pre>
+        <p>Shows row counts at each layer: 111 &rarr; 108 &rarr; 20 team metrics + 4 category summaries.</p>
+      </div>
+
+      <div class="try-it">
+        <div class="try-label">Lab 04: Incremental Loading</div>
+        <p>Simulate new data arriving: append 24 rows, re-run dbt, compare before/after gold metrics.</p>
+        <pre><code>uv run python labs/03_medallion_and_dbt/04_dbt_incremental.py</code></pre>
+        <p>Demonstrates full-refresh rebuild and explains how incremental materialization differs.</p>
+      </div>
+
+      <div class="try-it">
+        <div class="try-label">Lab 05: dbt Tests and Data Contracts</div>
+        <p>Explore the testing system: list all 27 tests, run them, inject bad data (score=7), watch the test catch it.</p>
+        <pre><code>uv run python labs/03_medallion_and_dbt/05_dbt_tests_and_contracts.py</code></pre>
+        <p>Also covers the custom suppression-logic test and test-driven data quality workflow.</p>
+      </div>
+
+      <div class="try-it">
+        <div class="try-label">dbt Commands Reference</div>
+        <pre><code># Run from dbt_project/ directory
+cd ~/Development/GithubRepo/ravi_engineering/dev_workspace/data-engineering-learning/dbt_project
+
+uv run dbt build --profiles-dir .           # seed + run + test (most common)
+uv run dbt seed --profiles-dir .            # load CSV seed files
+uv run dbt run --profiles-dir .             # build all models
+uv run dbt test --profiles-dir .            # run all data tests
+uv run dbt run --select silver.* --profiles-dir .   # only silver models
+uv run dbt run --select +team_overview_metrics --profiles-dir .  # model + all upstream
+uv run dbt test --select survey_responses_cleaned --profiles-dir .  # test one model
+uv run dbt run --full-refresh --profiles-dir .      # rebuild incremental models
+uv run dbt ls --resource-type test --profiles-dir .  # list all tests</code></pre>
+      </div>
+
+      <details>
+        <summary>Lab 04 output: before/after metrics when new data arrives</summary>
+        <div class="detail-content">
+          <p>24 new rows appended (EMP10 on T001, EMP11 on T002, all 12 questions each). Silver goes from 108 to 132 rows.</p>
+          <div class="table-scroll">
+            <table>
+              <thead><tr><th>team_id</th><th>category</th><th>old_mean</th><th>new_mean</th><th>old_count</th><th>new_count</th></tr></thead>
+              <tbody>
+                <tr><td>T001</td><td>Basic Needs</td><td>4.50</td><td>4.50</td><td>4</td><td>6</td></tr>
+                <tr><td>T001</td><td>Growth</td><td>3.50</td><td>3.83</td><td>4</td><td>6</td></tr>
+                <tr><td>T001</td><td>Individual</td><td>3.75</td><td>3.92</td><td>8</td><td>12</td></tr>
+                <tr><td>T001</td><td>Teamwork</td><td>3.88</td><td>3.92</td><td>8</td><td>12</td></tr>
+                <tr><td>T002</td><td>Basic Needs</td><td>3.50</td><td>3.50</td><td>4</td><td>6</td></tr>
+                <tr><td>T002</td><td>Growth</td><td>4.00</td><td>3.83</td><td>4</td><td>6</td></tr>
+                <tr><td>T002</td><td>Individual</td><td>3.38</td><td>3.42</td><td>8</td><td>12</td></tr>
+                <tr><td>T002</td><td>Teamwork</td><td>3.50</td><td>3.33</td><td>8</td><td>12</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>EMP10 (higher scores) pulled T001's Growth and Individual means up. EMP11 (lower scores) pulled T002's Growth and Teamwork means down. Counts increased by 2 per Basic Needs/Growth category (1 question each) and by 4 per Individual/Teamwork (2 questions each from the new respondent).</p>
+        </div>
+      </details>
+
+    </main>
+
+    <footer>
+      <h2>Sources</h2>
+      <div class="source"><code>notes/03_medallion_and_dbt.md</code></div>
+      <div class="source"><code>labs/03_medallion_and_dbt/01_medallion_raw_sql.py</code></div>
+      <div class="source"><code>labs/03_medallion_and_dbt/02_dbt_init_guide.py</code></div>
+      <div class="source"><code>labs/03_medallion_and_dbt/03_dbt_seed_and_run.py</code></div>
+      <div class="source"><code>labs/03_medallion_and_dbt/04_dbt_incremental.py</code></div>
+      <div class="source"><code>labs/03_medallion_and_dbt/05_dbt_tests_and_contracts.py</code></div>
+    </footer>
+  </div>
+
+  <script>
+    (function() {
+      // Theme toggle
+      var toggle = document.getElementById('theme-toggle');
+      var KEY = 'synthesis-theme';
+
+      function setTheme(t) {
+        document.documentElement.setAttribute('data-theme', t);
+        toggle.setAttribute('aria-label',
+          t === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+        try { localStorage.setItem(KEY, t); } catch(e) {}
+      }
+
+      var saved = null;
+      try { saved = localStorage.getItem(KEY); } catch(e) {}
+
+      if (saved) {
+        setTheme(saved);
+      } else {
+        setTheme(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      }
+
+      toggle.addEventListener('click', function() {
+        var current = document.documentElement.getAttribute('data-theme');
+        setTheme(current === 'dark' ? 'light' : 'dark');
+      });
+
+      // Sidebar toggle (mobile)
+      var sidebarToggle = document.getElementById('sidebar-toggle');
+      var sidebar = document.getElementById('sidebar');
+
+      sidebarToggle.addEventListener('click', function() {
+        sidebar.classList.toggle('open');
+      });
+
+      // Close sidebar when clicking a link (mobile)
+      sidebar.querySelectorAll('a').forEach(function(a) {
+        a.addEventListener('click', function() {
+          if (window.innerWidth <= 800) {
+            sidebar.classList.remove('open');
+          }
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

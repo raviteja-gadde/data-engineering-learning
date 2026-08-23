@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Engineering Learning — Index</title>
+<style>
+  :root {
+    --bg: #ffffff; --bg-card: #f8f9fa; --text: #1a1a2e; --text-muted: #555;
+    --accent: #2563eb; --accent-hover: #1d4ed8; --border: #e2e8f0;
+    --card-shadow: 0 2px 8px rgba(0,0,0,0.08); --number-bg: #2563eb; --number-text: #fff;
+    --tag-bg: #e8f0fe; --tag-text: #1a56db; --prereq-bg: #fef3c7; --prereq-text: #92400e;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f172a; --bg-card: #1e293b; --text: #e2e8f0; --text-muted: #94a3b8;
+      --accent: #60a5fa; --accent-hover: #93bbfc; --border: #334155;
+      --card-shadow: 0 2px 8px rgba(0,0,0,0.3); --number-bg: #3b82f6; --number-text: #fff;
+      --tag-bg: #1e3a5f; --tag-text: #93c5fd; --prereq-bg: #451a03; --prereq-text: #fcd34d;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f172a; --bg-card: #1e293b; --text: #e2e8f0; --text-muted: #94a3b8;
+    --accent: #60a5fa; --accent-hover: #93bbfc; --border: #334155;
+    --card-shadow: 0 2px 8px rgba(0,0,0,0.3); --number-bg: #3b82f6; --number-text: #fff;
+    --tag-bg: #1e3a5f; --tag-text: #93c5fd; --prereq-bg: #451a03; --prereq-text: #fcd34d;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.6; }
+  .header { max-width: 900px; margin: 0 auto; padding: 3rem 2rem 2rem; text-align: center; }
+  .header h1 { font-size: 2.2rem; margin-bottom: 0.5rem; }
+  .header p { color: var(--text-muted); font-size: 1.1rem; max-width: 600px; margin: 0 auto 1rem; }
+  .theme-toggle { position: fixed; top: 1rem; right: 1rem; background: var(--bg-card);
+    border: 1px solid var(--border); border-radius: 8px; padding: 0.4rem 0.8rem;
+    cursor: pointer; color: var(--text); font-size: 0.9rem; z-index: 100; }
+  .theme-toggle:hover { border-color: var(--accent); }
+  .learning-path { max-width: 900px; margin: 0 auto; padding: 0 2rem 3rem; }
+  .phase-label { font-size: 0.8rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--accent); margin: 2rem 0 1rem; padding-left: 0.5rem; }
+  .topic-card { display: flex; gap: 1.2rem; align-items: flex-start;
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 1.5rem; margin-bottom: 1rem; text-decoration: none; color: var(--text);
+    box-shadow: var(--card-shadow); transition: border-color 0.2s, transform 0.1s; }
+  .topic-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .topic-number { flex-shrink: 0; width: 2.5rem; height: 2.5rem; border-radius: 50%;
+    background: var(--number-bg); color: var(--number-text); display: flex;
+    align-items: center; justify-content: center; font-weight: 700; font-size: 1rem; }
+  .topic-content { flex: 1; }
+  .topic-content h2 { font-size: 1.15rem; margin-bottom: 0.3rem; }
+  .topic-content p { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 0.5rem; }
+  .topic-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .tag { font-size: 0.75rem; padding: 0.15rem 0.5rem; border-radius: 4px;
+    background: var(--tag-bg); color: var(--tag-text); }
+  .prereq { font-size: 0.75rem; padding: 0.15rem 0.5rem; border-radius: 4px;
+    background: var(--prereq-bg); color: var(--prereq-text); }
+  .getting-started { max-width: 900px; margin: 0 auto; padding: 0 2rem 3rem; }
+  .getting-started h2 { margin-bottom: 1rem; }
+  .cmd-block { background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 1rem 1.2rem; font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 0.9rem; margin-bottom: 0.8rem; overflow-x: auto; }
+  .footer { max-width: 900px; margin: 0 auto; padding: 2rem; text-align: center;
+    color: var(--text-muted); font-size: 0.85rem; border-top: 1px solid var(--border); }
+  @media (max-width: 600px) {
+    .header { padding: 2rem 1rem 1rem; }
+    .header h1 { font-size: 1.6rem; }
+    .learning-path, .getting-started { padding: 0 1rem 2rem; }
+    .topic-card { padding: 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">🌙 / ☀️</button>
+
+<div class="header">
+  <h1>Data Engineering Learning</h1>
+  <p>A hands-on workspace for learning data warehousing, transformation pipelines, and analytical data access patterns — grounded in employee engagement survey data.</p>
+  <p style="font-size:0.9rem;">9 topics · 38 lab scripts · 9 visual synthesis pages</p>
+</div>
+
+<div class="learning-path">
+
+  <div class="phase-label">Phase 1 — Foundation</div>
+
+  <a href="01_warehousing_fundamentals.html" class="topic-card">
+    <div class="topic-number">1</div>
+    <div class="topic-content">
+      <h2>Warehousing Fundamentals</h2>
+      <p>Star and snowflake schemas, slowly changing dimensions, grain, measures vs dimensions. The structural foundation everything else builds on.</p>
+      <div class="topic-tags">
+        <span class="tag">Star Schema</span>
+        <span class="tag">SCD Type 2</span>
+        <span class="tag">Grain</span>
+        <span class="tag">5 labs</span>
+      </div>
+    </div>
+  </a>
+
+  <div class="phase-label">Phase 2 — Core Patterns (parallel)</div>
+
+  <a href="02_columnar_storage.html" class="topic-card">
+    <div class="topic-number">2</div>
+    <div class="topic-content">
+      <h2>Columnar Storage</h2>
+      <p>Why analytical databases are fast: column-oriented layout, compression (RLE, dictionary, delta), predicate pushdown, vectorized execution.</p>
+      <div class="topic-tags">
+        <span class="tag">DuckDB</span>
+        <span class="tag">Parquet</span>
+        <span class="tag">Compression</span>
+        <span class="tag">4 labs</span>
+      </div>
+    </div>
+  </a>
+
+  <a href="03_medallion_and_dbt.html" class="topic-card">
+    <div class="topic-number">3</div>
+    <div class="topic-content">
+      <h2>Medallion Architecture + dbt + Airflow</h2>
+      <p>Bronze → Silver → Gold data layers. dbt for transformations (models, tests, contracts). Airflow for orchestration.</p>
+      <div class="topic-tags">
+        <span class="tag">Medallion</span>
+        <span class="tag">dbt</span>
+        <span class="tag">Airflow</span>
+        <span class="tag">5 labs</span>
+      </div>
+    </div>
+  </a>
+
+  <a href="04_precomputation_vs_runtime.html" class="topic-card">
+    <div class="topic-number">4</div>
+    <div class="topic-content">
+      <h2>Pre-computation vs Runtime</h2>
+      <p>When to pre-aggregate (rollup tables, materialized views) vs compute on demand. Combinatorial explosion. Serving layer pattern. Cache invalidation.</p>
+      <div class="topic-tags">
+        <span class="tag">Rollups</span>
+        <span class="tag">Serving Layer</span>
+        <span class="tag">Caching</span>
+        <span class="tag">4 labs</span>
+      </div>
+    </div>
+  </a>
+
+  <a href="05_dynamic_schema_eav.html" class="topic-card">
+    <div class="topic-number">5</div>
+    <div class="topic-content">
+      <h2>Dynamic Schema / EAV</h2>
+      <p>Four approaches to storing surveys with changing question sets: EAV, slot mechanism, JSON/VARIANT, sparse wide table. Tradeoffs compared.</p>
+      <div class="topic-tags">
+        <span class="tag">EAV</span>
+        <span class="tag">JSON</span>
+        <span class="tag">Schema Flexibility</span>
+        <span class="tag">5 labs</span>
+      </div>
+    </div>
+  </a>
+
+  <a href="07_suppression_access_control.html" class="topic-card">
+    <div class="topic-number">7</div>
+    <div class="topic-content">
+      <h2>Suppression &amp; Access Control</h2>
+      <p>Protecting survey respondent anonymity: suppression thresholds, k-anonymity, row-level security (RLS), dynamic masking, enforcement layers.</p>
+      <div class="topic-tags">
+        <span class="tag">k-Anonymity</span>
+        <span class="tag">RLS</span>
+        <span class="tag">PostgreSQL</span>
+        <span class="tag">5 labs</span>
+      </div>
+    </div>
+  </a>
+
+  <div class="phase-label">Phase 3 — Depends on Topics 1 + 2</div>
+
+  <a href="06_oltp_olap_spectrum.html" class="topic-card">
+    <div class="topic-number">6</div>
+    <div class="topic-content">
+      <h2>OLTP vs OLAP Spectrum</h2>
+      <p>Row-oriented (PostgreSQL) vs column-oriented (DuckDB) engines. When to use each. Serving layer as the bridge. Hybrid patterns and caching.</p>
+      <div class="topic-tags">
+        <span class="tag">PostgreSQL</span>
+        <span class="tag">DuckDB</span>
+        <span class="tag">Serving Layer</span>
+        <span class="tag">4 labs</span>
+        <span class="prereq">Needs T1 + T2</span>
+      </div>
+    </div>
+  </a>
+
+  <div class="phase-label">Phase 4 — Depends on Topics 1–7</div>
+
+  <a href="08_frontier_survey_platforms.html" class="topic-card">
+    <div class="topic-number">8</div>
+    <div class="topic-content">
+      <h2>Frontier Survey Platforms</h2>
+      <p>How Qualtrics, Culture Amp, and Medallia solve these problems at scale. Common architectural patterns. Implications for your own design.</p>
+      <div class="topic-tags">
+        <span class="tag">Qualtrics</span>
+        <span class="tag">Culture Amp</span>
+        <span class="tag">Medallia</span>
+        <span class="tag">1 lab</span>
+        <span class="prereq">Needs T1–T7</span>
+      </div>
+    </div>
+  </a>
+
+  <a href="09_agentic_data_access.html" class="topic-card">
+    <div class="topic-number">9</div>
+    <div class="topic-content">
+      <h2>Agentic Data Access — Capstone</h2>
+      <p>How AI agents access analytical data: tool contracts, scope resolution, caching, context window sizing, non-contradiction. Synthesizes all prior topics.</p>
+      <div class="topic-tags">
+        <span class="tag">Tool Contracts</span>
+        <span class="tag">Context Window</span>
+        <span class="tag">Non-Contradiction</span>
+        <span class="tag">5 labs</span>
+        <span class="prereq">Capstone — needs all</span>
+      </div>
+    </div>
+  </a>
+
+</div>
+
+<div class="getting-started">
+  <h2>Getting Started</h2>
+  <div class="cmd-block">cd ~/Development/GithubRepo/ravi_engineering/dev_workspace/data-engineering-learning</div>
+  <div class="cmd-block">uv run python labs/01_warehousing_fundamentals/01_star_schema.py</div>
+  <p style="color:var(--text-muted); margin-top:0.5rem;">Each topic has markdown notes in <code>notes/</code>, runnable Python labs in <code>labs/</code>, and this visual synthesis page. Start with Topic 1, then follow the phases.</p>
+</div>
+
+<div class="footer">
+  Data Engineering Learning Workspace · Employee Engagement Survey Data · Built with DuckDB, PostgreSQL, dbt, Airflow
+</div>
+
+<script>
+  (function() {
+    const toggle = document.getElementById('themeToggle');
+    const stored = localStorage.getItem('de-learning-theme');
+    if (stored) document.documentElement.setAttribute('data-theme', stored);
+    toggle.addEventListener('click', function() {
+      const current = document.documentElement.getAttribute('data-theme');
+      const isDark = current === 'dark' ||
+        (!current && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      const next = isDark ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('de-learning-theme', next);
+    });
+  })();
+</script>
+</body>
+</html>

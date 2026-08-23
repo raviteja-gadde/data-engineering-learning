@@ -1,0 +1,1502 @@
+<!--
+  Synthesis Page: Suppression and Access Control
+  Generated: 2026-08-23
+  Sources:
+  notes/07_suppression_access_control.md
+  labs/07_suppression_access_control/01_suppression_basics.py
+  labs/07_suppression_access_control/02_k_anonymity.py
+  labs/07_suppression_access_control/03_row_level_security.py
+  labs/07_suppression_access_control/04_dynamic_masking.py
+  labs/07_suppression_access_control/05_suppression_as_policy.py
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Suppression and Access Control</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --bg-secondary: #f5f7fa;
+      --text: #1a1a2e;
+      --text-secondary: #555770;
+      --border: #e0e0e8;
+      --accent: #4a6cf7;
+      --accent-soft: #eef0ff;
+      --code-bg: #f0f2f8;
+      --card-bg: #ffffff;
+      --card-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      --callout-info: #e8f0fe;
+      --callout-warn: #fef7e0;
+      --callout-tip: #e6f9ef;
+      --callout-info-border: #4a6cf7;
+      --callout-warn-border: #e6a817;
+      --callout-tip-border: #27ae60;
+      --sidebar-width: 240px;
+      --svg-text: #1a1a2e;
+      --svg-bg: #f5f7fa;
+      --svg-line: #ccc;
+      --suppress-color: #e74c3c;
+      --pass-color: #27ae60;
+      --rls-color: #3498db;
+      --mask-color: #9b59b6;
+      --suppress-bg: #fef0ef;
+      --pass-bg: #e6f9ef;
+      --rls-bg: #e8f4fd;
+      --mask-bg: #f5eef9;
+    }
+
+    [data-theme="dark"] {
+      --bg: #0f0f1a;
+      --bg-secondary: #1a1a2e;
+      --text: #e0e0ec;
+      --text-secondary: #9999b0;
+      --border: #2a2a40;
+      --accent: #6b8cff;
+      --accent-soft: #1a1a3e;
+      --code-bg: #1e1e32;
+      --card-bg: #16162a;
+      --card-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      --callout-info: #141430;
+      --callout-warn: #1e1a10;
+      --callout-tip: #0e1e14;
+      --callout-info-border: #6b8cff;
+      --callout-warn-border: #d4a017;
+      --callout-tip-border: #2ecc71;
+      --svg-text: #e0e0ec;
+      --svg-bg: #1a1a2e;
+      --svg-line: #444;
+      --suppress-color: #e74c3c;
+      --pass-color: #2ecc71;
+      --rls-color: #5dade2;
+      --mask-color: #bb8fce;
+      --suppress-bg: #2a1515;
+      --pass-bg: #0e1e14;
+      --rls-bg: #0e1a2a;
+      --mask-bg: #1f152a;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      transition: background 0.3s ease, color 0.3s ease;
+      display: flex;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      position: fixed;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: var(--sidebar-width);
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border);
+      padding: 1.5rem 0;
+      overflow-y: auto;
+      z-index: 100;
+      transition: background 0.3s ease, border-color 0.3s ease;
+    }
+
+    .sidebar h2 {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-secondary);
+      padding: 0 1.2rem;
+      margin-bottom: 0.8rem;
+    }
+
+    .sidebar a {
+      display: block;
+      padding: 0.4rem 1.2rem;
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      text-decoration: none;
+      border-bottom: none;
+      border-left: 3px solid transparent;
+      transition: all 0.15s ease;
+      line-height: 1.5;
+    }
+
+    .sidebar a:hover {
+      color: var(--accent);
+      background: var(--accent-soft);
+      border-bottom: none;
+    }
+
+    .sidebar a.active {
+      color: var(--accent);
+      border-left-color: var(--accent);
+      background: var(--accent-soft);
+      font-weight: 600;
+    }
+
+    .sidebar .topic-num {
+      display: inline-block;
+      width: 1.4em;
+      color: var(--text-secondary);
+      opacity: 0.6;
+      font-size: 0.78rem;
+    }
+
+    /* ── Main content area ── */
+    .content-wrapper {
+      margin-left: var(--sidebar-width);
+      flex: 1;
+      min-width: 0;
+    }
+
+    header {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 2.5rem 2rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    header h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.3;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-shrink: 0;
+      padding-top: 0.35rem;
+    }
+
+    .meta-date {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+
+    /* ── Theme button ── */
+    .theme-btn {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg-secondary);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.7rem;
+      flex-shrink: 0;
+      transition: background 0.2s ease, border-color 0.2s ease;
+      color: var(--text-secondary);
+      font-family: inherit;
+      font-size: 0.8rem;
+      font-weight: 500;
+      line-height: 1;
+    }
+
+    .theme-btn:hover {
+      background: var(--border);
+      color: var(--text);
+    }
+
+    .theme-btn:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .theme-btn svg { width: 16px; height: 16px; }
+
+    .theme-btn .icon-sun,
+    .theme-btn .icon-moon,
+    .theme-btn .label-light,
+    .theme-btn .label-dark { display: none; }
+
+    [data-theme="dark"] .theme-btn .icon-sun { display: block; }
+    [data-theme="dark"] .theme-btn .label-dark { display: inline; }
+    :root:not([data-theme="dark"]) .theme-btn .icon-moon { display: block; }
+    :root:not([data-theme="dark"]) .theme-btn .label-light { display: inline; }
+    [data-theme="light"] .theme-btn .icon-moon { display: block; }
+    [data-theme="light"] .theme-btn .label-light { display: inline; }
+
+    /* ── Main ── */
+    main {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 2rem 3rem;
+    }
+
+    main h2 {
+      font-size: 1.35rem;
+      font-weight: 600;
+      margin: 2.5rem 0 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 2px solid var(--border);
+      letter-spacing: -0.01em;
+    }
+
+    main h2:first-child { margin-top: 0.5rem; }
+
+    main h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin: 1.8rem 0 0.6rem;
+    }
+
+    main p { margin: 0.8rem 0; }
+
+    main ul, main ol {
+      margin: 0.8rem 0;
+      padding-left: 1.6rem;
+    }
+
+    main li { margin: 0.35rem 0; }
+    main li strong { color: var(--accent); }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.2s;
+    }
+
+    a:hover { border-bottom-color: var(--accent); }
+
+    code {
+      font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+      font-size: 0.88em;
+      background: var(--code-bg);
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+    }
+
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      overflow-x: auto;
+      margin: 1rem 0;
+    }
+
+    pre code {
+      background: none;
+      padding: 0;
+      font-size: 0.85em;
+      line-height: 1.6;
+    }
+
+    blockquote {
+      border-left: 3px solid var(--accent);
+      padding: 0.6rem 1rem;
+      margin: 1rem 0;
+      background: var(--accent-soft);
+      border-radius: 0 6px 6px 0;
+      color: var(--text-secondary);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.92em;
+    }
+
+    th, td {
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      font-weight: 600;
+      background: var(--bg-secondary);
+      white-space: nowrap;
+    }
+
+    tr:hover td { background: var(--bg-secondary); }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.2rem 1.4rem;
+      margin: 1rem 0;
+      box-shadow: var(--card-shadow);
+      transition: box-shadow 0.2s ease, transform 0.2s ease;
+    }
+
+    .card:hover {
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+      transform: translateY(-1px);
+    }
+
+    [data-theme="dark"] .card:hover {
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    }
+
+    .card h3 { margin-top: 0; }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+
+    .card-grid .card { margin: 0; }
+
+    /* ── Callouts ── */
+    .callout {
+      padding: 0.8rem 1rem;
+      border-radius: 8px;
+      margin: 1rem 0;
+      border-left: 4px solid;
+    }
+
+    .callout-info {
+      background: var(--callout-info);
+      border-left-color: var(--callout-info-border);
+    }
+
+    .callout-warn {
+      background: var(--callout-warn);
+      border-left-color: var(--callout-warn-border);
+    }
+
+    .callout-tip {
+      background: var(--callout-tip);
+      border-left-color: var(--callout-tip-border);
+    }
+
+    .callout strong {
+      display: block;
+      margin-bottom: 0.3rem;
+    }
+
+    /* ── Table of contents ── */
+    nav.toc {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.4rem;
+      margin: 1.5rem 0;
+    }
+
+    nav.toc ul { list-style: none; padding-left: 0; }
+    nav.toc li { margin: 0.3rem 0; }
+
+    nav.toc a {
+      color: var(--text-secondary);
+      font-size: 0.92em;
+    }
+
+    nav.toc a:hover { color: var(--accent); }
+
+    /* ── SVG ── */
+    svg text { fill: var(--text); }
+    svg .stroke { stroke: var(--border); }
+
+    .svg-container {
+      margin: 1.5rem 0;
+      overflow-x: auto;
+    }
+
+    .svg-container svg {
+      display: block;
+      margin: 0 auto;
+      max-width: 100%;
+      height: auto;
+    }
+
+    /* ── Details/Summary ── */
+    details {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin: 1rem 0;
+      overflow: hidden;
+    }
+
+    details summary {
+      padding: 0.8rem 1.2rem;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.95rem;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid transparent;
+      transition: background 0.15s;
+      list-style: none;
+    }
+
+    details summary::-webkit-details-marker { display: none; }
+
+    details summary::before {
+      content: "\25B6";
+      display: inline-block;
+      margin-right: 0.5rem;
+      font-size: 0.7em;
+      transition: transform 0.2s;
+    }
+
+    details[open] summary::before {
+      transform: rotate(90deg);
+    }
+
+    details[open] summary {
+      border-bottom-color: var(--border);
+    }
+
+    details .details-content {
+      padding: 1rem 1.2rem;
+    }
+
+    /* ── Deduction scenario ── */
+    .deduction-box {
+      background: var(--card-bg);
+      border: 2px solid var(--suppress-color);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin: 1.5rem 0;
+    }
+
+    .deduction-box h3 {
+      color: var(--suppress-color);
+      margin-top: 0;
+      margin-bottom: 1rem;
+    }
+
+    .score-row {
+      display: flex;
+      gap: 0.8rem;
+      align-items: center;
+      margin: 0.5rem 0;
+      flex-wrap: wrap;
+    }
+
+    .score-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+
+    .score-known {
+      background: var(--pass-bg);
+      border: 2px solid var(--pass-color);
+      color: var(--pass-color);
+    }
+
+    .score-unknown {
+      background: var(--suppress-bg);
+      border: 2px solid var(--suppress-color);
+      color: var(--suppress-color);
+    }
+
+    .score-label {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+
+    .math-line {
+      font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+      font-size: 0.95rem;
+      background: var(--code-bg);
+      padding: 0.6rem 1rem;
+      border-radius: 6px;
+      margin: 0.8rem 0;
+    }
+
+    /* ── Lab output ── */
+    .lab-output {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin: 1rem 0;
+      font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+      font-size: 0.82em;
+      line-height: 1.5;
+      overflow-x: auto;
+      white-space: pre;
+    }
+
+    .lab-output .suppress { color: var(--suppress-color); font-weight: 600; }
+    .lab-output .pass { color: var(--pass-color); }
+
+    /* ── Footer ── */
+    footer {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 2rem;
+      border-top: 1px solid var(--border);
+    }
+
+    footer h2 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    footer .source {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin: 0.25rem 0;
+    }
+
+    footer .source code { font-size: 0.85em; }
+
+    @media (max-width: 900px) {
+      .sidebar { display: none; }
+      .content-wrapper { margin-left: 0; }
+    }
+
+    @media (max-width: 600px) {
+      header { padding: 1.5rem 1rem 1rem; flex-direction: column; }
+      main { padding: 0 1rem 2rem; }
+      footer { padding: 1.5rem 1rem; }
+      .card-grid { grid-template-columns: 1fr; }
+      .score-row { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Sidebar Navigation ── -->
+  <nav class="sidebar">
+    <h2>Topics</h2>
+    <a href="01_warehousing_fundamentals.html"><span class="topic-num">1.</span> Warehousing Fundamentals</a>
+    <a href="02_columnar_storage.html"><span class="topic-num">2.</span> Columnar Storage</a>
+    <a href="03_medallion_and_dbt.html"><span class="topic-num">3.</span> Medallion Architecture + dbt</a>
+    <a href="04_precomputation_vs_runtime.html"><span class="topic-num">4.</span> Pre-computation vs Runtime</a>
+    <a href="05_dynamic_schema_eav.html"><span class="topic-num">5.</span> Dynamic Schema / EAV</a>
+    <a href="06_oltp_olap_spectrum.html"><span class="topic-num">6.</span> OLTP vs OLAP Spectrum</a>
+    <a href="07_suppression_access_control.html" class="active"><span class="topic-num">7.</span> Suppression &amp; Access Control</a>
+    <a href="08_frontier_survey_platforms.html"><span class="topic-num">8.</span> Frontier Survey Platforms</a>
+    <a href="09_agentic_data_access.html"><span class="topic-num">9.</span> Agentic Data Access</a>
+  </nav>
+
+  <!-- ── Main Content ── -->
+  <div class="content-wrapper">
+    <header>
+      <h1>Suppression and Access Control</h1>
+      <div class="header-right">
+        <span class="meta-date">2026-08-23</span>
+        <button class="theme-btn" id="theme-toggle" aria-label="Toggle dark mode">
+          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+          </svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+          <span class="label-light">Light</span>
+          <span class="label-dark">Dark</span>
+        </button>
+      </div>
+    </header>
+
+    <main>
+
+      <!-- ════════════════════════════════════════════════════════════ -->
+      <!-- SECTION: The Opening Problem                                -->
+      <!-- ════════════════════════════════════════════════════════════ -->
+      <h2 id="why-suppression">Why Suppression Exists</h2>
+
+      <p>Aggregated data can betray individual responses. The mechanism is simple arithmetic -- and it works with as few as three people.</p>
+
+      <div class="deduction-box">
+        <h3>The Arithmetic Deduction Attack</h3>
+        <p>A team of 3 people reports scores on "I have a best friend at work" (1-5 scale).</p>
+
+        <p style="margin-top: 1rem;"><strong style="color: var(--text);">The actual responses:</strong></p>
+        <div class="score-row">
+          <div><span class="score-badge score-known">1</span> <span class="score-label">Alice</span></div>
+          <div><span class="score-badge score-known">2</span> <span class="score-label">Bob</span></div>
+          <div><span class="score-badge score-unknown">3</span> <span class="score-label">Carol</span></div>
+        </div>
+
+        <p style="margin-top: 1rem;">The published group mean is <strong style="color: var(--text);">2.0</strong>. Alice and Bob know their own answers.</p>
+
+        <div class="math-line">
+          Carol's score = (mean &times; count) - Alice - Bob = (2.0 &times; 3) - 1 - 2 = <strong style="color: var(--suppress-color);">3</strong>
+        </div>
+
+        <p>Two people have deduced the exact response of their colleague. The "anonymous" survey is no longer anonymous.</p>
+      </div>
+
+      <p>This isn't theoretical. In a 3-person team, any two members can always reconstruct the third's answer from the group average. With 4 people, the math still constrains possibilities enough to make good guesses. With 10 people, the signal dissolves into noise.</p>
+
+      <p>This is why every serious survey platform suppresses results below a minimum group size. The principle applies far beyond surveys:</p>
+
+      <ul>
+        <li><strong>HIPAA</strong> -- healthcare data must suppress cell sizes below a threshold to prevent patient identification</li>
+        <li><strong>FERPA</strong> -- educational records have similar suppression requirements</li>
+        <li><strong>Bureau of Labor Statistics</strong> -- suppresses employment data for small geographic/industry cells</li>
+        <li><strong>Census Bureau</strong> -- applies disclosure avoidance to any table where a cell represents too few respondents</li>
+      </ul>
+
+      <div class="callout callout-info">
+        <strong>The universal pattern</strong>
+        When aggregate statistics are computed over small groups, the aggregation itself can be reversed to identify individuals. Suppression is the primary defense.
+      </div>
+
+      <!-- ════════════════════════════════════════════════════════════ -->
+      <!-- SECTION: Suppression Decision Tree                          -->
+      <!-- ════════════════════════════════════════════════════════════ -->
+      <h2 id="suppression-decision">The Suppression Decision</h2>
+
+      <p>Every time a report is rendered, each aggregate cell faces the same question: is the underlying group large enough to show safely?</p>
+
+      <div class="svg-container">
+        <svg viewBox="0 0 680 340" xmlns="http://www.w3.org/2000/svg" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
+          <!-- Background -->
+          <rect width="680" height="340" rx="12" fill="var(--svg-bg)" stroke="var(--border)" stroke-width="1"/>
+
+          <!-- Title -->
+          <text x="340" y="30" text-anchor="middle" font-size="14" font-weight="600" fill="var(--svg-text)">Suppression Decision Tree</text>
+
+          <!-- Start node -->
+          <rect x="240" y="50" width="200" height="40" rx="20" fill="var(--accent)" opacity="0.15" stroke="var(--accent)" stroke-width="1.5"/>
+          <text x="340" y="75" text-anchor="middle" font-size="12" font-weight="600" fill="var(--svg-text)">Aggregate query arrives</text>
+
+          <!-- Arrow down -->
+          <line x1="340" y1="90" x2="340" y2="120" stroke="var(--svg-line)" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+
+          <!-- Decision: count group -->
+          <polygon points="340,120 480,165 340,210 200,165" fill="var(--callout-warn)" stroke="var(--callout-warn-border)" stroke-width="1.5"/>
+          <text x="340" y="160" text-anchor="middle" font-size="11" font-weight="600" fill="var(--svg-text)">COUNT(*) in group</text>
+          <text x="340" y="175" text-anchor="middle" font-size="11" font-weight="600" fill="var(--svg-text)">&gt;= threshold?</text>
+
+          <!-- Left arrow: No -->
+          <line x1="200" y1="165" x2="110" y2="165" stroke="var(--svg-line)" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+          <text x="155" y="158" text-anchor="middle" font-size="10" font-weight="600" fill="var(--suppress-color)">No (n &lt; 4)</text>
+
+          <!-- Right arrow: Yes -->
+          <line x1="480" y1="165" x2="560" y2="165" stroke="var(--svg-line)" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+          <text x="520" y="158" text-anchor="middle" font-size="10" font-weight="600" fill="var(--pass-color)">Yes (n &gt;= 4)</text>
+
+          <!-- Suppress box -->
+          <rect x="20" y="145" width="90" height="40" rx="8" fill="var(--suppress-bg)" stroke="var(--suppress-color)" stroke-width="2"/>
+          <text x="65" y="163" text-anchor="middle" font-size="11" font-weight="700" fill="var(--suppress-color)">SUPPRESS</text>
+          <text x="65" y="177" text-anchor="middle" font-size="9" fill="var(--svg-text)">Return NULL</text>
+
+          <!-- Show box -->
+          <rect x="560" y="145" width="100" height="40" rx="8" fill="var(--pass-bg)" stroke="var(--pass-color)" stroke-width="2"/>
+          <text x="610" y="163" text-anchor="middle" font-size="11" font-weight="700" fill="var(--pass-color)">SHOW</text>
+          <text x="610" y="177" text-anchor="middle" font-size="9" fill="var(--svg-text)">Return AVG</text>
+
+          <!-- Bottom note: dynamic per query -->
+          <line x1="340" y1="210" x2="340" y2="245" stroke="var(--svg-line)" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+          <rect x="160" y="245" width="360" height="70" rx="8" fill="var(--callout-info)" stroke="var(--callout-info-border)" stroke-width="1.5"/>
+          <text x="340" y="267" text-anchor="middle" font-size="11" font-weight="600" fill="var(--svg-text)">Key: This runs PER QUERY, not per row</text>
+          <text x="340" y="283" text-anchor="middle" font-size="10" fill="var(--svg-text)">Same data passes at team level (n=10)</text>
+          <text x="340" y="297" text-anchor="middle" font-size="10" fill="var(--svg-text)">but fails at team+location (n=3)</text>
+
+          <!-- Arrowhead marker -->
+          <defs>
+            <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+              <polygon points="0 0, 8 3, 0 6" fill="var(--svg-line)"/>
+            </marker>
+          </defs>
+        </svg>
+      </div>
+
+      <!-- ════════════════════════════════════════════════════════════ -->
+      <!-- SECTION: Dynamic Suppression (Lab 01)                       -->
+      <!-- ════════════════════════════════════════════════════════════ -->
+      <h2 id="dynamic-suppression">Dynamic Suppression: Per Query, Not Per Row</h2>
+
+      <p>The critical insight: <strong>suppression is a property of the query, not the data</strong>. The same underlying rows can pass or fail suppression depending on which dimensions appear in the <code>GROUP BY</code>.</p>
+
+      <details>
+        <summary>Lab 01: Suppression Basics -- Same Data, Different Treatment</summary>
+        <div class="details-content">
+          <p>19 survey responses across 3 teams. Team A has 10 people (7 in New York, 3 in Austin), Team B has 3, Team C has 6 (4 in New York, 2 in Austin). Threshold = 4.</p>
+
+          <h3>Cut 1: Group by Team</h3>
+          <p>Team B (n=3) suppressed. Teams A and C pass.</p>
+          <pre><code>SELECT team, COUNT(*) AS n,
+       CASE WHEN COUNT(*) >= 4
+            THEN ROUND(AVG(q01), 2) END AS avg_q01
+FROM responses
+GROUP BY team ORDER BY team</code></pre>
+          <div class="lab-output">team   | n  | avg_q01
+-------+----+--------
+Team A | 10 | 4.0
+Team B |  3 | <span class="suppress">NULL</span>
+Team C |  6 | 3.5</div>
+
+          <h3>Cut 2: Group by Team + Location</h3>
+          <p>Same data, finer cut. Team A Austin (n=3) and Team C Austin (n=2) are <em>now</em> suppressed -- they passed at team level but fail at team+location.</p>
+          <div class="lab-output">team   | location | n | avg_q01
+-------+----------+---+--------
+Team A | Austin   | 3 | <span class="suppress">NULL</span>
+Team A | New York | 7 | 4.0
+Team B | Chicago  | 3 | <span class="suppress">NULL</span>
+Team C | Austin   | 2 | <span class="suppress">NULL</span>
+Team C | New York | 4 | 4.0</div>
+
+          <h3>Cut 3: Group by Team + Location + Department</h3>
+          <p>More dimensions = smaller cells = more suppression. In this dataset departments align with teams so counts don't change further, but in real data every added dimension fragments groups.</p>
+          <div class="lab-output">team   | location | department  | n | avg_q01
+-------+----------+-------------+---+--------
+Team A | Austin   | Engineering | 3 | <span class="suppress">NULL</span>
+Team A | New York | Engineering | 7 | 4.0
+Team B | Chicago  | Sales       | 3 | <span class="suppress">NULL</span>
+Team C | Austin   | Product     | 2 | <span class="suppress">NULL</span>
+Team C | New York | Product     | 4 | 4.0</div>
+
+          <div class="callout callout-warn">
+            <strong>Why you cannot pre-compute suppression</strong>
+            You cannot stamp a "suppressed" flag on raw data. The same row passes at one GROUP BY level and fails at another. Suppression must be evaluated at query time based on the report's specific dimensions.
+          </div>
+        </div>
+      </details>
+
+      <p>This is why suppression logic belongs in views, policies, or transformation layers -- not in application code that runs after the query. A dashboard with drill-down must re-evaluate suppression at each level.</p>
+
+      <!-- ════════════════════════════════════════════════════════════ -->
+      <!-- SECTION: k-Anonymity                                        -->
+      <!-- ════════════════════════════════════════════════════════════ -->
+      <h2 id="k-anonymity">k-Anonymity: The Formal Framework</h2>
+
+      <p>Suppression is an informal version of a well-studied privacy concept called <strong>k-anonymity</strong>. A dataset satisfies k-anonymity if every combination of quasi-identifiers appears at least <em>k</em> times.</p>
+
+      <div class="card-grid">
+        <div class="card">
+          <h3>Quasi-Identifiers</h3>
+          <p>Attributes that could narrow down who a record belongs to: team, location, department, tenure band, gender.</p>
+        </div>
+        <div class="card">
+          <h3>Sensitive Attribute</h3>
+          <p>The thing being protected -- survey responses, scores, the data whose exposure causes harm.</p>
+        </div>
+      </div>
+
+      <p>When we say "suppress where count &lt; 4," we are enforcing k-anonymity with k=4 on whatever grouping dimensions the report uses.</p>
+
+      <!-- k-anonymity grouping diagram -->
+      <div class="svg-container">
+        <svg viewBox="0 0 680 310" xmlns="http://www.w3.org/2000/svg" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
+          <rect width="680" height="310" rx="12" fill="var(--svg-bg)" stroke="var(--border)" stroke-width="1"/>
+          <text x="340" y="28" text-anchor="middle" font-size="14" font-weight="600" fill="var(--svg-text)">k-Anonymity: Grouping by Quasi-Identifiers</text>
+
+          <!-- Group 1: k=5 (safe) -->
+          <rect x="30" y="50" width="190" height="170" rx="8" fill="var(--pass-bg)" stroke="var(--pass-color)" stroke-width="1.5"/>
+          <text x="125" y="70" text-anchor="middle" font-size="11" font-weight="600" fill="var(--pass-color)">Team A, New York (k=5)</text>
+          <!-- People icons as circles -->
+          <circle cx="65" cy="105" r="14" fill="var(--pass-color)" opacity="0.2" stroke="var(--pass-color)" stroke-width="1"/>
+          <text x="65" y="110" text-anchor="middle" font-size="10" fill="var(--svg-text)">4</text>
+          <circle cx="105" cy="105" r="14" fill="var(--pass-color)" opacity="0.2" stroke="var(--pass-color)" stroke-width="1"/>
+          <text x="105" y="110" text-anchor="middle" font-size="10" fill="var(--svg-text)">5</text>
+          <circle cx="145" cy="105" r="14" fill="var(--pass-color)" opacity="0.2" stroke="var(--pass-color)" stroke-width="1"/>
+          <text x="145" y="110" text-anchor="middle" font-size="10" fill="var(--svg-text)">3</text>
+          <circle cx="85" cy="145" r="14" fill="var(--pass-color)" opacity="0.2" stroke="var(--pass-color)" stroke-width="1"/>
+          <text x="85" y="150" text-anchor="middle" font-size="10" fill="var(--svg-text)">4</text>
+          <circle cx="125" cy="145" r="14" fill="var(--pass-color)" opacity="0.2" stroke="var(--pass-color)" stroke-width="1"/>
+          <text x="125" y="150" text-anchor="middle" font-size="10" fill="var(--svg-text)">5</text>
+          <text x="125" y="190" text-anchor="middle" font-size="10" fill="var(--pass-color)" font-weight="600">SAFE: avg visible</text>
+          <text x="125" y="205" text-anchor="middle" font-size="10" fill="var(--svg-text)">Can't deduce any individual</text>
+
+          <!-- Group 2: k=2 (borderline) -->
+          <rect x="245" y="50" width="190" height="170" rx="8" fill="var(--callout-warn)" stroke="var(--callout-warn-border)" stroke-width="1.5"/>
+          <text x="340" y="70" text-anchor="middle" font-size="11" font-weight="600" fill="var(--callout-warn-border)">Team A, Austin (k=2)</text>
+          <circle cx="310" cy="115" r="14" fill="var(--callout-warn-border)" opacity="0.2" stroke="var(--callout-warn-border)" stroke-width="1"/>
+          <text x="310" y="120" text-anchor="middle" font-size="10" fill="var(--svg-text)">4</text>
+          <circle cx="370" cy="115" r="14" fill="var(--callout-warn-border)" opacity="0.2" stroke="var(--callout-warn-border)" stroke-width="1"/>
+          <text x="370" y="120" text-anchor="middle" font-size="10" fill="var(--svg-text)">5</text>
+          <text x="340" y="175" text-anchor="middle" font-size="10" fill="var(--callout-warn-border)" font-weight="600">RISKY: k &lt; 4</text>
+          <text x="340" y="190" text-anchor="middle" font-size="10" fill="var(--svg-text)">One known answer</text>
+          <text x="340" y="205" text-anchor="middle" font-size="10" fill="var(--svg-text)">reveals the other</text>
+
+          <!-- Group 3: k=1 (vulnerable) -->
+          <rect x="460" y="50" width="190" height="170" rx="8" fill="var(--suppress-bg)" stroke="var(--suppress-color)" stroke-width="1.5"/>
+          <text x="555" y="70" text-anchor="middle" font-size="11" font-weight="600" fill="var(--suppress-color)">Team C, Austin (k=1)</text>
+          <circle cx="555" cy="115" r="14" fill="var(--suppress-color)" opacity="0.2" stroke="var(--suppress-color)" stroke-width="1"/>
+          <text x="555" y="120" text-anchor="middle" font-size="10" fill="var(--svg-text)">2</text>
+          <text x="555" y="175" text-anchor="middle" font-size="10" fill="var(--suppress-color)" font-weight="600">EXPOSED: k=1</text>
+          <text x="555" y="190" text-anchor="middle" font-size="10" fill="var(--svg-text)">Unique combo identifies</text>
+          <text x="555" y="205" text-anchor="middle" font-size="10" fill="var(--svg-text)">individual directly</text>
+
+          <!-- Legend -->
+          <text x="340" y="255" text-anchor="middle" font-size="11" fill="var(--svg-text)">Each circle = one person. Number inside = their survey score.</text>
+          <text x="340" y="275" text-anchor="middle" font-size="11" fill="var(--svg-text)">k = how many people share the same quasi-identifier combination.</text>
+          <text x="340" y="295" text-anchor="middle" font-size="11" font-weight="600" fill="var(--svg-text)">Lower k = easier to single out individuals from the aggregate.</text>
+        </svg>
+      </div>
+
+      <h3>Two Ways to Satisfy k-Anonymity</h3>
+      <div class="card-grid">
+        <div class="card">
+          <h3>Suppression</h3>
+          <p>Hide the entire group's results. Replace with NULL or "insufficient data." The group exists but its aggregate is invisible.</p>
+          <p><em>Survey platforms typically use this approach.</em></p>
+        </div>
+        <div class="card">
+          <h3>Generalization</h3>
+          <p>Roll up to a coarser grouping. Show department-level instead of team-level results. Trade granularity for privacy.</p>
+          <p><em>Data platforms may implement automatic roll-up.</em></p>
+        </div>
+      </div>
+
+      <details>
+        <summary>Lab 02: k-Anonymity -- The Attacker Scenario</summary>
+        <div class="details-content">
+          <p>18 employees with quasi-identifiers (team, location, tenure_band) and a sensitive attribute (q01_score). An attacker knows their colleague is on Team C, in Austin, with 5+ years tenure.</p>
+
+          <h3>Step 1: Find Vulnerable Groups</h3>
+          <div class="lab-output">team   | location | tenure    | size | status
+-------+----------+-----------+------+-----------
+Team B | Chicago  | 3-5 years |  1   | <span class="suppress">VULNERABLE</span>
+Team B | Chicago  | 0-2 years |  1   | <span class="suppress">VULNERABLE</span>
+Team A | Austin   | 3-5 years |  1   | <span class="suppress">VULNERABLE</span>
+Team B | Chicago  | 5+ years  |  1   | <span class="suppress">VULNERABLE</span>
+Team C | Austin   | 5+ years  |  1   | <span class="suppress">VULNERABLE</span>
+Team A | New York | 0-2 years |  2   | <span class="suppress">VULNERABLE</span>
+Team A | New York | 3-5 years |  3   | <span class="suppress">VULNERABLE</span></div>
+          <p>With k=4, <em>every single group</em> in this dataset is vulnerable. No combination has 4+ people.</p>
+
+          <h3>Step 2: The Attack</h3>
+          <pre><code>SELECT team, location, tenure_band, q01_score
+FROM employees
+WHERE team = 'Team C' AND location = 'Austin'
+  AND tenure_band = '5+ years'</code></pre>
+          <div class="lab-output">team   | location | tenure   | score
+-------+----------+----------+------
+Team C | Austin   | 5+ years | <span class="suppress">2</span>     -- Exact identification!</div>
+
+          <h3>Step 3: After Suppression (k=4)</h3>
+          <div class="lab-output">team   | location | tenure   | score
+-------+----------+----------+------
+Team C | Austin   | 5+ years | <span class="suppress">NULL</span>  -- Attack blocked</div>
+
+          <div class="callout callout-tip">
+            <strong>Try it yourself</strong>
+            Run <code>uv run python labs/07_suppression_access_control/02_k_anonymity.py</code> to see the full attacker scenario play out. Notice how all 18 records have their scores suppressed because no quasi-identifier group reaches k=4.
+          </div>
+        </div>
+      </details>
+
+      <!-- ════════════════════════════════════════════════════════════ -->
+      <!-- SECTION: Three Enforcement Layers                           -->
+      <!-- ════════════════════════════════════════════════════════════ -->
+      <h2 id="enforcement-layers">Three Enforcement Layers</h2>
+
+      <p>Suppression can be enforced at three levels, with dramatically different reliability:</p>
+
+      <!-- Three layers SVG comparison -->
+      <div class="svg-container">
+        <svg viewBox="0 0 680 340" xmlns="http://www.w3.org/2000/svg" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
+          <rect width="680" height="340" rx="12" fill="var(--svg-bg)" stroke="var(--border)" stroke-width="1"/>
+          <text x="340" y="28" text-anchor="middle" font-size="14" font-weight="600" fill="var(--svg-text)">Three Enforcement Layers Compared</text>
+
+          <!-- Layer 1: Application -->
+          <rect x="20" y="50" width="200" height="270" rx="8" fill="var(--suppress-bg)" stroke="var(--suppress-color)" stroke-width="1.5"/>
+          <text x="120" y="75" text-anchor="middle" font-size="12" font-weight="700" fill="var(--suppress-color)">Application Level</text>
+          <line x1="40" y1="85" x2="200" y2="85" stroke="var(--suppress-color)" stroke-width="0.5" opacity="0.4"/>
+
+          <text x="120" y="108" text-anchor="middle" font-size="10" fill="var(--svg-text)">Python/JS filters results</text>
+          <text x="120" y="123" text-anchor="middle" font-size="10" fill="var(--svg-text)">AFTER the query runs</text>
+
+          <rect x="40" y="140" width="160" height="28" rx="4" fill="var(--code-bg)" stroke="var(--border)" stroke-width="1"/>
+          <text x="120" y="158" text-anchor="middle" font-size="9" font-family="monospace" fill="var(--svg-text)">if row.count &lt; 4: NULL</text>
+
+          <text x="120" y="195" text-anchor="middle" font-size="10" fill="var(--suppress-color)" font-weight="600">Fragile</text>
+          <text x="120" y="212" text-anchor="middle" font-size="9" fill="var(--svg-text)">Every consumer must</text>
+          <text x="120" y="225" text-anchor="middle" font-size="9" fill="var(--svg-text)">implement independently</text>
+          <text x="120" y="250" text-anchor="middle" font-size="9" fill="var(--svg-text)">New dashboard forgets?</text>
+          <text x="120" y="265" text-anchor="middle" font-size="9" fill="var(--suppress-color)" font-weight="600">Data leaks.</text>
+
+          <rect x="50" y="285" width="140" height="24" rx="12" fill="var(--suppress-color)" opacity="0.15" stroke="var(--suppress-color)" stroke-width="1"/>
+          <text x="120" y="301" text-anchor="middle" font-size="10" font-weight="600" fill="var(--suppress-color)">Bypass risk: HIGH</text>
+
+          <!-- Layer 2: Database View -->
+          <rect x="240" y="50" width="200" height="270" rx="8" fill="var(--callout-warn)" stroke="var(--callout-warn-border)" stroke-width="1.5"/>
+          <text x="340" y="75" text-anchor="middle" font-size="12" font-weight="700" fill="var(--callout-warn-border)">Database View</text>
+          <line x1="260" y1="85" x2="420" y2="85" stroke="var(--callout-warn-border)" stroke-width="0.5" opacity="0.4"/>
+
+          <text x="340" y="108" text-anchor="middle" font-size="10" fill="var(--svg-text)">SQL view with CASE WHEN</text>
+          <text x="340" y="123" text-anchor="middle" font-size="10" fill="var(--svg-text)">Automatic for all consumers</text>
+
+          <rect x="260" y="140" width="160" height="28" rx="4" fill="var(--code-bg)" stroke="var(--border)" stroke-width="1"/>
+          <text x="340" y="158" text-anchor="middle" font-size="9" font-family="monospace" fill="var(--svg-text)">CASE WHEN n>=4 THEN</text>
+
+          <text x="340" y="195" text-anchor="middle" font-size="10" fill="var(--callout-warn-border)" font-weight="600">Reliable</text>
+          <text x="340" y="212" text-anchor="middle" font-size="9" fill="var(--svg-text)">One definition, all</text>
+          <text x="340" y="225" text-anchor="middle" font-size="9" fill="var(--svg-text)">consumers get suppression</text>
+          <text x="340" y="250" text-anchor="middle" font-size="9" fill="var(--svg-text)">Base table still exists</text>
+          <text x="340" y="265" text-anchor="middle" font-size="9" fill="var(--svg-text)">(queryable if access allows)</text>
+
+          <rect x="270" y="285" width="140" height="24" rx="12" fill="var(--callout-warn-border)" opacity="0.15" stroke="var(--callout-warn-border)" stroke-width="1"/>
+          <text x="340" y="301" text-anchor="middle" font-size="10" font-weight="600" fill="var(--callout-warn-border)">Bypass risk: MEDIUM</text>
+
+          <!-- Layer 3: Transform (dbt) -->
+          <rect x="460" y="50" width="200" height="270" rx="8" fill="var(--pass-bg)" stroke="var(--pass-color)" stroke-width="1.5"/>
+          <text x="560" y="75" text-anchor="middle" font-size="12" font-weight="700" fill="var(--pass-color)">Transform (dbt)</text>
+          <line x1="480" y1="85" x2="640" y2="85" stroke="var(--pass-color)" stroke-width="0.5" opacity="0.4"/>
+
+          <text x="560" y="108" text-anchor="middle" font-size="10" fill="var(--svg-text)">Suppression baked into</text>
+          <text x="560" y="123" text-anchor="middle" font-size="10" fill="var(--svg-text)">pipeline output tables</text>
+
+          <rect x="480" y="140" width="160" height="28" rx="4" fill="var(--code-bg)" stroke="var(--border)" stroke-width="1"/>
+          <text x="560" y="158" text-anchor="middle" font-size="9" font-family="monospace" fill="var(--svg-text)">{{ suppress_below() }}</text>
+
+          <text x="560" y="195" text-anchor="middle" font-size="10" fill="var(--pass-color)" font-weight="600">Strongest</text>
+          <text x="560" y="212" text-anchor="middle" font-size="9" fill="var(--svg-text)">Raw data never exposed</text>
+          <text x="560" y="225" text-anchor="middle" font-size="9" fill="var(--svg-text)">downstream at all</text>
+          <text x="560" y="250" text-anchor="middle" font-size="9" fill="var(--svg-text)">Version-controlled, tested,</text>
+          <text x="560" y="265" text-anchor="middle" font-size="9" fill="var(--svg-text)">auditable via CI</text>
+
+          <rect x="490" y="285" width="140" height="24" rx="12" fill="var(--pass-color)" opacity="0.15" stroke="var(--pass-color)" stroke-width="1"/>
+          <text x="560" y="301" text-anchor="middle" font-size="10" font-weight="600" fill="var(--pass-color)">Bypass risk: LOW</text>
+        </svg>
+      </div>
+
+      <div class="callout callout-info">
+        <strong>The right answer</strong>
+        Suppression is a data integrity concern, not a presentation concern. Enforce as close to the data as possible. Database views or transformation-layer models are correct. Application-level suppression is a last resort.
+      </div>
+
+      <h3>Enforcement Comparison</h3>
+      <div style="overflow-x: auto;">
+        <table>
+          <thead>
+            <tr><th>Property</th><th>Application</th><th>Database View</th><th>Transform (dbt)</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Reliability</strong></td>
+              <td>Low -- each consumer must implement</td>
+              <td>High -- automatic for all</td>
+              <td>High -- baked into output</td>
+            </tr>
+            <tr>
+              <td><strong>Bypass risk</strong></td>
+              <td>High -- direct table access skips it</td>
+              <td>Medium -- base table still queryable</td>
+              <td>Low -- raw data not exposed</td>
+            </tr>
+            <tr>
+              <td><strong>Auditability</strong></td>
+              <td>Scattered in app code</td>
+              <td>Single SQL definition</td>
+              <td>Version-controlled in git</td>
+            </tr>
+            <tr>
+              <td><strong>Threshold change</strong></td>
+              <td>Update every consumer</td>
+              <td>Update one view</td>
+              <td>Update one macro</td>
+            </tr>
+            <tr>
+              <td><strong>Dynamic cuts</strong></td>
+              <td>Flexible -- runtime</td>
+              <td>Flexible -- GROUP BY</td>
+              <td>Fixed at build time</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <details>
+        <summary>Lab 05: Three Enforcement Approaches Side by Side</summary>
+        <div class="details-content">
+          <p>The same suppression rule (hide where n &lt; 4) implemented at three levels.</p>
+
+          <h3>Approach 1: Application-Level (Fragile)</h3>
+          <pre><code>results = db.query("SELECT team, AVG(score) FROM responses GROUP BY team")
+for row in results:
+    if row.count &lt; 4:
+        row.avg_score = None  # suppress in Python</code></pre>
+          <div class="lab-output">Raw query exposes Team B's data: avg = <span class="suppress">2.0</span>
+After suppress(): Team B avg = <span class="suppress">NULL</span>
+Risk: A second dashboard that skips suppress() leaks the data.</div>
+
+          <h3>Approach 2: Database View (Reliable)</h3>
+          <pre><code>CREATE VIEW team_scores_safe AS
+SELECT team, COUNT(*) AS n,
+       CASE WHEN COUNT(*) >= 4
+            THEN ROUND(AVG(score), 2) END AS avg_score
+FROM responses GROUP BY team;</code></pre>
+          <div class="lab-output">All consumers query team_scores_safe:
+Team A | 10 | 4.0
+Team B |  3 | <span class="suppress">NULL</span>  -- automatic
+Team C |  6 | 3.5</div>
+
+          <h3>Approach 3: Transformation (dbt Pattern)</h3>
+          <pre><code>-- dbt macro: macros/suppress_below.sql
+{% macro suppress_below(column, threshold=4) %}
+    CASE WHEN COUNT(*) >= {{ threshold }} THEN {{ column }} END
+{% endmacro %}
+
+-- models/team_scores.sql
+SELECT team,
+       {{ suppress_below('ROUND(AVG(score), 2)') }} AS avg_score
+FROM {{ ref('stg_responses') }}
+GROUP BY team</code></pre>
+          <div class="lab-output">Materialized output:
+Team A | 10 | 4.0   | suppressed=False
+Team B |  3 | <span class="suppress">NULL</span>  | suppressed=True
+Team C |  6 | 3.5   | suppressed=False</div>
+
+          <div class="callout callout-tip">
+            <strong>Try it yourself</strong>
+            Run <code>uv run python labs/07_suppression_access_control/05_suppression_as_policy.py</code> to see all three approaches produce identical output -- but with different reliability guarantees.
+          </div>
+        </div>
+      </details>
+
+      <!-- ════════════════════════════════════════════════════════════ -->
+      <!-- SECTION: Row-Level Security                                 -->
+      <!-- ════════════════════════════════════════════════════════════ -->
+      <h2 id="rls">Row-Level Security (RLS)</h2>
+
+      <p>Suppression controls <em>what data is shown at all</em>. Row-Level Security controls <em>who sees which rows</em>. Different problems, often needed together.</p>
+
+      <p>Without RLS, you have two bad options: separate tables per manager (doesn't scale) or application-level <code>WHERE team = current_user_team</code> on every query (one missed filter leaks all data). RLS moves the filter into the database engine itself.</p>
+
+      <!-- RLS policy flow diagram -->
+      <div class="svg-container">
+        <svg viewBox="0 0 680 280" xmlns="http://www.w3.org/2000/svg" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
+          <rect width="680" height="280" rx="12" fill="var(--svg-bg)" stroke="var(--border)" stroke-width="1"/>
+          <text x="340" y="28" text-anchor="middle" font-size="14" font-weight="600" fill="var(--svg-text)">RLS Policy Flow: Same Query, Different Results</text>
+
+          <defs>
+            <marker id="arrow2" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+              <polygon points="0 0, 8 3, 0 6" fill="var(--svg-line)"/>
+            </marker>
+          </defs>
+
+          <!-- Query box -->
+          <rect x="20" y="80" width="140" height="60" rx="8" fill="var(--accent)" opacity="0.12" stroke="var(--accent)" stroke-width="1.5"/>
+          <text x="90" y="105" text-anchor="middle" font-size="10" font-weight="600" fill="var(--svg-text)">SELECT * FROM</text>
+          <text x="90" y="120" text-anchor="middle" font-size="10" font-weight="600" fill="var(--svg-text)">team_scores;</text>
+
+          <!-- Arrow to policy -->
+          <line x1="160" y1="110" x2="210" y2="110" stroke="var(--svg-line)" stroke-width="1.5" marker-end="url(#arrow2)"/>
+
+          <!-- Policy engine -->
+          <rect x="210" y="60" width="160" height="100" rx="8" fill="var(--rls-bg)" stroke="var(--rls-color)" stroke-width="2"/>
+          <text x="290" y="82" text-anchor="middle" font-size="11" font-weight="700" fill="var(--rls-color)">RLS Policy Check</text>
+          <line x1="225" y1="90" x2="355" y2="90" stroke="var(--rls-color)" stroke-width="0.5" opacity="0.4"/>
+          <text x="290" y="108" text-anchor="middle" font-size="9" font-family="monospace" fill="var(--svg-text)">USING (manager_role</text>
+          <text x="290" y="122" text-anchor="middle" font-size="9" font-family="monospace" fill="var(--svg-text)">= current_user)</text>
+          <text x="290" y="148" text-anchor="middle" font-size="9" fill="var(--svg-text)">Silently appended by DB</text>
+
+          <!-- Arrow to manager_a result -->
+          <line x1="370" y1="85" x2="430" y2="65" stroke="var(--svg-line)" stroke-width="1.5" marker-end="url(#arrow2)"/>
+          <!-- Arrow to manager_b result -->
+          <line x1="370" y1="110" x2="430" y2="130" stroke="var(--svg-line)" stroke-width="1.5" marker-end="url(#arrow2)"/>
+          <!-- Arrow to admin result -->
+          <line x1="370" y1="140" x2="430" y2="200" stroke="var(--svg-line)" stroke-width="1.5" marker-end="url(#arrow2)"/>
+
+          <!-- Labels -->
+          <text x="410" y="55" text-anchor="middle" font-size="9" fill="var(--svg-text)">manager_a</text>
+          <text x="410" y="125" text-anchor="middle" font-size="9" fill="var(--svg-text)">manager_b</text>
+          <text x="410" y="195" text-anchor="middle" font-size="9" fill="var(--svg-text)">admin</text>
+
+          <!-- manager_a results -->
+          <rect x="430" y="45" width="230" height="45" rx="6" fill="var(--card-bg)" stroke="var(--border)" stroke-width="1"/>
+          <text x="545" y="63" text-anchor="middle" font-size="9" font-family="monospace" fill="var(--pass-color)">Team Alpha  4.20  3.80</text>
+          <text x="545" y="78" text-anchor="middle" font-size="9" font-family="monospace" fill="var(--pass-color)">Team Beta   3.50  3.20</text>
+
+          <!-- manager_b results -->
+          <rect x="430" y="110" width="230" height="45" rx="6" fill="var(--card-bg)" stroke="var(--border)" stroke-width="1"/>
+          <text x="545" y="128" text-anchor="middle" font-size="9" font-family="monospace" fill="var(--rls-color)">Team Gamma  3.90  4.10</text>
+          <text x="545" y="143" text-anchor="middle" font-size="9" font-family="monospace" fill="var(--rls-color)">Team Delta  2.80  2.50</text>
+
+          <!-- admin results -->
+          <rect x="430" y="175" width="230" height="72" rx="6" fill="var(--card-bg)" stroke="var(--border)" stroke-width="1"/>
+          <text x="545" y="193" text-anchor="middle" font-size="9" font-family="monospace" fill="var(--svg-text)">Team Alpha  4.20  3.80</text>
+          <text x="545" y="208" text-anchor="middle" font-size="9" font-family="monospace" fill="var(--svg-text)">Team Beta   3.50  3.20</text>
+          <text x="545" y="223" text-anchor="middle" font-size="9" font-family="monospace" fill="var(--svg-text)">Team Gamma  3.90  4.10</text>
+          <text x="545" y="238" text-anchor="middle" font-size="9" font-family="monospace" fill="var(--svg-text)">Team Delta  2.80  2.50</text>
+
+          <text x="340" y="270" text-anchor="middle" font-size="10" fill="var(--svg-text)">The manager never even knows the other teams' rows exist.</text>
+        </svg>
+      </div>
+
+      <h3>PostgreSQL RLS Implementation</h3>
+      <pre><code>-- Enable RLS on the table
+ALTER TABLE team_scores ENABLE ROW LEVEL SECURITY;
+
+-- Policy: managers see only their team
+CREATE POLICY manager_team_access ON team_scores
+    FOR SELECT
+    USING (manager_role = current_user);
+
+-- Admin bypass: sees everything
+CREATE POLICY admin_access ON team_scores
+    FOR SELECT
+    TO admin_role
+    USING (true);</code></pre>
+
+      <h3>Snowflake Row Access Policies</h3>
+      <pre><code>CREATE ROW ACCESS POLICY team_visibility AS (team_name VARCHAR)
+RETURNS BOOLEAN ->
+    CASE
+        WHEN IS_ROLE_IN_SESSION('ADMIN') THEN true
+        WHEN team_name = CURRENT_ROLE() THEN true
+        ELSE false
+    END;
+
+ALTER TABLE team_scores ADD ROW ACCESS POLICY team_visibility ON (team_name);</code></pre>
+
+      <details>
+        <summary>Lab 03: Row-Level Security -- Same Query, Different Results</summary>
+        <div class="details-content">
+          <p>Three PostgreSQL roles (manager_a, manager_b, survey_admin) with RLS policies. All run the same <code>SELECT</code>.</p>
+
+          <div class="lab-output"><span class="pass">-- As manager_a:</span>
+team_name  | avg_q01 | avg_q07 | response_count
+-----------+---------+---------+---------------
+Team Alpha | 4.20    | 3.80    | 10
+Team Beta  | 3.50    | 3.20    | 8
+
+<span class="pass">-- As manager_b:</span>
+team_name  | avg_q01 | avg_q07 | response_count
+-----------+---------+---------+---------------
+Team Gamma | 3.90    | 4.10    | 6
+Team Delta | 2.80    | 2.50    | 3
+
+<span class="pass">-- As survey_admin:</span>
+team_name  | avg_q01 | avg_q07 | response_count
+-----------+---------+---------+---------------
+Team Alpha | 4.20    | 3.80    | 10
+Team Beta  | 3.50    | 3.20    | 8
+Team Gamma | 3.90    | 4.10    | 6
+Team Delta | 2.80    | 2.50    | 3</div>
+
+          <div class="callout callout-tip">
+            <strong>Try it yourself</strong>
+            Run <code>uv run python labs/07_suppression_access_control/03_row_level_security.py</code> -- requires a local PostgreSQL instance. Watch the same <code>SELECT *</code> return different row counts per role.
+          </div>
+        </div>
+      </details>
+
+      <!-- ════════════════════════════════════════════════════════════ -->
+      <!-- SECTION: Column Masking                                     -->
+      <!-- ════════════════════════════════════════════════════════════ -->
+      <h2 id="column-masking">Column Masking</h2>
+
+      <p>Sometimes the row is visible but specific column values should be hidden based on the viewer's role. RLS hides rows; masking hides values within visible rows.</p>
+
+      <div class="card-grid">
+        <div class="card">
+          <h3>Use Cases</h3>
+          <ul>
+            <li>Manager sees team aggregates but not individual scores</li>
+            <li>HR analyst sees aggregates but not free-text comments</li>
+            <li>Admin sees everything</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>RLS vs Masking</h3>
+          <ul>
+            <li><strong>RLS</strong>: row is entirely invisible</li>
+            <li><strong>Masking</strong>: row visible, certain columns NULL</li>
+            <li>Both needed in multi-tenant analytics</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>PostgreSQL Masking Function</h3>
+      <pre><code>CREATE OR REPLACE FUNCTION mask_score(val NUMERIC)
+RETURNS NUMERIC AS $$
+BEGIN
+    IF current_user = 'analyst_role' THEN
+        RETURN val;    -- privileged: see actual score
+    ELSE
+        RETURN NULL;   -- everyone else: masked
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Masked view wraps the raw table
+CREATE VIEW team_scores_masked AS
+SELECT team_name,
+       mask_score(avg_q01)  AS avg_q01,
+       mask_score(avg_q07)  AS avg_q07,
+       response_count       -- count always visible
+FROM team_scores_raw;</code></pre>
+
+      <h3>Snowflake Native Masking Policy</h3>
+      <pre><code>CREATE MASKING POLICY score_mask AS (val NUMERIC)
+RETURNS NUMERIC ->
+    CASE
+        WHEN IS_ROLE_IN_SESSION('ANALYST') THEN val
+        ELSE NULL
+    END;</code></pre>
+
+      <details>
+        <summary>Lab 04: Dynamic Column Masking -- Same Row, Hidden Columns</summary>
+        <div class="details-content">
+          <p>Two roles (analyst_role, viewer_role) query the same masked view.</p>
+
+          <div class="lab-output"><span class="pass">-- As analyst_role (privileged):</span>
+team_name  | avg_q01 | avg_q07 | avg_q10 | response_count
+-----------+---------+---------+---------+---------------
+Team Alpha | 4.20    | 3.80    | 3.10    | 10
+Team Beta  | 3.50    | 3.20    | 2.80    | 8
+Team Gamma | 3.90    | 4.10    | 3.60    | 6
+Team Delta | 2.80    | 2.50    | 2.10    | 3
+
+<span class="pass">-- As viewer_role (scores masked):</span>
+team_name  | avg_q01 | avg_q07 | avg_q10 | response_count
+-----------+---------+---------+---------+---------------
+Team Alpha | <span class="suppress">NULL</span>    | <span class="suppress">NULL</span>    | <span class="suppress">NULL</span>    | 10
+Team Beta  | <span class="suppress">NULL</span>    | <span class="suppress">NULL</span>    | <span class="suppress">NULL</span>    | 8
+Team Gamma | <span class="suppress">NULL</span>    | <span class="suppress">NULL</span>    | <span class="suppress">NULL</span>    | 6
+Team Delta | <span class="suppress">NULL</span>    | <span class="suppress">NULL</span>    | <span class="suppress">NULL</span>    | 3</div>
+
+          <p>The viewer sees all four teams (all rows visible) but every score column is NULL. Only the response count -- a metadata field -- is revealed.</p>
+
+          <div class="callout callout-tip">
+            <strong>Try it yourself</strong>
+            Run <code>uv run python labs/07_suppression_access_control/04_dynamic_masking.py</code> -- requires PostgreSQL. Compare the two role outputs side by side.
+          </div>
+        </div>
+      </details>
+
+      <!-- ════════════════════════════════════════════════════════════ -->
+      <!-- SECTION: RLS + Suppression Together                         -->
+      <!-- ════════════════════════════════════════════════════════════ -->
+      <h2 id="rls-plus-suppression">RLS + Suppression Together</h2>
+
+      <p>In a real survey platform, you need both controls working simultaneously:</p>
+
+      <ol>
+        <li><strong>RLS</strong> ensures Manager A cannot see Team B's data at all</li>
+        <li><strong>Suppression</strong> ensures that even for their own team, if a sub-group is too small, the aggregate is hidden</li>
+        <li><strong>Masking</strong> optionally hides specific column values based on the viewer's role</li>
+      </ol>
+
+      <p>These are complementary, not alternative, controls. A complete access control system layers all three.</p>
+
+      <div class="svg-container">
+        <svg viewBox="0 0 680 200" xmlns="http://www.w3.org/2000/svg" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
+          <rect width="680" height="200" rx="12" fill="var(--svg-bg)" stroke="var(--border)" stroke-width="1"/>
+          <text x="340" y="25" text-anchor="middle" font-size="13" font-weight="600" fill="var(--svg-text)">Layered Access Control</text>
+
+          <defs>
+            <marker id="arrow3" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+              <polygon points="0 0, 8 3, 0 6" fill="var(--svg-line)"/>
+            </marker>
+          </defs>
+
+          <!-- Raw data -->
+          <rect x="20" y="70" width="110" height="70" rx="6" fill="var(--card-bg)" stroke="var(--border)" stroke-width="1"/>
+          <text x="75" y="90" text-anchor="middle" font-size="10" font-weight="600" fill="var(--svg-text)">Raw Data</text>
+          <text x="75" y="108" text-anchor="middle" font-size="9" fill="var(--text-secondary)">All teams</text>
+          <text x="75" y="121" text-anchor="middle" font-size="9" fill="var(--text-secondary)">All scores</text>
+          <text x="75" y="134" text-anchor="middle" font-size="9" fill="var(--text-secondary)">All dimensions</text>
+
+          <!-- Arrow -->
+          <line x1="130" y1="105" x2="165" y2="105" stroke="var(--svg-line)" stroke-width="1.5" marker-end="url(#arrow3)"/>
+
+          <!-- Layer 1: RLS -->
+          <rect x="165" y="55" width="135" height="100" rx="6" fill="var(--rls-bg)" stroke="var(--rls-color)" stroke-width="2"/>
+          <text x="232" y="75" text-anchor="middle" font-size="10" font-weight="700" fill="var(--rls-color)">Layer 1: RLS</text>
+          <text x="232" y="95" text-anchor="middle" font-size="9" fill="var(--svg-text)">Filter ROWS</text>
+          <text x="232" y="110" text-anchor="middle" font-size="9" fill="var(--svg-text)">by viewer's role</text>
+          <text x="232" y="130" text-anchor="middle" font-size="8" fill="var(--text-secondary)">Who sees which teams?</text>
+          <text x="232" y="145" text-anchor="middle" font-size="8" fill="var(--text-secondary)">Manager sees own only</text>
+
+          <!-- Arrow -->
+          <line x1="300" y1="105" x2="330" y2="105" stroke="var(--svg-line)" stroke-width="1.5" marker-end="url(#arrow3)"/>
+
+          <!-- Layer 2: Suppression -->
+          <rect x="330" y="55" width="145" height="100" rx="6" fill="var(--suppress-bg)" stroke="var(--suppress-color)" stroke-width="2"/>
+          <text x="402" y="75" text-anchor="middle" font-size="10" font-weight="700" fill="var(--suppress-color)">Layer 2: Suppress</text>
+          <text x="402" y="95" text-anchor="middle" font-size="9" fill="var(--svg-text)">NULL aggregates</text>
+          <text x="402" y="110" text-anchor="middle" font-size="9" fill="var(--svg-text)">where n &lt; threshold</text>
+          <text x="402" y="130" text-anchor="middle" font-size="8" fill="var(--text-secondary)">Small sub-groups</text>
+          <text x="402" y="145" text-anchor="middle" font-size="8" fill="var(--text-secondary)">hidden from everyone</text>
+
+          <!-- Arrow -->
+          <line x1="475" y1="105" x2="505" y2="105" stroke="var(--svg-line)" stroke-width="1.5" marker-end="url(#arrow3)"/>
+
+          <!-- Layer 3: Masking -->
+          <rect x="505" y="55" width="155" height="100" rx="6" fill="var(--mask-bg)" stroke="var(--mask-color)" stroke-width="2"/>
+          <text x="582" y="75" text-anchor="middle" font-size="10" font-weight="700" fill="var(--mask-color)">Layer 3: Masking</text>
+          <text x="582" y="95" text-anchor="middle" font-size="9" fill="var(--svg-text)">NULL specific</text>
+          <text x="582" y="110" text-anchor="middle" font-size="9" fill="var(--svg-text)">columns by role</text>
+          <text x="582" y="130" text-anchor="middle" font-size="8" fill="var(--text-secondary)">Viewer sees teams</text>
+          <text x="582" y="145" text-anchor="middle" font-size="8" fill="var(--text-secondary)">but not scores</text>
+
+          <text x="340" y="185" text-anchor="middle" font-size="10" fill="var(--svg-text)">Each layer addresses a different threat. A complete system uses all three.</text>
+        </svg>
+      </div>
+
+      <!-- ════════════════════════════════════════════════════════════ -->
+      <!-- SECTION: Policy-as-Code                                     -->
+      <!-- ════════════════════════════════════════════════════════════ -->
+      <h2 id="policy-as-code">Policy-as-Code</h2>
+
+      <p>When access control and suppression rules live in code (SQL, dbt macros, OPA policies), they become version-controlled, auditable, testable, and reviewable. Every change goes through pull requests like any other code.</p>
+
+      <h3>Implementation Patterns</h3>
+      <div class="card-grid">
+        <div class="card">
+          <h3>SQL Views/Policies</h3>
+          <p>Most direct approach. Lives in the database. The <code>CASE WHEN COUNT(*) >= 4</code> pattern enforced at the view level.</p>
+        </div>
+        <div class="card">
+          <h3>dbt Macros</h3>
+          <p><code>{{ suppress_below(4) }}</code> wraps the CASE WHEN pattern. One macro, one threshold, consistent across all models.</p>
+        </div>
+        <div class="card">
+          <h3>Open Policy Agent (OPA)</h3>
+          <p>External policy engine. "Can user X see team Y's data?" is evaluated by OPA, query constructed accordingly.</p>
+        </div>
+        <div class="card">
+          <h3>ABAC</h3>
+          <p>Attribute-Based Access Control. Policies reference user attributes (role, team) and data attributes (sensitivity level) to make access decisions.</p>
+        </div>
+      </div>
+
+      <h3>The dbt Macro Pattern</h3>
+      <pre><code>-- macros/suppress_below.sql
+{% macro suppress_below(column, threshold=4) %}
+    CASE WHEN COUNT(*) >= {{ threshold }} THEN {{ column }} END
+{% endmacro %}
+
+-- models/team_scores.sql
+SELECT team,
+       {{ suppress_below('ROUND(AVG(score), 2)') }} AS avg_score
+FROM {{ ref('stg_responses') }}
+GROUP BY team</code></pre>
+
+      <div class="callout callout-tip">
+        <strong>The CASE WHEN pattern</strong>
+        This is the core SQL idiom for suppression. It appears everywhere -- in views, in dbt models, in ad-hoc queries. Know it cold:
+        <pre><code>CASE WHEN COUNT(*) >= 4 THEN ROUND(AVG(score), 2) END AS avg_score</code></pre>
+        When the count is below threshold, <code>CASE WHEN</code> with no <code>ELSE</code> returns NULL automatically.
+      </div>
+
+      <!-- ════════════════════════════════════════════════════════════ -->
+      <!-- SECTION: Industry Parallels                                 -->
+      <!-- ════════════════════════════════════════════════════════════ -->
+      <h2 id="industry">Industry Parallels</h2>
+
+      <p>These patterns have decades of precedent across regulated industries:</p>
+
+      <details>
+        <summary>HIPAA (Healthcare)</summary>
+        <div class="details-content">
+          <p>The Safe Harbor method requires suppression of cells with fewer than a threshold (often set at the "expert determination" level). Geographic data must be generalized to regions with 20,000+ population. Dates must be generalized to years for patients over 89.</p>
+          <p>Healthcare suppression patterns are the most mature and well-documented of any industry.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>Bureau of Labor Statistics</summary>
+        <div class="details-content">
+          <p>BLS publishes employment statistics suppressed at multiple levels. If publishing county-level data would reveal a single employer's workforce, the entire county cell is suppressed.</p>
+          <p>They also apply <strong>complementary suppression</strong>: if suppressing one cell makes another cell calculable by subtraction from a published total, the second cell must also be suppressed. This is more sophisticated than simple threshold-based suppression.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>FERPA (Education)</summary>
+        <div class="details-content">
+          <p>Student education records require suppression when cell sizes are small enough to identify individual students. Typical thresholds range from 5-10 depending on the institution and data type.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>Census Bureau -- Differential Privacy</summary>
+        <div class="details-content">
+          <p>The Census Bureau's Disclosure Avoidance System is the most sophisticated suppression framework in existence. For the 2020 Census, they adopted <strong>differential privacy</strong> -- adding calibrated noise to published statistics rather than suppressing cells.</p>
+          <p>This is a more advanced approach than k-anonymity but solves the same fundamental problem: preventing individual identification from aggregate statistics.</p>
+        </div>
+      </details>
+
+      <!-- ════════════════════════════════════════════════════════════ -->
+      <!-- SECTION: Key Takeaways                                      -->
+      <!-- ════════════════════════════════════════════════════════════ -->
+      <h2 id="takeaways">Key Takeaways</h2>
+
+      <div class="card" style="border-left: 4px solid var(--accent);">
+        <ol>
+          <li><strong>Suppression exists</strong> because small-group aggregates can be reversed to identify individual responses</li>
+          <li><strong>k-anonymity</strong> formalizes the minimum group size requirement -- survey "minimum N" is k-anonymity on report dimensions</li>
+          <li><strong>Suppression is per-query</strong>, not per-row. The same data passes or fails depending on the GROUP BY dimensions</li>
+          <li><strong>Enforce close to the data</strong> -- views, policies, transformation layer. Never rely solely on application code</li>
+          <li><strong>RLS and suppression</strong> solve different problems. RLS controls who sees which rows; suppression controls whether an aggregate is safe to show. Both are needed</li>
+          <li><strong>Column masking</strong> adds a third layer: visible rows with hidden values based on role</li>
+          <li><strong>Policy-as-code</strong> (SQL policies, dbt macros, OPA) makes access rules auditable, testable, and version-controlled</li>
+        </ol>
+      </div>
+
+      <h3>Running the Labs</h3>
+      <div class="callout callout-info">
+        <strong>Lab Index</strong>
+        <ul style="margin-top: 0.5rem;">
+          <li><code>01_suppression_basics.py</code> -- Dynamic suppression across GROUP BY levels (DuckDB)</li>
+          <li><code>02_k_anonymity.py</code> -- Attacker scenario with quasi-identifiers (DuckDB)</li>
+          <li><code>03_row_level_security.py</code> -- RLS with PostgreSQL roles and policies (requires PostgreSQL)</li>
+          <li><code>04_dynamic_masking.py</code> -- Column masking via function + view (requires PostgreSQL)</li>
+          <li><code>05_suppression_as_policy.py</code> -- Three enforcement approaches compared (DuckDB)</li>
+        </ul>
+        <p style="margin-top: 0.5rem;">Run from the project root: <code>cd ~/Development/GithubRepo/ravi_engineering/dev_workspace/data-engineering-learning && uv run python labs/07_suppression_access_control/&lt;script&gt;.py</code></p>
+      </div>
+
+    </main>
+
+    <footer>
+      <h2>Sources</h2>
+      <div class="source"><code>notes/07_suppression_access_control.md</code></div>
+      <div class="source"><code>labs/07_suppression_access_control/01_suppression_basics.py</code></div>
+      <div class="source"><code>labs/07_suppression_access_control/02_k_anonymity.py</code></div>
+      <div class="source"><code>labs/07_suppression_access_control/03_row_level_security.py</code></div>
+      <div class="source"><code>labs/07_suppression_access_control/04_dynamic_masking.py</code></div>
+      <div class="source"><code>labs/07_suppression_access_control/05_suppression_as_policy.py</code></div>
+    </footer>
+  </div>
+
+  <script>
+    (function() {
+      var toggle = document.getElementById('theme-toggle');
+      var KEY = 'synthesis-theme';
+
+      function setTheme(t) {
+        document.documentElement.setAttribute('data-theme', t);
+        toggle.setAttribute('aria-label',
+          t === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+        try { localStorage.setItem(KEY, t); } catch(e) {}
+      }
+
+      var saved = null;
+      try { saved = localStorage.getItem(KEY); } catch(e) {}
+
+      if (saved) {
+        setTheme(saved);
+      } else {
+        setTheme(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      }
+
+      toggle.addEventListener('click', function() {
+        var current = document.documentElement.getAttribute('data-theme');
+        setTheme(current === 'dark' ? 'light' : 'dark');
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,47 @@
+version: 2
+
+models:
+  - name: survey_responses_cleaned
+    description: "Deduplicated, typed, reverse-scale-corrected survey responses."
+    columns:
+      - name: response_id
+        data_tests:
+          - unique
+          - not_null
+      - name: score
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3, 4, 5]
+                quote: false
+      - name: team_id
+        data_tests:
+          - not_null
+      - name: question_id
+        data_tests:
+          - not_null
+      - name: category
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['Basic Needs', 'Individual', 'Teamwork', 'Growth']
+
+  - name: team_hierarchy_scd
+    description: "Team dimension with hierarchy path."
+    columns:
+      - name: team_id
+        data_tests:
+          - unique
+          - not_null
+
+  - name: suppression_flags
+    description: "Per-team suppression flags based on respondent count threshold."
+    columns:
+      - name: team_id
+        data_tests:
+          - unique
+          - not_null
+      - name: is_suppressed
+        data_tests:
+          - not_null

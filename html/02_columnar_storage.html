@@ -1,0 +1,1251 @@
+<!--
+  Synthesis Page: Columnar Storage and Modern Query Engines
+  Generated: 2026-08-23
+  Sources:
+  notes/02_columnar_storage.md
+  labs/02_columnar_storage/01_row_vs_column.py
+  labs/02_columnar_storage/02_compression_demo.py
+  labs/02_columnar_storage/03_predicate_pushdown.py
+  labs/02_columnar_storage/04_vectorized_execution.py
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Columnar Storage and Modern Query Engines</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --bg-secondary: #f5f7fa;
+      --text: #1a1a2e;
+      --text-secondary: #555770;
+      --border: #e0e0e8;
+      --accent: #4a6cf7;
+      --accent-soft: #eef0ff;
+      --code-bg: #f0f2f8;
+      --card-bg: #ffffff;
+      --card-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      --callout-info: #e8f0fe;
+      --callout-warn: #fef7e0;
+      --callout-tip: #e6f9ef;
+      --callout-info-border: #4a6cf7;
+      --callout-warn-border: #e6a817;
+      --callout-tip-border: #27ae60;
+    }
+
+    [data-theme="dark"] {
+      --bg: #0f0f1a;
+      --bg-secondary: #1a1a2e;
+      --text: #e0e0ec;
+      --text-secondary: #9999b0;
+      --border: #2a2a40;
+      --accent: #6b8cff;
+      --accent-soft: #1a1a3e;
+      --code-bg: #1e1e32;
+      --card-bg: #16162a;
+      --card-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      --callout-info: #141430;
+      --callout-warn: #1e1a10;
+      --callout-tip: #0e1e14;
+      --callout-info-border: #6b8cff;
+      --callout-warn-border: #d4a017;
+      --callout-tip-border: #2ecc71;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    /* ── Header ── */
+    header {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 2.5rem 2rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    header h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.3;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-shrink: 0;
+      padding-top: 0.35rem;
+    }
+
+    .meta-date {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+
+    /* ── Theme button ── */
+    .theme-btn {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg-secondary);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.7rem;
+      flex-shrink: 0;
+      transition: background 0.2s ease, border-color 0.2s ease;
+      color: var(--text-secondary);
+      font-family: inherit;
+      font-size: 0.8rem;
+      font-weight: 500;
+      line-height: 1;
+    }
+
+    .theme-btn:hover {
+      background: var(--border);
+      color: var(--text);
+    }
+
+    .theme-btn:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .theme-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .theme-btn .icon-sun,
+    .theme-btn .icon-moon,
+    .theme-btn .label-light,
+    .theme-btn .label-dark {
+      display: none;
+    }
+
+    [data-theme="dark"] .theme-btn .icon-sun { display: block; }
+    [data-theme="dark"] .theme-btn .label-dark { display: inline; }
+    :root:not([data-theme="dark"]) .theme-btn .icon-moon { display: block; }
+    :root:not([data-theme="dark"]) .theme-btn .label-light { display: inline; }
+    [data-theme="light"] .theme-btn .icon-moon { display: block; }
+    [data-theme="light"] .theme-btn .label-light { display: inline; }
+
+    /* ── Main ── */
+    main {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 2rem 3rem;
+    }
+
+    main h2 {
+      font-size: 1.35rem;
+      font-weight: 600;
+      margin: 2.5rem 0 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 2px solid var(--border);
+      letter-spacing: -0.01em;
+    }
+
+    main h2:first-child {
+      margin-top: 0.5rem;
+    }
+
+    main h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin: 1.8rem 0 0.6rem;
+    }
+
+    main p { margin: 0.8rem 0; }
+
+    main ul, main ol {
+      margin: 0.8rem 0;
+      padding-left: 1.6rem;
+    }
+
+    main li { margin: 0.35rem 0; }
+    main li strong { color: var(--accent); }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.2s;
+    }
+
+    a:hover { border-bottom-color: var(--accent); }
+
+    code {
+      font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+      font-size: 0.88em;
+      background: var(--code-bg);
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+    }
+
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      overflow-x: auto;
+      margin: 1rem 0;
+    }
+
+    pre code {
+      background: none;
+      padding: 0;
+      font-size: 0.85em;
+      line-height: 1.6;
+    }
+
+    blockquote {
+      border-left: 3px solid var(--accent);
+      padding: 0.6rem 1rem;
+      margin: 1rem 0;
+      background: var(--accent-soft);
+      border-radius: 0 6px 6px 0;
+      color: var(--text-secondary);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.92em;
+    }
+
+    th, td {
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      font-weight: 600;
+      background: var(--bg-secondary);
+      white-space: nowrap;
+    }
+
+    tr:hover td { background: var(--bg-secondary); }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.2rem 1.4rem;
+      margin: 1rem 0;
+      box-shadow: var(--card-shadow);
+      transition: box-shadow 0.2s ease, transform 0.2s ease;
+    }
+
+    .card:hover {
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+      transform: translateY(-1px);
+    }
+
+    [data-theme="dark"] .card:hover {
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    }
+
+    .card h3 { margin-top: 0; }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+
+    .card-grid .card { margin: 0; }
+
+    /* ── Callouts ── */
+    .callout {
+      padding: 0.8rem 1rem;
+      border-radius: 8px;
+      margin: 1rem 0;
+      border-left: 4px solid;
+    }
+
+    .callout-info {
+      background: var(--callout-info);
+      border-left-color: var(--callout-info-border);
+    }
+
+    .callout-warn {
+      background: var(--callout-warn);
+      border-left-color: var(--callout-warn-border);
+    }
+
+    .callout-tip {
+      background: var(--callout-tip);
+      border-left-color: var(--callout-tip-border);
+    }
+
+    .callout strong {
+      display: block;
+      margin-bottom: 0.3rem;
+    }
+
+    /* ── Table of contents ── */
+    nav.toc {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.4rem;
+      margin: 1.5rem 0;
+    }
+
+    nav.toc ul { list-style: none; padding-left: 0; }
+    nav.toc li { margin: 0.3rem 0; }
+
+    nav.toc a {
+      color: var(--text-secondary);
+      font-size: 0.92em;
+    }
+
+    nav.toc a:hover { color: var(--accent); }
+
+    /* ── SVG ── */
+    svg text { fill: var(--text); }
+    svg .stroke { stroke: var(--border); }
+
+    /* ── Footer ── */
+    footer {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 2rem;
+      border-top: 1px solid var(--border);
+    }
+
+    footer h2 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    footer .source {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin: 0.25rem 0;
+    }
+
+    footer .source code { font-size: 0.85em; }
+
+    /* ── Sidebar ── */
+    .page-wrapper {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      width: 260px;
+      flex-shrink: 0;
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border);
+      padding: 1.5rem 0;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+
+    .sidebar h2 {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-secondary);
+      padding: 0 1.2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .sidebar ol {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .sidebar ol li a {
+      display: block;
+      padding: 0.4rem 1.2rem;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      border-bottom: none;
+      transition: background 0.15s, color 0.15s;
+      line-height: 1.4;
+    }
+
+    .sidebar ol li a:hover {
+      background: var(--border);
+      color: var(--text);
+      border-bottom: none;
+    }
+
+    .sidebar ol li.active a {
+      color: var(--accent);
+      background: var(--accent-soft);
+      font-weight: 600;
+      border-left: 3px solid var(--accent);
+      padding-left: calc(1.2rem - 3px);
+    }
+
+    .sidebar .topic-num {
+      display: inline-block;
+      width: 1.4em;
+      color: var(--text-secondary);
+      opacity: 0.6;
+      font-size: 0.8em;
+    }
+
+    .sidebar ol li.active .topic-num {
+      color: var(--accent);
+      opacity: 0.8;
+    }
+
+    .main-content {
+      flex: 1;
+      min-width: 0;
+      max-width: 900px;
+    }
+
+    .main-content header {
+      max-width: none;
+      padding: 2.5rem 2.5rem 1.5rem;
+    }
+
+    .main-content main {
+      max-width: none;
+      padding: 0 2.5rem 3rem;
+    }
+
+    .main-content footer {
+      max-width: none;
+      padding: 2rem 2.5rem;
+    }
+
+    /* ── Syntax highlighting ── */
+    .kw { color: #7c3aed; }       /* keywords */
+    .fn { color: #0369a1; }       /* functions */
+    .str { color: #16a34a; }      /* strings */
+    .num { color: #c2410c; }      /* numbers */
+    .cmt { color: #6b7280; font-style: italic; }  /* comments */
+    .op { color: var(--text-secondary); }          /* operators */
+
+    [data-theme="dark"] .kw { color: #a78bfa; }
+    [data-theme="dark"] .fn { color: #38bdf8; }
+    [data-theme="dark"] .str { color: #4ade80; }
+    [data-theme="dark"] .num { color: #fb923c; }
+    [data-theme="dark"] .cmt { color: #9ca3af; }
+
+    /* ── Details/Summary ── */
+    details {
+      margin: 1rem 0;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    details summary {
+      padding: 0.7rem 1rem;
+      cursor: pointer;
+      background: var(--bg-secondary);
+      font-weight: 600;
+      font-size: 0.95em;
+      user-select: none;
+      list-style: none;
+    }
+
+    details summary::-webkit-details-marker { display: none; }
+
+    details summary::before {
+      content: "\25B6\00a0";
+      font-size: 0.7em;
+      vertical-align: middle;
+      transition: transform 0.2s;
+      display: inline-block;
+    }
+
+    details[open] summary::before {
+      transform: rotate(90deg);
+    }
+
+    details .detail-content {
+      padding: 0.8rem 1rem;
+    }
+
+    /* ── Try-it callout ── */
+    .try-it {
+      background: var(--callout-tip);
+      border: 1px solid var(--callout-tip-border);
+      border-radius: 8px;
+      padding: 0.8rem 1rem;
+      margin: 1rem 0;
+    }
+
+    .try-it strong {
+      color: var(--callout-tip-border);
+    }
+
+    /* ── Performance bars ── */
+    .perf-bar {
+      height: 22px;
+      border-radius: 4px;
+      display: inline-block;
+      vertical-align: middle;
+      min-width: 4px;
+    }
+
+    .perf-label {
+      font-size: 0.85em;
+      font-weight: 600;
+      margin-left: 0.5rem;
+    }
+
+    /* ── SVG theme-aware ── */
+    svg .fill-bg { fill: var(--bg); }
+    svg .fill-bg2 { fill: var(--bg-secondary); }
+    svg .fill-card { fill: var(--card-bg); }
+    svg .stroke-border { stroke: var(--border); }
+    svg .fill-text { fill: var(--text); }
+    svg .fill-text2 { fill: var(--text-secondary); }
+    svg .fill-accent { fill: var(--accent); }
+
+    /* color-coded table cells */
+    .cell-fast { background: #dcfce7; color: #166534; }
+    .cell-slow { background: #fee2e2; color: #991b1b; }
+    .cell-mid  { background: #fef9c3; color: #854d0e; }
+
+    [data-theme="dark"] .cell-fast { background: #14532d; color: #86efac; }
+    [data-theme="dark"] .cell-slow { background: #450a0a; color: #fca5a5; }
+    [data-theme="dark"] .cell-mid  { background: #422006; color: #fde047; }
+
+    /* ── Hamburger for mobile sidebar ── */
+    .sidebar-toggle {
+      display: none;
+      position: fixed;
+      bottom: 1.2rem;
+      left: 1.2rem;
+      z-index: 1000;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 44px;
+      height: 44px;
+      font-size: 1.3rem;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      line-height: 1;
+    }
+
+    @media (max-width: 900px) {
+      .sidebar {
+        position: fixed;
+        left: -280px;
+        top: 0;
+        z-index: 999;
+        transition: left 0.3s ease;
+        box-shadow: 4px 0 16px rgba(0,0,0,0.1);
+      }
+      .sidebar.open { left: 0; }
+      .sidebar-toggle { display: block; }
+      .main-content header { padding: 1.5rem 1.2rem 1rem; flex-direction: column; }
+      .main-content main { padding: 0 1.2rem 2rem; }
+      .main-content footer { padding: 1.5rem 1.2rem; }
+      .card-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 600px) {
+      header { flex-direction: column; }
+      .card-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-wrapper">
+    <!-- Sidebar navigation -->
+    <nav class="sidebar" id="sidebar">
+      <h2>Topics</h2>
+      <ol>
+        <li><a href="01_warehousing_fundamentals.html"><span class="topic-num">1.</span> Warehousing Fundamentals</a></li>
+        <li class="active"><a href="02_columnar_storage.html"><span class="topic-num">2.</span> Columnar Storage</a></li>
+        <li><a href="03_medallion_and_dbt.html"><span class="topic-num">3.</span> Medallion Architecture + dbt</a></li>
+        <li><a href="04_precomputation_vs_runtime.html"><span class="topic-num">4.</span> Pre-computation vs Runtime</a></li>
+        <li><a href="05_dynamic_schema_eav.html"><span class="topic-num">5.</span> Dynamic Schema / EAV</a></li>
+        <li><a href="06_oltp_olap_spectrum.html"><span class="topic-num">6.</span> OLTP vs OLAP Spectrum</a></li>
+        <li><a href="07_suppression_access_control.html"><span class="topic-num">7.</span> Suppression &amp; Access Control</a></li>
+        <li><a href="08_frontier_survey_platforms.html"><span class="topic-num">8.</span> Frontier Survey Platforms</a></li>
+        <li><a href="09_agentic_data_access.html"><span class="topic-num">9.</span> Agentic Data Access</a></li>
+      </ol>
+    </nav>
+
+    <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle navigation">&#9776;</button>
+
+    <div class="main-content">
+      <header>
+        <h1>Columnar Storage and Modern Query Engines</h1>
+        <div class="header-right">
+          <span class="meta-date">2026-08-23</span>
+          <button class="theme-btn" id="theme-toggle" aria-label="Toggle dark mode">
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+            </svg>
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+            <span class="label-light">Light</span>
+            <span class="label-dark">Dark</span>
+          </button>
+        </div>
+      </header>
+
+      <main>
+
+    <!-- ═══════════════════ TABLE OF CONTENTS ═══════════════════ -->
+    <nav class="toc">
+      <ul>
+        <li><a href="#physical-layout">Physical Layout: Row vs Column</a></li>
+        <li><a href="#three-advantages">Three Stacking Advantages</a></li>
+        <li><a href="#compression">Compression Techniques</a></li>
+        <li><a href="#predicate-pushdown">Predicate Pushdown &amp; Late Materialization</a></li>
+        <li><a href="#snowflake">Snowflake Micro-Partitions</a></li>
+        <li><a href="#vectorized">Vectorized Execution</a></li>
+        <li><a href="#lab-results">Lab Results</a></li>
+        <li><a href="#limitations">What Columnar Does NOT Solve</a></li>
+      </ul>
+    </nav>
+
+    <!-- ═══════════════════ SECTION 1: PHYSICAL LAYOUT ═══════════════════ -->
+    <h2 id="physical-layout">Physical Layout: Row vs Column</h2>
+
+    <p>Every database stores data in <strong>pages</strong> (typically 4-8 KB blocks on disk). The difference between row-oriented and column-oriented storage is <em>what goes into each page</em>. This is not an abstraction &mdash; it determines which disk blocks the OS reads when you run a query.</p>
+
+    <!-- Row vs Column SVG Diagram -->
+    <svg viewBox="0 0 780 340" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:780px;margin:1.5rem auto;display:block;" role="img" aria-label="Row vs column storage layout diagram showing how data is physically arranged in disk pages">
+      <!-- Row Storage side -->
+      <text x="170" y="24" text-anchor="middle" font-size="14" font-weight="700" class="fill-text">Row-Oriented (PostgreSQL)</text>
+      <text x="170" y="42" text-anchor="middle" font-size="11" class="fill-text2">Each page = complete rows</text>
+
+      <!-- Page 1 -->
+      <rect x="20" y="55" width="300" height="80" rx="6" fill="none" stroke="var(--border)" stroke-width="1.5"/>
+      <text x="30" y="50" font-size="10" font-weight="600" class="fill-text2">DISK PAGE 1</text>
+
+      <rect x="30" y="63" width="50" height="20" rx="3" fill="#dbeafe" stroke="#93c5fd"/>
+      <text x="55" y="77" text-anchor="middle" font-size="9" fill="#1e40af">id</text>
+      <rect x="84" y="63" width="55" height="20" rx="3" fill="#fce7f3" stroke="#f9a8d4"/>
+      <text x="111" y="77" text-anchor="middle" font-size="9" fill="#9d174d">name</text>
+      <rect x="143" y="63" width="55" height="20" rx="3" fill="#d1fae5" stroke="#6ee7b7"/>
+      <text x="170" y="77" text-anchor="middle" font-size="9" fill="#065f46">team</text>
+      <rect x="202" y="63" width="36" height="20" rx="3" fill="#fef3c7" stroke="#fcd34d"/>
+      <text x="220" y="77" text-anchor="middle" font-size="9" fill="#92400e">q01</text>
+      <rect x="242" y="63" width="36" height="20" rx="3" fill="#fef3c7" stroke="#fcd34d"/>
+      <text x="260" y="77" text-anchor="middle" font-size="9" fill="#92400e">q02</text>
+      <rect x="282" y="63" width="28" height="20" rx="3" fill="#e5e7eb" stroke="#9ca3af"/>
+      <text x="296" y="77" text-anchor="middle" font-size="8" fill="#6b7280">...</text>
+
+      <rect x="30" y="88" width="50" height="20" rx="3" fill="#dbeafe" stroke="#93c5fd"/>
+      <text x="55" y="102" text-anchor="middle" font-size="9" fill="#1e40af">id</text>
+      <rect x="84" y="88" width="55" height="20" rx="3" fill="#fce7f3" stroke="#f9a8d4"/>
+      <text x="111" y="102" text-anchor="middle" font-size="9" fill="#9d174d">name</text>
+      <rect x="143" y="88" width="55" height="20" rx="3" fill="#d1fae5" stroke="#6ee7b7"/>
+      <text x="170" y="102" text-anchor="middle" font-size="9" fill="#065f46">team</text>
+      <rect x="202" y="88" width="36" height="20" rx="3" fill="#fef3c7" stroke="#fcd34d"/>
+      <text x="220" y="102" text-anchor="middle" font-size="9" fill="#92400e">q01</text>
+      <rect x="242" y="88" width="36" height="20" rx="3" fill="#fef3c7" stroke="#fcd34d"/>
+      <text x="260" y="102" text-anchor="middle" font-size="9" fill="#92400e">q02</text>
+      <rect x="282" y="88" width="28" height="20" rx="3" fill="#e5e7eb" stroke="#9ca3af"/>
+      <text x="296" y="102" text-anchor="middle" font-size="8" fill="#6b7280">...</text>
+
+      <rect x="30" y="113" width="50" height="20" rx="3" fill="#dbeafe" stroke="#93c5fd"/>
+      <text x="55" y="127" text-anchor="middle" font-size="9" fill="#1e40af">id</text>
+      <rect x="84" y="113" width="55" height="20" rx="3" fill="#fce7f3" stroke="#f9a8d4"/>
+      <text x="111" y="127" text-anchor="middle" font-size="9" fill="#9d174d">name</text>
+      <rect x="143" y="113" width="55" height="20" rx="3" fill="#d1fae5" stroke="#6ee7b7"/>
+      <text x="170" y="127" text-anchor="middle" font-size="9" fill="#065f46">team</text>
+      <rect x="202" y="113" width="36" height="20" rx="3" fill="#fef3c7" stroke="#fcd34d"/>
+      <text x="220" y="127" text-anchor="middle" font-size="9" fill="#92400e">q01</text>
+      <rect x="242" y="113" width="36" height="20" rx="3" fill="#fef3c7" stroke="#fcd34d"/>
+      <text x="260" y="127" text-anchor="middle" font-size="9" fill="#92400e">q02</text>
+      <rect x="282" y="113" width="28" height="20" rx="3" fill="#e5e7eb" stroke="#9ca3af"/>
+      <text x="296" y="127" text-anchor="middle" font-size="8" fill="#6b7280">...</text>
+
+      <!-- Annotation: "SELECT AVG(q01)" highlights -->
+      <text x="170" y="158" text-anchor="middle" font-size="10" class="fill-text2">SELECT AVG(q01): must read ALL columns per row</text>
+      <line x1="220" y1="62" x2="220" y2="135" stroke="#ef4444" stroke-width="2" stroke-dasharray="4" opacity="0.6"/>
+
+      <!-- Column Storage side -->
+      <text x="590" y="24" text-anchor="middle" font-size="14" font-weight="700" class="fill-text">Column-Oriented (DuckDB)</text>
+      <text x="590" y="42" text-anchor="middle" font-size="11" class="fill-text2">Each page = one column, many rows</text>
+
+      <!-- team_id column page -->
+      <rect x="440" y="55" width="300" height="35" rx="6" fill="none" stroke="var(--border)" stroke-width="1.5"/>
+      <text x="445" y="50" font-size="10" font-weight="600" class="fill-text2">PAGE: team_id column</text>
+      <rect x="450" y="62" width="40" height="20" rx="3" fill="#d1fae5" stroke="#6ee7b7"/>
+      <text x="470" y="76" text-anchor="middle" font-size="8" fill="#065f46">eng</text>
+      <rect x="494" y="62" width="40" height="20" rx="3" fill="#d1fae5" stroke="#6ee7b7"/>
+      <text x="514" y="76" text-anchor="middle" font-size="8" fill="#065f46">eng</text>
+      <rect x="538" y="62" width="40" height="20" rx="3" fill="#d1fae5" stroke="#6ee7b7"/>
+      <text x="558" y="76" text-anchor="middle" font-size="8" fill="#065f46">eng</text>
+      <rect x="582" y="62" width="44" height="20" rx="3" fill="#d1fae5" stroke="#6ee7b7"/>
+      <text x="604" y="76" text-anchor="middle" font-size="8" fill="#065f46">sales</text>
+      <rect x="630" y="62" width="44" height="20" rx="3" fill="#d1fae5" stroke="#6ee7b7"/>
+      <text x="652" y="76" text-anchor="middle" font-size="8" fill="#065f46">sales</text>
+      <rect x="678" y="62" width="28" height="20" rx="3" fill="#e5e7eb" stroke="#9ca3af"/>
+      <text x="692" y="76" text-anchor="middle" font-size="8" fill="#6b7280">...</text>
+
+      <!-- q01 column page (highlighted) -->
+      <rect x="440" y="100" width="300" height="35" rx="6" fill="none" stroke="#22c55e" stroke-width="2.5"/>
+      <text x="445" y="96" font-size="10" font-weight="600" fill="#16a34a">PAGE: q01 column</text>
+      <rect x="450" y="107" width="30" height="20" rx="3" fill="#fef3c7" stroke="#fcd34d"/>
+      <text x="465" y="121" text-anchor="middle" font-size="9" fill="#92400e">4</text>
+      <rect x="484" y="107" width="30" height="20" rx="3" fill="#fef3c7" stroke="#fcd34d"/>
+      <text x="499" y="121" text-anchor="middle" font-size="9" fill="#92400e">5</text>
+      <rect x="518" y="107" width="30" height="20" rx="3" fill="#fef3c7" stroke="#fcd34d"/>
+      <text x="533" y="121" text-anchor="middle" font-size="9" fill="#92400e">3</text>
+      <rect x="552" y="107" width="30" height="20" rx="3" fill="#fef3c7" stroke="#fcd34d"/>
+      <text x="567" y="121" text-anchor="middle" font-size="9" fill="#92400e">4</text>
+      <rect x="586" y="107" width="30" height="20" rx="3" fill="#fef3c7" stroke="#fcd34d"/>
+      <text x="601" y="121" text-anchor="middle" font-size="9" fill="#92400e">5</text>
+      <rect x="620" y="107" width="30" height="20" rx="3" fill="#fef3c7" stroke="#fcd34d"/>
+      <text x="635" y="121" text-anchor="middle" font-size="9" fill="#92400e">4</text>
+      <rect x="654" y="107" width="30" height="20" rx="3" fill="#fef3c7" stroke="#fcd34d"/>
+      <text x="669" y="121" text-anchor="middle" font-size="9" fill="#92400e">3</text>
+      <rect x="688" y="107" width="28" height="20" rx="3" fill="#e5e7eb" stroke="#9ca3af"/>
+      <text x="702" y="121" text-anchor="middle" font-size="8" fill="#6b7280">...</text>
+
+      <!-- q02 column page -->
+      <rect x="440" y="145" width="300" height="35" rx="6" fill="none" stroke="var(--border)" stroke-width="1.5"/>
+      <text x="445" y="141" font-size="10" font-weight="600" class="fill-text2">PAGE: q02 column</text>
+      <rect x="450" y="152" width="30" height="20" rx="3" fill="#fef3c7" stroke="#fcd34d"/>
+      <text x="465" y="166" text-anchor="middle" font-size="9" fill="#92400e">3</text>
+      <rect x="484" y="152" width="30" height="20" rx="3" fill="#fef3c7" stroke="#fcd34d"/>
+      <text x="499" y="166" text-anchor="middle" font-size="9" fill="#92400e">4</text>
+      <rect x="518" y="152" width="30" height="20" rx="3" fill="#fef3c7" stroke="#fcd34d"/>
+      <text x="533" y="166" text-anchor="middle" font-size="9" fill="#92400e">4</text>
+      <rect x="552" y="152" width="30" height="20" rx="3" fill="#fef3c7" stroke="#fcd34d"/>
+      <text x="567" y="166" text-anchor="middle" font-size="9" fill="#92400e">5</text>
+      <rect x="586" y="152" width="30" height="20" rx="3" fill="#fef3c7" stroke="#fcd34d"/>
+      <text x="601" y="166" text-anchor="middle" font-size="9" fill="#92400e">3</text>
+      <rect x="620" y="152" width="30" height="20" rx="3" fill="#fef3c7" stroke="#fcd34d"/>
+      <text x="635" y="166" text-anchor="middle" font-size="9" fill="#92400e">4</text>
+      <rect x="654" y="152" width="30" height="20" rx="3" fill="#fef3c7" stroke="#fcd34d"/>
+      <text x="669" y="166" text-anchor="middle" font-size="9" fill="#92400e">4</text>
+      <rect x="688" y="152" width="28" height="20" rx="3" fill="#e5e7eb" stroke="#9ca3af"/>
+      <text x="702" y="166" text-anchor="middle" font-size="8" fill="#6b7280">...</text>
+
+      <text x="590" y="200" text-anchor="middle" font-size="10" fill="#16a34a" font-weight="600">SELECT AVG(q01): reads ONLY the q01 page</text>
+
+      <!-- I/O comparison box at bottom -->
+      <rect x="20" y="220" width="740" height="110" rx="8" fill="var(--bg-secondary)" stroke="var(--border)" stroke-width="1"/>
+      <text x="390" y="244" text-anchor="middle" font-size="13" font-weight="700" class="fill-text">I/O Comparison: SELECT AVG(q01) on a 15-column table</text>
+
+      <text x="40" y="272" font-size="12" font-weight="600" class="fill-text">Row store:</text>
+      <rect x="130" y="260" width="600" height="16" rx="3" fill="#fca5a5" opacity="0.7"/>
+      <text x="740" y="272" font-size="11" font-weight="600" fill="#991b1b">15/15 cols read</text>
+
+      <text x="40" y="302" font-size="12" font-weight="600" class="fill-text">Column store:</text>
+      <rect x="130" y="290" width="40" height="16" rx="3" fill="#86efac" opacity="0.9"/>
+      <text x="180" y="302" font-size="11" font-weight="600" fill="#166534">1/15 cols read</text>
+
+      <text x="390" y="322" text-anchor="middle" font-size="11" class="fill-text2">Column storage reads 1/15th the data = ~14x less I/O for single-column analytical queries</text>
+    </svg>
+
+    <div class="callout callout-info">
+      <strong>The core insight</strong>
+      For <code>SELECT AVG(q01) FROM responses</code>, row storage reads every page in the table because <code>q01</code> is scattered across all pages alongside <code>name</code>, <code>team_id</code>, <code>q02</code>-<code>q12</code>. If the table has 15 columns, roughly 14/15 of the data read from disk is thrown away. Column storage reads only the pages containing the <code>q01</code> column &mdash; 1/15th of the I/O.
+    </div>
+
+    <p>For OLTP workloads &mdash; <code>SELECT * FROM responses WHERE id = 42</code> &mdash; row storage wins. The entire row lives in one page. Column storage must fetch one page per column and reassemble them, which is slower for point lookups.</p>
+
+    <!-- ═══════════════════ SECTION 2: THREE ADVANTAGES ═══════════════════ -->
+    <h2 id="three-advantages">Three Stacking Advantages</h2>
+
+    <p>Three reinforcing advantages stack on top of each other, compounding into the large speedups seen in analytical workloads.</p>
+
+    <div class="card-grid">
+      <div class="card">
+        <h3>1. Column Pruning</h3>
+        <p>Read only the columns the query references. A dashboard query computing <code>AVG(q01)</code> grouped by <code>team_id</code> touches 2 columns out of 50+ in a real survey table.</p>
+        <p style="font-size:0.9em;color:var(--text-secondary);">This is typically the largest contributor to speedup on wide tables.</p>
+      </div>
+      <div class="card">
+        <h3>2. Better Compression</h3>
+        <p>Same-type, similar-value data compresses dramatically better. <code>team_id</code> values are all short strings from a small set. <code>q01</code> values are all integers 1-5.</p>
+        <p style="font-size:0.9em;color:var(--text-secondary);">Compression ratios of 5-10x are common for columnar vs 2-3x for row storage.</p>
+      </div>
+      <div class="card">
+        <h3>3. Vectorized / SIMD</h3>
+        <p>A contiguous array of <code>q01</code> integer values can be processed in CPU-native SIMD batches of 2048 values, sized to fit in the L2 cache (~256 KB).</p>
+        <p style="font-size:0.9em;color:var(--text-secondary);">Row storage interleaves different types, breaking the pattern SIMD needs.</p>
+      </div>
+    </div>
+
+    <!-- Row vs Column performance table -->
+    <h3>Performance by Query Pattern</h3>
+    <div style="overflow-x:auto;">
+    <table>
+      <thead>
+        <tr>
+          <th>Query Pattern</th>
+          <th>Row Store</th>
+          <th>Column Store</th>
+          <th>Winner</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>SELECT AVG(q01)</code> &mdash; narrow scan</td>
+          <td class="cell-slow">Reads all columns</td>
+          <td class="cell-fast">Reads 1 column</td>
+          <td class="cell-fast">Columnar (24x in lab)</td>
+        </tr>
+        <tr>
+          <td><code>SELECT * WHERE id=42</code> &mdash; point lookup</td>
+          <td class="cell-fast">One page, one row</td>
+          <td class="cell-slow">One page per column</td>
+          <td class="cell-fast">Row</td>
+        </tr>
+        <tr>
+          <td><code>INSERT</code> one row</td>
+          <td class="cell-fast">Append to one page</td>
+          <td class="cell-slow">Update every column's storage</td>
+          <td class="cell-fast">Row</td>
+        </tr>
+        <tr>
+          <td><code>AVG</code> of all 12 columns</td>
+          <td class="cell-mid">Reads all (but uses all)</td>
+          <td class="cell-fast">Reads all (compressed, vectorized)</td>
+          <td class="cell-fast">Columnar (7x in lab)</td>
+        </tr>
+        <tr>
+          <td>Filtered aggregation</td>
+          <td class="cell-slow">Full scan + filter</td>
+          <td class="cell-fast">Predicate pushdown</td>
+          <td class="cell-fast">Columnar (4x in lab)</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+
+    <div class="try-it">
+      <strong>Try it yourself</strong>
+      <code>uv run python labs/02_columnar_storage/01_row_vs_column.py</code>
+      <p style="margin:0.3rem 0 0;font-size:0.9em;">Loads 100K rows into PostgreSQL and DuckDB, runs identical analytical queries on both. Watch the query plans to see column pruning in action.</p>
+    </div>
+
+    <!-- ═══════════════════ SECTION 3: COMPRESSION ═══════════════════ -->
+    <h2 id="compression">Compression Techniques</h2>
+
+    <p>Columnar engines choose compression per-column based on data characteristics. The engine inspects statistics (cardinality, value distribution, type) and picks the best technique automatically.</p>
+
+    <h3>Run-Length Encoding (RLE)</h3>
+
+    <p>Replace consecutive identical values with (value, count) pairs. Works best on <strong>low-cardinality columns</strong> &mdash; especially when sorted.</p>
+
+    <!-- RLE SVG Diagram -->
+    <svg viewBox="0 0 700 140" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:700px;margin:1rem auto;display:block;" role="img" aria-label="Run-length encoding compression illustration">
+      <text x="10" y="20" font-size="11" font-weight="600" class="fill-text2">Raw data (8 values, 8 entries stored):</text>
+      <!-- Raw values -->
+      <rect x="10" y="30" width="65" height="26" rx="4" fill="#d1fae5" stroke="#6ee7b7"/><text x="42" y="48" text-anchor="middle" font-size="10" fill="#065f46">eng</text>
+      <rect x="80" y="30" width="65" height="26" rx="4" fill="#d1fae5" stroke="#6ee7b7"/><text x="112" y="48" text-anchor="middle" font-size="10" fill="#065f46">eng</text>
+      <rect x="150" y="30" width="65" height="26" rx="4" fill="#d1fae5" stroke="#6ee7b7"/><text x="182" y="48" text-anchor="middle" font-size="10" fill="#065f46">eng</text>
+      <rect x="220" y="30" width="65" height="26" rx="4" fill="#d1fae5" stroke="#6ee7b7"/><text x="252" y="48" text-anchor="middle" font-size="10" fill="#065f46">eng</text>
+      <rect x="290" y="30" width="65" height="26" rx="4" fill="#d1fae5" stroke="#6ee7b7"/><text x="322" y="48" text-anchor="middle" font-size="10" fill="#065f46">eng</text>
+      <rect x="360" y="30" width="65" height="26" rx="4" fill="#dbeafe" stroke="#93c5fd"/><text x="392" y="48" text-anchor="middle" font-size="10" fill="#1e40af">sales</text>
+      <rect x="430" y="30" width="65" height="26" rx="4" fill="#dbeafe" stroke="#93c5fd"/><text x="462" y="48" text-anchor="middle" font-size="10" fill="#1e40af">sales</text>
+      <rect x="500" y="30" width="65" height="26" rx="4" fill="#dbeafe" stroke="#93c5fd"/><text x="532" y="48" text-anchor="middle" font-size="10" fill="#1e40af">sales</text>
+
+      <!-- Arrow -->
+      <line x1="350" y1="68" x2="350" y2="85" stroke="var(--accent)" stroke-width="2"/>
+      <polygon points="343,82 350,92 357,82" fill="var(--accent)"/>
+      <text x="370" y="82" font-size="10" font-weight="600" class="fill-accent">RLE</text>
+
+      <text x="10" y="108" font-size="11" font-weight="600" class="fill-text2">Compressed (8 values, 2 entries stored):</text>
+      <rect x="10" y="114" width="100" height="26" rx="4" fill="#d1fae5" stroke="#6ee7b7"/><text x="60" y="132" text-anchor="middle" font-size="10" fill="#065f46">(eng, 5)</text>
+      <rect x="118" y="114" width="105" height="26" rx="4" fill="#dbeafe" stroke="#93c5fd"/><text x="170" y="132" text-anchor="middle" font-size="10" fill="#1e40af">(sales, 3)</text>
+      <text x="240" y="132" font-size="10" font-weight="600" fill="#16a34a">75% smaller</text>
+    </svg>
+
+    <h3>Dictionary Encoding</h3>
+
+    <p>Replace string values with integer codes, store the dictionary separately. Beyond storage savings, integer comparisons are faster than string comparisons, so <code>WHERE department = 'Engineering'</code> becomes <code>WHERE dept_code = 0</code> internally.</p>
+
+    <pre><code><span class="cmt">// Dictionary: {0: "Engineering", 1: "Sales", 2: "Product"}</span>
+<span class="cmt">// Raw:        ["Engineering", "Sales", "Engineering", "Product", "Engineering"]</span>
+<span class="cmt">// Encoded:    [0, 1, 0, 2, 0]  &larr; integers instead of strings</span></code></pre>
+
+    <h3>Delta Encoding</h3>
+
+    <p>Store the first value and then differences from each predecessor. The deltas are small numbers that compress well with further encoding. Works best on <strong>sorted or naturally sequential columns</strong> &mdash; timestamps, auto-increment IDs, dates.</p>
+
+    <pre><code><span class="cmt">// Timestamps: [1000, 1001, 1002, 1005, 1006]</span>
+<span class="cmt">// Delta:      [1000, +1,   +1,   +3,   +1]  &larr; small numbers compress well</span></code></pre>
+
+    <h3>How They Combine</h3>
+
+    <p>Real columnar engines layer these techniques. A <code>survey_date</code> column might be delta-encoded (dates become small offsets), then bit-packed (small numbers need fewer bits), then optionally RLE'd if consecutive deltas are identical. The engine chooses automatically based on data statistics.</p>
+
+    <details>
+      <summary>Lab results: DuckDB compression choices (500K rows)</summary>
+      <div class="detail-content">
+        <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr><th>Column</th><th>Distinct Values</th><th>Compression</th><th>Raw Size</th><th>Compressed</th><th>Ratio</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>team_id</code></td><td>8</td><td>Dictionary</td><td>5.2 MB</td><td>13.1 KB</td><td class="cell-fast">409x</td></tr>
+            <tr><td><code>response_value</code></td><td>5</td><td>BitPacking</td><td>1.9 MB</td><td>186.3 KB</td><td class="cell-fast">10.5x</td></tr>
+            <tr><td><code>score_precise</code></td><td>16,001</td><td>ALP (float)</td><td>3.8 MB</td><td>1.3 MB</td><td class="cell-mid">2.9x</td></tr>
+            <tr><td><code>comment_text</code></td><td>10</td><td>Dictionary</td><td>2.4 MB</td><td>140.0 KB</td><td class="cell-fast">17.4x</td></tr>
+            <tr><td><code>custom_q1</code></td><td>5 (95% NULL)</td><td>RLE</td><td>1.9 MB</td><td>49.7 KB</td><td class="cell-fast">39.3x</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p>Lower cardinality = more compressible. The engine picks the right technique per column automatically.</p>
+      </div>
+    </details>
+
+    <!-- NULLs are free -->
+    <h3>Why NULLs Are Free in Columnar Storage</h3>
+
+    <div class="callout callout-warn">
+      <strong>The insight that changes how you think about sparse survey data</strong>
+      A column that is 95% NULL compresses to near-zero storage. The NULL runs collapse: <code>[(NULL, 950), (4, 1), (NULL, 12), (3, 1), ...]</code>. In the lab, a 95% NULL column used only <strong>1.3% of total table storage</strong> &mdash; 49.7 KB out of 3.6 MB.
+    </div>
+
+    <p>This challenges the common concern about "ever-widening tables" in survey data. Adding 20 custom questions that only 5% of respondents answer barely affects storage or query performance in a columnar warehouse. The NULLs compress away. In row storage, those 20 extra columns bloat every page whether they contain data or not.</p>
+
+    <div class="try-it">
+      <strong>Try it yourself</strong>
+      <code>uv run python labs/02_columnar_storage/02_compression_demo.py</code>
+      <p style="margin:0.3rem 0 0;font-size:0.9em;">Creates 500K rows with varying cardinality columns. Shows DuckDB's automatic compression choices and per-column sizes in Parquet export.</p>
+    </div>
+
+    <!-- ═══════════════════ SECTION 4: PREDICATE PUSHDOWN ═══════════════════ -->
+    <h2 id="predicate-pushdown">Predicate Pushdown &amp; Late Materialization</h2>
+
+    <h3>Predicate Pushdown</h3>
+
+    <p>"Push the WHERE clause down to the storage layer" &mdash; filter rows before they leave disk, rather than reading everything and filtering in memory.</p>
+
+    <!-- Predicate Pushdown SVG -->
+    <svg viewBox="0 0 720 260" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:720px;margin:1.5rem auto;display:block;" role="img" aria-label="Predicate pushdown flow diagram showing how blocks are skipped using min/max metadata">
+      <text x="360" y="20" text-anchor="middle" font-size="13" font-weight="700" class="fill-text">SELECT AVG(q01) WHERE team_id = 'Engineering'</text>
+
+      <!-- Blocks with min/max metadata -->
+      <text x="20" y="48" font-size="11" font-weight="600" class="fill-text2">Data blocks with min/max metadata (sorted by team_id):</text>
+
+      <!-- Block 1: Eng - skip=no -->
+      <rect x="20" y="58" width="130" height="55" rx="6" fill="var(--card-bg)" stroke="#22c55e" stroke-width="2"/>
+      <text x="85" y="76" text-anchor="middle" font-size="10" font-weight="600" fill="#16a34a">Block 1</text>
+      <text x="85" y="90" text-anchor="middle" font-size="9" class="fill-text2">min: Engineering</text>
+      <text x="85" y="102" text-anchor="middle" font-size="9" class="fill-text2">max: Engineering</text>
+
+      <!-- Block 2: Finance - skip=yes -->
+      <rect x="160" y="58" width="130" height="55" rx="6" fill="var(--card-bg)" stroke="#ef4444" stroke-width="2" stroke-dasharray="6"/>
+      <text x="225" y="76" text-anchor="middle" font-size="10" font-weight="600" fill="#ef4444">Block 2</text>
+      <text x="225" y="90" text-anchor="middle" font-size="9" class="fill-text2">min: Finance</text>
+      <text x="225" y="102" text-anchor="middle" font-size="9" class="fill-text2">max: HR</text>
+
+      <!-- Block 3: Legal - skip=yes -->
+      <rect x="300" y="58" width="130" height="55" rx="6" fill="var(--card-bg)" stroke="#ef4444" stroke-width="2" stroke-dasharray="6"/>
+      <text x="365" y="76" text-anchor="middle" font-size="10" font-weight="600" fill="#ef4444">Block 3</text>
+      <text x="365" y="90" text-anchor="middle" font-size="9" class="fill-text2">min: Legal</text>
+      <text x="365" y="102" text-anchor="middle" font-size="9" class="fill-text2">max: Operations</text>
+
+      <!-- Block 4: skip=yes -->
+      <rect x="440" y="58" width="130" height="55" rx="6" fill="var(--card-bg)" stroke="#ef4444" stroke-width="2" stroke-dasharray="6"/>
+      <text x="505" y="76" text-anchor="middle" font-size="10" font-weight="600" fill="#ef4444">Block 4</text>
+      <text x="505" y="90" text-anchor="middle" font-size="9" class="fill-text2">min: Product</text>
+      <text x="505" y="102" text-anchor="middle" font-size="9" class="fill-text2">max: Sales</text>
+
+      <!-- Block 5: skip=yes -->
+      <rect x="580" y="58" width="130" height="55" rx="6" fill="var(--card-bg)" stroke="#ef4444" stroke-width="2" stroke-dasharray="6"/>
+      <text x="645" y="76" text-anchor="middle" font-size="10" font-weight="600" fill="#ef4444">Block 5</text>
+      <text x="645" y="90" text-anchor="middle" font-size="9" class="fill-text2">min: Support</text>
+      <text x="645" y="102" text-anchor="middle" font-size="9" class="fill-text2">max: Support</text>
+
+      <!-- Labels -->
+      <text x="85" y="130" text-anchor="middle" font-size="10" font-weight="700" fill="#16a34a">READ</text>
+      <text x="225" y="130" text-anchor="middle" font-size="10" font-weight="700" fill="#ef4444">SKIP</text>
+      <text x="365" y="130" text-anchor="middle" font-size="10" font-weight="700" fill="#ef4444">SKIP</text>
+      <text x="505" y="130" text-anchor="middle" font-size="10" font-weight="700" fill="#ef4444">SKIP</text>
+      <text x="645" y="130" text-anchor="middle" font-size="10" font-weight="700" fill="#ef4444">SKIP</text>
+
+      <!-- Summary -->
+      <rect x="20" y="148" width="690" height="50" rx="6" fill="var(--bg-secondary)" stroke="var(--border)"/>
+      <text x="360" y="170" text-anchor="middle" font-size="12" font-weight="600" class="fill-text">With data sorted by team_id: read 1 block, skip 4 blocks = 80% data skipped</text>
+      <text x="360" y="188" text-anchor="middle" font-size="11" class="fill-text2">Unsorted data: Engineering rows scattered across all blocks = fewer blocks skippable</text>
+
+      <!-- Connection to Snowflake -->
+      <text x="360" y="220" text-anchor="middle" font-size="11" class="fill-text2">Same principle as Snowflake <strong class="fill-text">clustering keys</strong>: physically organize data by the columns you filter most.</text>
+      <text x="360" y="240" text-anchor="middle" font-size="11" class="fill-text2">Also called <strong class="fill-text">zone maps</strong>: store min/max per block, skip entire blocks based on WHERE clause.</text>
+    </svg>
+
+    <h3>Late Materialization</h3>
+
+    <p>Traditional query processing reads all columns for matching rows, then evaluates expressions. Late materialization reads only the column(s) needed for the WHERE clause first, identifies which row positions match, then reads the other columns only for those positions.</p>
+
+    <pre><code><span class="cmt">-- SELECT name, q01, q02 FROM responses WHERE team_id = 'Engineering'</span>
+<span class="cmt">--</span>
+<span class="cmt">-- Step 1: Scan ONLY team_id column &rarr; positions [0, 1, 2, 5, 8, ...]</span>
+<span class="cmt">-- Step 2: Read name, q01, q02 ONLY at those positions</span>
+<span class="cmt">-- Step 3: If WHERE eliminates 80% of rows, you avoided reading</span>
+<span class="cmt">--         80% of the other columns</span>
+<span class="cmt">--</span>
+<span class="cmt">-- This compounds with column pruning: fewer columns AND fewer values per column.</span></code></pre>
+
+    <div class="try-it">
+      <strong>Try it yourself</strong>
+      <code>uv run python labs/02_columnar_storage/03_predicate_pushdown.py</code>
+      <p style="margin:0.3rem 0 0;font-size:0.9em;">Builds 1M rows in sorted and unsorted tables, then compares query plans and timing with/without WHERE clauses.</p>
+    </div>
+
+    <!-- ═══════════════════ SECTION 5: SNOWFLAKE ═══════════════════ -->
+    <h2 id="snowflake">Snowflake Micro-Partitions</h2>
+
+    <p>Snowflake stores data in <strong>micro-partitions</strong>: immutable chunks of 50-150 MB, internally columnar and compressed.</p>
+
+    <div class="card-grid">
+      <div class="card">
+        <h3>Immutable</h3>
+        <p>Updates and deletes create new micro-partitions; old ones are garbage-collected. No in-place modification &mdash; this avoids the recompress-on-write problem.</p>
+      </div>
+      <div class="card">
+        <h3>Automatic</h3>
+        <p>You don't manage partitions. Snowflake decides how to split data based on ingestion order.</p>
+      </div>
+      <div class="card">
+        <h3>Min/Max Pruning</h3>
+        <p>Each micro-partition stores min/max of every column. <code>WHERE survey_date = '2025-Q1'</code> can skip partitions whose date range doesn't include Q1 2025.</p>
+      </div>
+      <div class="card">
+        <h3>Clustering Keys</h3>
+        <p><code>CLUSTER BY (team_id)</code> physically reorganizes micro-partitions so rows with similar values land together. Maximizes pruning effectiveness.</p>
+      </div>
+    </div>
+
+    <blockquote>
+      <strong>Analogy:</strong> Micro-partitions are like chapters in a book, and min/max metadata is like the index at the back. Instead of reading every page to find "Chapter 7," you check the index and jump directly to it.
+    </blockquote>
+
+    <!-- ═══════════════════ SECTION 6: VECTORIZED EXECUTION ═══════════════════ -->
+    <h2 id="vectorized">Vectorized Execution</h2>
+
+    <p>Traditional row-at-a-time processing (the <strong>Volcano model</strong>): each operator processes one row, calls the next operator for one row, producing a function call per row per operator. For millions of rows, the overhead is enormous.</p>
+
+    <p>Vectorized execution processes a <strong>batch</strong> of values (DuckDB uses ~2048). The batch is a contiguous array of one column's values. Why 2048? DuckDB sizes batches to fit in the CPU's <strong>L2 cache</strong> (~256 KB). A batch of 2048 int32 values is 8 KB. Multiple columns' batches fit in L2 simultaneously &mdash; data stays in fast cache memory throughout processing.</p>
+
+    <!-- Processing hierarchy SVG -->
+    <svg viewBox="0 0 700 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:700px;margin:1.5rem auto;display:block;" role="img" aria-label="Processing speed hierarchy from Python loop to DuckDB vectorized execution">
+      <text x="350" y="20" text-anchor="middle" font-size="13" font-weight="700" class="fill-text">Processing Speed: Mean of 10M values</text>
+
+      <!-- Python loop bar -->
+      <text x="130" y="52" text-anchor="end" font-size="11" font-weight="600" class="fill-text">Python for-loop</text>
+      <rect x="140" y="40" width="540" height="20" rx="4" fill="#fca5a5" opacity="0.8"/>
+      <text x="690" y="55" font-size="11" font-weight="700" fill="#991b1b">246.6 ms (1x)</text>
+
+      <!-- pandas bar -->
+      <text x="130" y="92" text-anchor="end" font-size="11" font-weight="600" class="fill-text">pandas</text>
+      <rect x="140" y="80" width="13" height="20" rx="4" fill="#fde047" opacity="0.9"/>
+      <text x="162" y="95" font-size="11" font-weight="700" fill="#854d0e">6.0 ms (41x)</text>
+
+      <!-- NumPy bar -->
+      <text x="130" y="132" text-anchor="end" font-size="11" font-weight="600" class="fill-text">NumPy</text>
+      <rect x="140" y="120" width="5" height="20" rx="3" fill="#86efac" opacity="0.9"/>
+      <text x="154" y="135" font-size="11" font-weight="700" fill="#166534">2.1 ms (118x)</text>
+
+      <!-- DuckDB bar -->
+      <text x="130" y="172" text-anchor="end" font-size="11" font-weight="600" class="fill-text">DuckDB SQL</text>
+      <rect x="140" y="160" width="5" height="20" rx="3" fill="#93c5fd" opacity="0.9"/>
+      <text x="154" y="175" font-size="11" font-weight="700" fill="#1e40af">2.2 ms (111x)</text>
+    </svg>
+
+    <details>
+      <summary>Why the differences?</summary>
+      <div class="detail-content">
+        <ul>
+          <li><strong>Python for-loop:</strong> Each iteration pays bytecode dispatch, type checking, float box/unbox, branch prediction miss. Tens of nanoseconds per element &times; 10M elements.</li>
+          <li><strong>pandas:</strong> Wraps the numpy array (zero-copy), then compiled C loop. Small overhead from Series construction.</li>
+          <li><strong>NumPy:</strong> Compiled C with SIMD intrinsics. Processes 4-8 doubles per CPU cycle. Minimal overhead.</li>
+          <li><strong>DuckDB SQL:</strong> Vectorized execution with ~2048-value batches sized for L2 cache. Uses SIMD internally. Small overhead from SQL parsing and query engine pipeline, but nearly matches NumPy on a single <code>AVG()</code>.</li>
+        </ul>
+        <p>The lesson: analytical query engines are fast because they use the same techniques as NumPy (compiled code, SIMD, cache-aware batching) but applied to SQL queries over arbitrary schemas.</p>
+      </div>
+    </details>
+
+    <div class="try-it">
+      <strong>Try it yourself</strong>
+      <code>uv run python labs/02_columnar_storage/04_vectorized_execution.py</code>
+      <p style="margin:0.3rem 0 0;font-size:0.9em;">Benchmarks computing the mean of 10M values four ways. Each method starts from its native format to measure pure computation speed.</p>
+    </div>
+
+    <!-- ═══════════════════ SECTION 7: LAB RESULTS ═══════════════════ -->
+    <h2 id="lab-results">Lab Results Summary</h2>
+
+    <h3>Lab 01: Row vs Column Storage (100K rows)</h3>
+    <div style="overflow-x:auto;">
+    <table>
+      <thead>
+        <tr><th>Query</th><th>PostgreSQL (row)</th><th>DuckDB (columnar)</th><th>Speedup</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Narrow scan: AVG of 1 column</td>
+          <td>5.3 ms</td>
+          <td>0.2 ms</td>
+          <td class="cell-fast">24.3x</td>
+        </tr>
+        <tr>
+          <td>Filtered aggregation</td>
+          <td>5.2 ms</td>
+          <td>1.4 ms</td>
+          <td class="cell-fast">3.7x</td>
+        </tr>
+        <tr>
+          <td>Wide scan: AVG of all 12 columns</td>
+          <td>10.5 ms</td>
+          <td>1.4 ms</td>
+          <td class="cell-fast">7.4x</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+
+    <h3>Lab 02: Compression (500K rows)</h3>
+    <div style="overflow-x:auto;">
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Compression</th><th>Raw</th><th>Compressed</th><th>Ratio</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>team_id</code> (8 distinct)</td><td>Dictionary</td><td>5.2 MB</td><td>13.1 KB</td><td class="cell-fast">409x</td></tr>
+        <tr><td><code>response_value</code> (5 distinct)</td><td>BitPacking</td><td>1.9 MB</td><td>186.3 KB</td><td class="cell-fast">10.5x</td></tr>
+        <tr><td><code>score_precise</code> (16K distinct)</td><td>ALP</td><td>3.8 MB</td><td>1.3 MB</td><td class="cell-mid">2.9x</td></tr>
+        <tr><td><code>custom_q1</code> (95% NULL)</td><td>RLE</td><td>1.9 MB</td><td>49.7 KB</td><td class="cell-fast">39.3x</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p>A 95% NULL column costs only <strong>1.3% of total table storage</strong>. NULLs are essentially free in columnar storage.</p>
+
+    <h3>Lab 03: Predicate Pushdown (1M rows)</h3>
+    <div style="overflow-x:auto;">
+    <table>
+      <thead>
+        <tr><th>Query</th><th>Time (median of 5)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>No filter (full scan)</td><td>0.38 ms</td></tr>
+        <tr><td>Filter on sorted column</td><td>0.89 ms</td></tr>
+        <tr><td>Filter on unsorted column</td><td>1.14 ms</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p>Sorted column filtering enables more effective block skipping via min/max metadata pruning. Note: at 1M rows in-memory, the full scan reads a single column with no predicate overhead, so filtered queries can appear slower. The real pushdown benefit scales with data size, more columns, and disk-bound I/O. The key evidence is in EXPLAIN ANALYZE (block skipping), not raw timing.</p>
+
+    <h3>Lab 04: Vectorized Execution (10M values)</h3>
+    <div style="overflow-x:auto;">
+    <table>
+      <thead>
+        <tr><th>Method</th><th>Time</th><th>vs Python loop</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Python for-loop</td><td>246.6 ms</td><td>1x (baseline)</td></tr>
+        <tr><td>pandas</td><td>6.0 ms</td><td class="cell-fast">41x</td></tr>
+        <tr><td>NumPy</td><td>2.1 ms</td><td class="cell-fast">118x</td></tr>
+        <tr><td>DuckDB SQL</td><td>2.2 ms</td><td class="cell-fast">111x</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <!-- ═══════════════════ SECTION 8: LIMITATIONS ═══════════════════ -->
+    <h2 id="limitations">What Columnar Does NOT Solve</h2>
+
+    <div class="callout callout-warn">
+      <strong>Columnar storage is not a silver bullet</strong>
+      It optimizes data <em>access patterns</em> for analytical queries, but does not fix every data problem.
+    </div>
+
+    <ul>
+      <li><strong>Schema design still matters.</strong> A poorly designed star schema in a columnar warehouse is still slow. Columnar doesn't fix bad grain decisions or missing dimensions.</li>
+      <li><strong>Terrible for OLTP.</strong> Inserting one survey response requires updating every column's storage separately. Point lookups (<code>WHERE id = 42</code>) require reassembling columns. Don't use columnar as a primary store for production applications.</li>
+      <li><strong>Clustering/sort key choices matter.</strong> Predicate pushdown only helps if data is physically organized for skipping. Random layout gets no pruning benefit.</li>
+      <li><strong>Not a replacement for all indexing.</strong> Columnar pruning works on ranges and equality. Complex predicates (full-text search, spatial queries) still need specialized indexes.</li>
+      <li><strong>Compression can backfire for updates.</strong> Compressed blocks must be decompressed, modified, and recompressed. This is why Snowflake uses immutable micro-partitions instead of in-place updates.</li>
+    </ul>
+
+      </main>
+
+      <footer>
+        <h2>Sources</h2>
+        <div class="source"><code>notes/02_columnar_storage.md</code></div>
+        <div class="source"><code>labs/02_columnar_storage/01_row_vs_column.py</code></div>
+        <div class="source"><code>labs/02_columnar_storage/02_compression_demo.py</code></div>
+        <div class="source"><code>labs/02_columnar_storage/03_predicate_pushdown.py</code></div>
+        <div class="source"><code>labs/02_columnar_storage/04_vectorized_execution.py</code></div>
+      </footer>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      var toggle = document.getElementById('theme-toggle');
+      var KEY = 'synthesis-theme';
+
+      function setTheme(t) {
+        document.documentElement.setAttribute('data-theme', t);
+        toggle.setAttribute('aria-label',
+          t === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+        try { localStorage.setItem(KEY, t); } catch(e) {}
+      }
+
+      var saved = null;
+      try { saved = localStorage.getItem(KEY); } catch(e) {}
+
+      if (saved) {
+        setTheme(saved);
+      } else {
+        setTheme(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      }
+
+      toggle.addEventListener('click', function() {
+        var current = document.documentElement.getAttribute('data-theme');
+        setTheme(current === 'dark' ? 'light' : 'dark');
+      });
+
+      // Sidebar toggle for mobile
+      var sidebarToggle = document.getElementById('sidebar-toggle');
+      var sidebar = document.getElementById('sidebar');
+      sidebarToggle.addEventListener('click', function() {
+        sidebar.classList.toggle('open');
+      });
+
+      // Close sidebar when clicking a link on mobile
+      sidebar.addEventListener('click', function(e) {
+        if (e.target.tagName === 'A' && window.innerWidth <= 900) {
+          sidebar.classList.remove('open');
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

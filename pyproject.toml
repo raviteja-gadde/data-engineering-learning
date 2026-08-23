@@ -1,0 +1,28 @@
+# Versions verified from PyPI on 2026-08-23
+[project]
+name = "data-engineering-learning"
+version = "0.1.0"
+description = "Hands-on data engineering learning – warehousing, dbt, Airflow, query engines, access patterns"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "duckdb>=1.5.5",
+    "psycopg2-binary>=2.9.12",
+    "pandas>=3.0.5",
+    "pyarrow>=25.0.1",
+    "sqlalchemy>=2.0.52",
+    "rich>=15.0.0",
+    "matplotlib>=3.11.1",
+]
+
+[project.optional-dependencies]
+snowflake = [
+    # Note: [pandas] extra omitted — snowflake-connector pins pandas<3.0
+    # and this workspace uses pandas 3.x. Use connector's fetch_pandas_*
+    # only after downgrading pandas or in a separate venv.
+    "snowflake-connector-python[secure-local-storage]>=4.7.2",
+]
+dbt = [
+    "dbt-core>=1.12.3",
+    "dbt-duckdb>=1.11.0",
+]

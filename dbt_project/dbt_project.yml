@@ -1,0 +1,22 @@
+name: 'survey_analytics'
+version: '1.0.0'
+config-version: 2
+profile: 'survey_analytics'
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  survey_analytics:
+    bronze:
+      +materialized: view
+    silver:
+      +materialized: table
+    gold:
+      +materialized: table

@@ -1,0 +1,28 @@
+version: 2
+
+models:
+  - name: team_overview_metrics
+    description: "Mean score per team per question category, with suppression status."
+    columns:
+      - name: team_id
+        data_tests:
+          - not_null
+      - name: category
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['Basic Needs', 'Individual', 'Teamwork', 'Growth']
+      - name: mean_score
+        data_tests:
+          - not_null
+
+  - name: category_summary
+    description: "Organization-wide aggregations per question category."
+    columns:
+      - name: category
+        data_tests:
+          - unique
+          - not_null
+      - name: mean_score
+        data_tests:
+          - not_null

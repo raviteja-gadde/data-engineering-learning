@@ -1,0 +1,13 @@
+question_id,question_text,category,is_reverse_scored
+Q01,I know what is expected of me at work,Basic Needs,false
+Q02,I have the materials and equipment I need to do my work right,Basic Needs,false
+Q03,At work I have the opportunity to do what I do best every day,Individual,false
+Q04,In the last seven days I have received recognition for doing good work,Individual,false
+Q05,My supervisor or someone at work seems to care about me as a person,Individual,false
+Q06,There is someone at work who encourages my development,Individual,true
+Q07,At work my opinions seem to count,Teamwork,false
+Q08,The mission or purpose of my organization makes me feel my job is important,Teamwork,false
+Q09,My associates or fellow employees are committed to doing quality work,Teamwork,false
+Q10,I have a best friend at work,Teamwork,false
+Q11,In the last six months someone at work has talked to me about my progress,Growth,false
+Q12,This last year I have had opportunities at work to learn and grow,Growth,false

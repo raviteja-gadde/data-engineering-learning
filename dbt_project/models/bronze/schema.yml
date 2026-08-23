@@ -1,0 +1,36 @@
+version: 2
+
+models:
+  - name: stg_survey_responses
+    description: "Staged survey responses with basic type casting. May contain duplicates."
+    columns:
+      - name: response_id
+        data_tests:
+          - not_null
+      - name: score
+        data_tests:
+          - not_null
+      - name: question_id
+        data_tests:
+          - not_null
+
+  - name: stg_team_hierarchy
+    description: "Staged team hierarchy reference data."
+    columns:
+      - name: team_id
+        data_tests:
+          - unique
+          - not_null
+
+  - name: stg_question_config
+    description: "Staged question configuration with typed boolean for reverse scoring."
+    columns:
+      - name: question_id
+        data_tests:
+          - unique
+          - not_null
+      - name: category
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['Basic Needs', 'Individual', 'Teamwork', 'Growth']

@@ -1,0 +1,1657 @@
+<!--
+  Synthesis Page: Dynamic Schema and EAV Patterns
+  Generated: 2026-08-23
+  Sources:
+  notes/05_dynamic_schema_eav.md
+  labs/05_dynamic_schema_eav/01_eav_model.py
+  labs/05_dynamic_schema_eav/02_slot_mechanism.py
+  labs/05_dynamic_schema_eav/03_json_variant.py
+  labs/05_dynamic_schema_eav/04_sparse_wide_table.py
+  labs/05_dynamic_schema_eav/05_approach_comparison.py
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dynamic Schema and EAV Patterns</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --bg-secondary: #f5f7fa;
+      --text: #1a1a2e;
+      --text-secondary: #555770;
+      --border: #e0e0e8;
+      --accent: #4a6cf7;
+      --accent-soft: #eef0ff;
+      --code-bg: #f0f2f8;
+      --card-bg: #ffffff;
+      --card-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      --callout-info: #e8f0fe;
+      --callout-warn: #fef7e0;
+      --callout-tip: #e6f9ef;
+      --callout-info-border: #4a6cf7;
+      --callout-warn-border: #e6a817;
+      --callout-tip-border: #27ae60;
+      --eav-color: #e74c3c;
+      --slot-color: #e67e22;
+      --json-color: #9b59b6;
+      --wide-color: #27ae60;
+      --eav-bg: #fef0ef;
+      --slot-bg: #fef5ec;
+      --json-bg: #f5eef9;
+      --wide-bg: #ecf9f2;
+      --sidebar-width: 240px;
+      --svg-text: #1a1a2e;
+      --svg-bg: #f5f7fa;
+      --svg-line: #ccc;
+      --good: #27ae60;
+      --mid: #e6a817;
+      --bad: #e74c3c;
+      --good-bg: #e6f9ef;
+      --mid-bg: #fef7e0;
+      --bad-bg: #fef0ef;
+    }
+
+    [data-theme="dark"] {
+      --bg: #0f0f1a;
+      --bg-secondary: #1a1a2e;
+      --text: #e0e0ec;
+      --text-secondary: #9999b0;
+      --border: #2a2a40;
+      --accent: #6b8cff;
+      --accent-soft: #1a1a3e;
+      --code-bg: #1e1e32;
+      --card-bg: #16162a;
+      --card-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      --callout-info: #141430;
+      --callout-warn: #1e1a10;
+      --callout-tip: #0e1e14;
+      --callout-info-border: #6b8cff;
+      --callout-warn-border: #d4a017;
+      --callout-tip-border: #2ecc71;
+      --eav-bg: #2a1515;
+      --slot-bg: #2a1f10;
+      --json-bg: #1f152a;
+      --wide-bg: #0e1e14;
+      --svg-text: #e0e0ec;
+      --svg-bg: #1a1a2e;
+      --svg-line: #444;
+      --good-bg: #0e1e14;
+      --mid-bg: #1e1a10;
+      --bad-bg: #2a1515;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      transition: background 0.3s ease, color 0.3s ease;
+      display: flex;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      position: fixed;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: var(--sidebar-width);
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border);
+      padding: 1.5rem 0;
+      overflow-y: auto;
+      z-index: 100;
+      transition: background 0.3s ease, border-color 0.3s ease;
+    }
+
+    .sidebar h2 {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-secondary);
+      padding: 0 1.2rem;
+      margin-bottom: 0.8rem;
+    }
+
+    .sidebar a {
+      display: block;
+      padding: 0.4rem 1.2rem;
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      text-decoration: none;
+      border-bottom: none;
+      border-left: 3px solid transparent;
+      transition: all 0.15s ease;
+      line-height: 1.5;
+    }
+
+    .sidebar a:hover {
+      color: var(--accent);
+      background: var(--accent-soft);
+      border-bottom: none;
+    }
+
+    .sidebar a.active {
+      color: var(--accent);
+      border-left-color: var(--accent);
+      background: var(--accent-soft);
+      font-weight: 600;
+    }
+
+    .sidebar .topic-num {
+      display: inline-block;
+      width: 1.4em;
+      color: var(--text-secondary);
+      opacity: 0.6;
+      font-size: 0.78rem;
+    }
+
+    /* ── Main content area ── */
+    .content-wrapper {
+      margin-left: var(--sidebar-width);
+      flex: 1;
+      min-width: 0;
+    }
+
+    header {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 2.5rem 2rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    header h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.3;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-shrink: 0;
+      padding-top: 0.35rem;
+    }
+
+    .meta-date {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+
+    /* ── Theme button ── */
+    .theme-btn {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg-secondary);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.7rem;
+      flex-shrink: 0;
+      transition: background 0.2s ease, border-color 0.2s ease;
+      color: var(--text-secondary);
+      font-family: inherit;
+      font-size: 0.8rem;
+      font-weight: 500;
+      line-height: 1;
+    }
+
+    .theme-btn:hover {
+      background: var(--border);
+      color: var(--text);
+    }
+
+    .theme-btn:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .theme-btn svg { width: 16px; height: 16px; }
+
+    .theme-btn .icon-sun,
+    .theme-btn .icon-moon,
+    .theme-btn .label-light,
+    .theme-btn .label-dark { display: none; }
+
+    [data-theme="dark"] .theme-btn .icon-sun { display: block; }
+    [data-theme="dark"] .theme-btn .label-dark { display: inline; }
+    :root:not([data-theme="dark"]) .theme-btn .icon-moon { display: block; }
+    :root:not([data-theme="dark"]) .theme-btn .label-light { display: inline; }
+    [data-theme="light"] .theme-btn .icon-moon { display: block; }
+    [data-theme="light"] .theme-btn .label-light { display: inline; }
+
+    /* ── Main ── */
+    main {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 2rem 3rem;
+    }
+
+    main h2 {
+      font-size: 1.35rem;
+      font-weight: 600;
+      margin: 2.5rem 0 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 2px solid var(--border);
+      letter-spacing: -0.01em;
+    }
+
+    main h2:first-child { margin-top: 0.5rem; }
+
+    main h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin: 1.8rem 0 0.6rem;
+    }
+
+    main p { margin: 0.8rem 0; }
+
+    main ul, main ol {
+      margin: 0.8rem 0;
+      padding-left: 1.6rem;
+    }
+
+    main li { margin: 0.35rem 0; }
+    main li strong { color: var(--accent); }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.2s;
+    }
+
+    a:hover { border-bottom-color: var(--accent); }
+
+    code {
+      font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+      font-size: 0.88em;
+      background: var(--code-bg);
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+    }
+
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      overflow-x: auto;
+      margin: 1rem 0;
+    }
+
+    pre code {
+      background: none;
+      padding: 0;
+      font-size: 0.85em;
+      line-height: 1.6;
+    }
+
+    blockquote {
+      border-left: 3px solid var(--accent);
+      padding: 0.6rem 1rem;
+      margin: 1rem 0;
+      background: var(--accent-soft);
+      border-radius: 0 6px 6px 0;
+      color: var(--text-secondary);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.92em;
+    }
+
+    th, td {
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      font-weight: 600;
+      background: var(--bg-secondary);
+      white-space: nowrap;
+    }
+
+    tr:hover td { background: var(--bg-secondary); }
+
+    .table-wrap {
+      overflow-x: auto;
+      margin: 1rem 0;
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.2rem 1.4rem;
+      margin: 1rem 0;
+      box-shadow: var(--card-shadow);
+      transition: box-shadow 0.2s ease, transform 0.2s ease;
+    }
+
+    .card:hover {
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+      transform: translateY(-1px);
+    }
+
+    [data-theme="dark"] .card:hover {
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    }
+
+    .card h3 { margin-top: 0; }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+
+    .card-grid .card { margin: 0; }
+
+    /* ── Approach-colored cards ── */
+    .card-eav { border-left: 4px solid var(--eav-color); }
+    .card-slot { border-left: 4px solid var(--slot-color); }
+    .card-json { border-left: 4px solid var(--json-color); }
+    .card-wide { border-left: 4px solid var(--wide-color); }
+
+    .card-eav .approach-label { color: var(--eav-color); }
+    .card-slot .approach-label { color: var(--slot-color); }
+    .card-json .approach-label { color: var(--json-color); }
+    .card-wide .approach-label { color: var(--wide-color); }
+
+    .approach-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.3rem;
+    }
+
+    /* ── Callouts ── */
+    .callout {
+      padding: 0.8rem 1rem;
+      border-radius: 8px;
+      margin: 1rem 0;
+      border-left: 4px solid;
+    }
+
+    .callout-info {
+      background: var(--callout-info);
+      border-left-color: var(--callout-info-border);
+    }
+
+    .callout-warn {
+      background: var(--callout-warn);
+      border-left-color: var(--callout-warn-border);
+    }
+
+    .callout-tip {
+      background: var(--callout-tip);
+      border-left-color: var(--callout-tip-border);
+    }
+
+    .callout strong {
+      display: block;
+      margin-bottom: 0.3rem;
+    }
+
+    /* ── Collapsible details ── */
+    details {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin: 1rem 0;
+      overflow: hidden;
+    }
+
+    summary {
+      padding: 0.8rem 1.2rem;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.95rem;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid transparent;
+      transition: background 0.15s ease;
+      list-style: none;
+    }
+
+    summary::-webkit-details-marker { display: none; }
+
+    summary::before {
+      content: "\25B6";
+      display: inline-block;
+      margin-right: 0.5rem;
+      font-size: 0.7em;
+      transition: transform 0.2s ease;
+    }
+
+    details[open] > summary::before {
+      transform: rotate(90deg);
+    }
+
+    details[open] > summary {
+      border-bottom-color: var(--border);
+    }
+
+    summary:hover { background: var(--border); }
+
+    details .details-body {
+      padding: 1rem 1.2rem;
+    }
+
+    /* ── Table of contents ── */
+    nav.toc {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.4rem;
+      margin: 1.5rem 0;
+    }
+
+    nav.toc ul { list-style: none; padding-left: 0; }
+    nav.toc li { margin: 0.3rem 0; }
+
+    nav.toc a {
+      color: var(--text-secondary);
+      font-size: 0.92em;
+    }
+
+    nav.toc a:hover { color: var(--accent); }
+
+    /* ── Color-coded comparison cells ── */
+    .c-good { background: var(--good-bg); color: var(--good); font-weight: 600; }
+    .c-mid { background: var(--mid-bg); color: var(--mid); font-weight: 600; }
+    .c-bad { background: var(--bad-bg); color: var(--bad); font-weight: 600; }
+
+    /* ── SVG ── */
+    svg text { fill: var(--svg-text); }
+    svg .stroke { stroke: var(--border); }
+
+    .svg-container {
+      overflow-x: auto;
+      margin: 1.5rem 0;
+    }
+
+    .svg-container svg {
+      display: block;
+      margin: 0 auto;
+    }
+
+    /* ── Lab output ── */
+    .lab-output {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin: 1rem 0;
+      font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+      font-size: 0.82em;
+      line-height: 1.5;
+      overflow-x: auto;
+      white-space: pre;
+    }
+
+    .lab-output .label {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--accent);
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+
+    /* ── Footer ── */
+    footer {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 2rem;
+      border-top: 1px solid var(--border);
+    }
+
+    footer h2 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    footer .source {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin: 0.25rem 0;
+    }
+
+    footer .source code { font-size: 0.85em; }
+
+    /* ── Approach comparison grid ── */
+    .approach-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.8rem;
+      margin: 1.5rem 0;
+    }
+
+    .approach-box {
+      border-radius: 8px;
+      padding: 1rem;
+      border: 2px solid;
+    }
+
+    .approach-box h4 {
+      font-size: 0.9rem;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+    }
+
+    .approach-box .data-row {
+      font-family: "SF Mono", "Fira Code", monospace;
+      font-size: 0.78em;
+      line-height: 1.4;
+      margin: 0.2rem 0;
+      color: var(--text-secondary);
+    }
+
+    .approach-box-eav { border-color: var(--eav-color); background: var(--eav-bg); }
+    .approach-box-eav h4 { color: var(--eav-color); }
+    .approach-box-slot { border-color: var(--slot-color); background: var(--slot-bg); }
+    .approach-box-slot h4 { color: var(--slot-color); }
+    .approach-box-json { border-color: var(--json-color); background: var(--json-bg); }
+    .approach-box-json h4 { color: var(--json-color); }
+    .approach-box-wide { border-color: var(--wide-color); background: var(--wide-bg); }
+    .approach-box-wide h4 { color: var(--wide-color); }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      .sidebar { display: none; }
+      .content-wrapper { margin-left: 0; }
+      .approach-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 600px) {
+      header { padding: 1.5rem 1rem 1rem; flex-direction: column; }
+      main { padding: 0 1rem 2rem; }
+      footer { padding: 1.5rem 1rem; }
+      .card-grid { grid-template-columns: 1fr; }
+      .approach-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar Navigation -->
+  <nav class="sidebar">
+    <h2>Topics</h2>
+    <a href="01_warehousing_fundamentals.html"><span class="topic-num">1.</span> Warehousing Fundamentals</a>
+    <a href="02_columnar_storage.html"><span class="topic-num">2.</span> Columnar Storage</a>
+    <a href="03_medallion_and_dbt.html"><span class="topic-num">3.</span> Medallion Architecture + dbt</a>
+    <a href="04_precomputation_vs_runtime.html"><span class="topic-num">4.</span> Pre-computation vs Runtime</a>
+    <a href="05_dynamic_schema_eav.html" class="active"><span class="topic-num">5.</span> Dynamic Schema / EAV</a>
+    <a href="06_oltp_olap_spectrum.html"><span class="topic-num">6.</span> OLTP vs OLAP Spectrum</a>
+    <a href="07_suppression_access_control.html"><span class="topic-num">7.</span> Suppression &amp; Access Control</a>
+    <a href="08_frontier_survey_platforms.html"><span class="topic-num">8.</span> Frontier Survey Platforms</a>
+    <a href="09_agentic_data_access.html"><span class="topic-num">9.</span> Agentic Data Access</a>
+  </nav>
+
+  <div class="content-wrapper">
+    <header>
+      <h1>Dynamic Schema and EAV Patterns</h1>
+      <div class="header-right">
+        <span class="meta-date">2026-08-23</span>
+        <button class="theme-btn" id="theme-toggle" aria-label="Toggle dark mode">
+          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+          </svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+          <span class="label-light">Light</span>
+          <span class="label-dark">Dark</span>
+        </button>
+      </div>
+    </header>
+
+    <main>
+
+      <!-- ═══ INTRO ═══ -->
+      <h2 id="problem">The Problem: Variable Question Sets</h2>
+
+      <p>A standard engagement survey has 12 core questions. But real deployments add project-specific custom questions. Project Phoenix runs 12 + 2 custom remote-work questions (14 total). Atlas runs 12 + 5 custom leadership questions (17 total). Orbit runs 12 + 3 custom safety questions (15 total).</p>
+
+      <p>This creates a schema problem with no single right answer. Relational databases expect you to declare columns upfront, but the shape of the data varies per project. Four approaches exist, each trading something different off.</p>
+
+      <div class="callout callout-info">
+        <strong>Core Tension</strong>
+        Schema flexibility vs. query simplicity. The more flexibly you store variable attributes, the harder it becomes to query them analytically. Every approach makes a different bet on this tradeoff.
+      </div>
+
+      <nav class="toc">
+        <ul>
+          <li><a href="#four-approaches">Four Approaches at a Glance</a></li>
+          <li><a href="#eav">Approach 1: Entity-Attribute-Value (EAV)</a></li>
+          <li><a href="#slot">Approach 2: Slot Mechanism</a></li>
+          <li><a href="#json">Approach 3: JSON / Semi-Structured</a></li>
+          <li><a href="#wide">Approach 4: Sparse Wide Table</a></li>
+          <li><a href="#same-data">Same Data, Four Representations</a></li>
+          <li><a href="#comparison">Side-by-Side Comparison</a></li>
+          <li><a href="#lab-results">Lab Results</a></li>
+          <li><a href="#decision-framework">Decision Framework</a></li>
+        </ul>
+      </nav>
+
+      <!-- ═══ FOUR APPROACHES AT A GLANCE ═══ -->
+      <h2 id="four-approaches">Four Approaches at a Glance</h2>
+
+      <p>The same respondent's data -- Q01 score of 4.3 from Project Phoenix, Team Alpha -- is stored completely differently in each approach.</p>
+
+      <div class="svg-container">
+        <svg viewBox="0 0 820 380" width="820" height="380" xmlns="http://www.w3.org/2000/svg" style="font-family: -apple-system, BlinkMacSystemFont, sans-serif;">
+          <!-- EAV box -->
+          <rect x="10" y="10" width="185" height="170" rx="8" fill="var(--eav-bg)" stroke="var(--eav-color)" stroke-width="2"/>
+          <text x="102" y="35" text-anchor="middle" font-weight="700" font-size="13" fill="var(--eav-color)">EAV</text>
+          <text x="20" y="58" font-size="10" fill="var(--text-secondary)" font-family="monospace">response_id | attr  | val</text>
+          <line x1="20" y1="63" x2="185" y2="63" stroke="var(--border)" stroke-width="1"/>
+          <text x="20" y="78" font-size="10" fill="var(--svg-text)" font-family="monospace">1001        | Q01   | 4.3</text>
+          <text x="20" y="93" font-size="10" fill="var(--svg-text)" font-family="monospace">1001        | Q02   | 4.0</text>
+          <text x="20" y="108" font-size="10" fill="var(--svg-text)" font-family="monospace">1001        | Q03   | 3.9</text>
+          <text x="20" y="123" font-size="10" fill="var(--text-secondary)" font-family="monospace">  ...14 rows total...</text>
+          <text x="20" y="143" font-size="10" fill="var(--svg-text)" font-family="monospace">1001        | CRW01 | 4.0</text>
+          <text x="20" y="158" font-size="10" fill="var(--svg-text)" font-family="monospace">1001        | CRW02 | 3.4</text>
+          <text x="102" y="175" text-anchor="middle" font-size="9" fill="var(--text-secondary)">One row per answer</text>
+
+          <!-- Slot box -->
+          <rect x="215" y="10" width="185" height="170" rx="8" fill="var(--slot-bg)" stroke="var(--slot-color)" stroke-width="2"/>
+          <text x="307" y="35" text-anchor="middle" font-weight="700" font-size="13" fill="var(--slot-color)">Slot</text>
+          <text x="225" y="58" font-size="10" fill="var(--text-secondary)" font-family="monospace">id   |s1  |s7  |s13 |s14</text>
+          <line x1="225" y1="63" x2="390" y2="63" stroke="var(--border)" stroke-width="1"/>
+          <text x="225" y="78" font-size="10" fill="var(--svg-text)" font-family="monospace">1001 |4.3 |3.9 |4.0 |3.4</text>
+          <text x="225" y="100" font-size="9" fill="var(--text-secondary)" font-family="monospace">+ mapping table:</text>
+          <text x="225" y="116" font-size="10" fill="var(--svg-text)" font-family="monospace">Phoenix|1 |Q01</text>
+          <text x="225" y="131" font-size="10" fill="var(--svg-text)" font-family="monospace">Phoenix|13|CRW01</text>
+          <text x="225" y="146" font-size="10" fill="var(--svg-text)" font-family="monospace">Atlas  |13|CLD01</text>
+          <text x="307" y="175" text-anchor="middle" font-size="9" fill="var(--text-secondary)">Generic columns + lookup</text>
+
+          <!-- JSON box -->
+          <rect x="420" y="10" width="185" height="170" rx="8" fill="var(--json-bg)" stroke="var(--json-color)" stroke-width="2"/>
+          <text x="512" y="35" text-anchor="middle" font-weight="700" font-size="13" fill="var(--json-color)">JSON</text>
+          <text x="430" y="58" font-size="10" fill="var(--text-secondary)" font-family="monospace">id   | responses</text>
+          <line x1="430" y1="63" x2="595" y2="63" stroke="var(--border)" stroke-width="1"/>
+          <text x="430" y="78" font-size="10" fill="var(--svg-text)" font-family="monospace">1001 | {</text>
+          <text x="430" y="93" font-size="10" fill="var(--svg-text)" font-family="monospace">       "Q01": 4.3,</text>
+          <text x="430" y="108" font-size="10" fill="var(--svg-text)" font-family="monospace">       "Q02": 4.0,</text>
+          <text x="430" y="123" font-size="10" fill="var(--text-secondary)" font-family="monospace">       ...</text>
+          <text x="430" y="138" font-size="10" fill="var(--svg-text)" font-family="monospace">       "CRW01": 4.0,</text>
+          <text x="430" y="153" font-size="10" fill="var(--svg-text)" font-family="monospace">       "CRW02": 3.4</text>
+          <text x="430" y="168" font-size="10" fill="var(--svg-text)" font-family="monospace">     }</text>
+          <text x="512" y="175" text-anchor="middle" font-size="9" fill="var(--text-secondary)">Self-describing blob</text>
+
+          <!-- Wide box -->
+          <rect x="625" y="10" width="185" height="170" rx="8" fill="var(--wide-bg)" stroke="var(--wide-color)" stroke-width="2"/>
+          <text x="717" y="35" text-anchor="middle" font-weight="700" font-size="13" fill="var(--wide-color)">Sparse Wide</text>
+          <text x="635" y="58" font-size="9" fill="var(--text-secondary)" font-family="monospace">id  |q01 |q02 |..|crw01|cld01</text>
+          <line x1="635" y1="63" x2="800" y2="63" stroke="var(--border)" stroke-width="1"/>
+          <text x="635" y="78" font-size="9" fill="var(--svg-text)" font-family="monospace">1001|4.3 |4.0 |..|4.0  |NULL</text>
+          <text x="635" y="93" font-size="9" fill="var(--svg-text)" font-family="monospace">2001|3.8 |3.5 |..|NULL |3.4</text>
+          <text x="635" y="115" font-size="9" fill="var(--text-secondary)">Phoenix rows: crw* filled, cld* NULL</text>
+          <text x="635" y="130" font-size="9" fill="var(--text-secondary)">Atlas rows: cld* filled, crw* NULL</text>
+          <text x="635" y="150" font-size="9" fill="var(--good)">Column names = question meaning</text>
+          <text x="717" y="175" text-anchor="middle" font-size="9" fill="var(--text-secondary)">One column per question</text>
+
+          <!-- Arrows showing the core tradeoff -->
+          <text x="410" y="220" text-anchor="middle" font-weight="700" font-size="14" fill="var(--svg-text)">The Core Tradeoff</text>
+
+          <!-- Flexibility axis -->
+          <line x1="50" y1="260" x2="770" y2="260" stroke="var(--border)" stroke-width="2" marker-end="url(#arrowhead)"/>
+          <text x="410" y="250" text-anchor="middle" font-size="11" fill="var(--text-secondary)">Schema Flexibility</text>
+          <text x="50" y="275" font-size="10" fill="var(--text-secondary)">Low</text>
+          <text x="770" y="275" text-anchor="end" font-size="10" fill="var(--text-secondary)">High</text>
+
+          <!-- Position markers on flexibility axis -->
+          <circle cx="130" cy="260" r="8" fill="var(--wide-color)"/>
+          <text x="130" y="295" text-anchor="middle" font-size="10" font-weight="600" fill="var(--wide-color)">Wide</text>
+          <circle cx="310" cy="260" r="8" fill="var(--slot-color)"/>
+          <text x="310" y="295" text-anchor="middle" font-size="10" font-weight="600" fill="var(--slot-color)">Slot</text>
+          <circle cx="560" cy="260" r="8" fill="var(--json-color)"/>
+          <text x="560" y="295" text-anchor="middle" font-size="10" font-weight="600" fill="var(--json-color)">JSON</text>
+          <circle cx="690" cy="260" r="8" fill="var(--eav-color)"/>
+          <text x="690" y="295" text-anchor="middle" font-size="10" font-weight="600" fill="var(--eav-color)">EAV</text>
+
+          <!-- Query simplicity axis -->
+          <line x1="50" y1="340" x2="770" y2="340" stroke="var(--border)" stroke-width="2" marker-end="url(#arrowhead)"/>
+          <text x="410" y="330" text-anchor="middle" font-size="11" fill="var(--text-secondary)">Query Simplicity</text>
+          <text x="50" y="355" font-size="10" fill="var(--text-secondary)">Low</text>
+          <text x="770" y="355" text-anchor="end" font-size="10" fill="var(--text-secondary)">High</text>
+
+          <!-- Position markers on query axis (inversed) -->
+          <circle cx="130" cy="340" r="8" fill="var(--eav-color)"/>
+          <text x="130" y="375" text-anchor="middle" font-size="10" font-weight="600" fill="var(--eav-color)">EAV</text>
+          <circle cx="310" cy="340" r="8" fill="var(--slot-color)"/>
+          <text x="310" y="375" text-anchor="middle" font-size="10" font-weight="600" fill="var(--slot-color)">Slot</text>
+          <circle cx="530" cy="340" r="8" fill="var(--json-color)"/>
+          <text x="530" y="375" text-anchor="middle" font-size="10" font-weight="600" fill="var(--json-color)">JSON</text>
+          <circle cx="700" cy="340" r="8" fill="var(--wide-color)"/>
+          <text x="700" y="375" text-anchor="middle" font-size="10" font-weight="600" fill="var(--wide-color)">Wide</text>
+
+          <defs>
+            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+              <polygon points="0 0, 10 3.5, 0 7" fill="var(--border)"/>
+            </marker>
+          </defs>
+        </svg>
+      </div>
+
+      <!-- ═══ EAV ═══ -->
+      <h2 id="eav">Approach 1: Entity-Attribute-Value (EAV)</h2>
+
+      <div class="card card-eav">
+        <div class="approach-label">EAV -- Entity-Attribute-Value</div>
+        <h3>Mechanism</h3>
+        <p>Decompose every data point into three columns: which entity has the value, which attribute it is, and what the value is. Instead of one column per question, you have one <em>row</em> per question-answer pair.</p>
+        <p>Adding a new question means inserting rows, not altering the table schema. Zero DDL changes, ever.</p>
+      </div>
+
+      <h3>Schema</h3>
+      <pre><code>CREATE TABLE eav_responses (
+    response_id  INTEGER,
+    project      VARCHAR,
+    team         VARCHAR,
+    attribute    VARCHAR,   -- question identifier (data, not schema)
+    value        DOUBLE     -- answer score
+);</code></pre>
+
+      <h3>What the data looks like</h3>
+      <div class="table-wrap">
+      <table>
+        <thead><tr><th>response_id</th><th>project</th><th>team</th><th>attribute</th><th>value</th></tr></thead>
+        <tbody>
+          <tr><td>1001</td><td>Phoenix</td><td>Alpha</td><td>Q01</td><td>4.3</td></tr>
+          <tr><td>1001</td><td>Phoenix</td><td>Alpha</td><td>Q02</td><td>4.0</td></tr>
+          <tr><td>1001</td><td>Phoenix</td><td>Alpha</td><td>Q03</td><td>3.9</td></tr>
+          <tr><td style="color: var(--text-secondary);" colspan="3">...</td><td style="color: var(--text-secondary);">14 rows per respondent</td><td></td></tr>
+          <tr><td>1001</td><td>Phoenix</td><td>Alpha</td><td>CRW01</td><td>4.0</td></tr>
+          <tr><td>1001</td><td>Phoenix</td><td>Alpha</td><td>CRW02</td><td>3.4</td></tr>
+        </tbody>
+      </table>
+      </div>
+
+      <p>45 respondents across 3 projects produce <strong>690 EAV rows</strong> -- each question-answer pair gets its own row.</p>
+
+      <div class="card-grid">
+        <div class="card card-eav">
+          <h3>Strengths</h3>
+          <ul>
+            <li><strong>Infinite flexibility.</strong> New questions, new projects, new instruments -- just insert rows. No migrations, no DDL.</li>
+            <li><strong>Uniform storage.</strong> Easy to backup, replicate, partition by entity.</li>
+            <li><strong>Sparse-data friendly.</strong> No wasted columns if projects have different question counts.</li>
+          </ul>
+        </div>
+        <div class="card card-eav">
+          <h3>Weaknesses</h3>
+          <ul>
+            <li><strong>Painful analytics.</strong> Mean score per question per team requires PIVOT/conditional aggregation.</li>
+            <li><strong>No type enforcement.</strong> The value column is one type for everything.</li>
+            <li><strong>AI/text-to-SQL hostile.</strong> An LLM must know valid attribute names and construct PIVOT patterns.</li>
+          </ul>
+        </div>
+      </div>
+
+      <details>
+        <summary>The analytical query pain -- see the PIVOT pattern</summary>
+        <div class="details-body">
+          <p>Computing mean score per question per team in EAV requires one <code>CASE</code> expression per question. For 50 questions, that is 50 repetitive CASE clauses:</p>
+          <pre><code>SELECT
+    team,
+    ROUND(AVG(CASE WHEN attribute = 'Q01' THEN value END), 2) AS Q01,
+    ROUND(AVG(CASE WHEN attribute = 'Q02' THEN value END), 2) AS Q02,
+    ROUND(AVG(CASE WHEN attribute = 'Q03' THEN value END), 2) AS Q03,
+    ROUND(AVG(CASE WHEN attribute = 'Q04' THEN value END), 2) AS Q04,
+    ROUND(AVG(CASE WHEN attribute = 'Q05' THEN value END), 2) AS Q05,
+    ROUND(AVG(CASE WHEN attribute = 'Q06' THEN value END), 2) AS Q06
+    -- ... repeat for every question
+FROM eav_responses
+WHERE project = 'Phoenix'
+GROUP BY team ORDER BY team;</code></pre>
+
+          <p>Lab output (Phoenix, Q01-Q06):</p>
+          <div class="table-wrap">
+          <table>
+            <thead><tr><th>Team</th><th>Q01</th><th>Q02</th><th>Q03</th><th>Q04</th><th>Q05</th><th>Q06</th></tr></thead>
+            <tbody>
+              <tr><td>Alpha</td><td>4.34</td><td>4.08</td><td>4.04</td><td>3.70</td><td>3.96</td><td>3.60</td></tr>
+              <tr><td>Beta</td><td>4.22</td><td>3.96</td><td>4.00</td><td>3.12</td><td>3.62</td><td>3.42</td></tr>
+              <tr><td>Gamma</td><td>4.06</td><td>3.98</td><td>3.80</td><td>3.58</td><td>3.82</td><td>3.52</td></tr>
+            </tbody>
+          </table>
+          </div>
+
+          <div class="callout callout-warn">
+            <strong>Compare to a wide table</strong>
+            The same query in a wide table is just <code>AVG(q01_score), AVG(q02_score)</code>. No CASE, no conditional aggregation. That is the price EAV charges for its flexibility.
+          </div>
+        </div>
+      </details>
+
+      <details>
+        <summary>Adding a new question -- zero schema change</summary>
+        <div class="details-body">
+          <pre><code>-- Add a brand-new question to Phoenix: zero ALTER TABLE
+INSERT INTO eav_responses VALUES
+    (9901, 'Phoenix', 'Alpha', 'CNEW01', 4.0),
+    (9902, 'Phoenix', 'Beta',  'CNEW01', 3.5);</code></pre>
+          <p>After insertion, Phoenix now has 15 distinct questions. No table modification, no downtime.</p>
+        </div>
+      </details>
+
+      <h3>When to use EAV</h3>
+      <p>Systems where schema changes are genuinely unpredictable and frequent, the primary access pattern is entity lookup ("show me respondent X's answers"), and you can afford the analytical query tax. Classic examples: medical records (each patient has different test results), product catalogs (each category has different attributes), CMS field builders.</p>
+
+
+      <!-- ═══ SLOT ═══ -->
+      <h2 id="slot">Approach 2: Slot Mechanism</h2>
+
+      <div class="card card-slot">
+        <div class="approach-label">Slot Mechanism</div>
+        <h3>Mechanism</h3>
+        <p>Pre-allocate a fixed number of generic columns: <code>slot_1</code>, <code>slot_2</code>, ... <code>slot_20</code>. A separate mapping table records what each slot means for each project. The schema never changes; only the mapping data changes.</p>
+      </div>
+
+      <h3>Schema</h3>
+      <pre><code>-- Response table (fixed width, 20 value columns)
+CREATE TABLE slot_responses (
+    response_id  INTEGER,
+    project      VARCHAR,
+    team         VARCHAR,
+    slot_1       DOUBLE,
+    slot_2       DOUBLE,
+    ...
+    slot_20      DOUBLE
+);
+
+-- Mapping table (the Rosetta Stone)
+CREATE TABLE slot_mapping (
+    project       VARCHAR,
+    slot_number   INTEGER,
+    question_id   VARCHAR,
+    question_text VARCHAR
+);</code></pre>
+
+      <div class="callout callout-warn">
+        <strong>The slot_13 problem</strong>
+        <code>slot_13</code> means completely different things per project:
+        <ul style="margin-top: 0.3rem;">
+          <li>Phoenix: CRW01 (remote work tools)</li>
+          <li>Atlas: CLD01 (leadership vision)</li>
+          <li>Orbit: CSF01 (physical safety)</li>
+        </ul>
+        The same column holds completely different questions. Without the mapping table, the data is meaningless.
+      </div>
+
+      <div class="card-grid">
+        <div class="card card-slot">
+          <h3>Strengths</h3>
+          <ul>
+            <li><strong>Deterministic width.</strong> Always 20 value columns. Storage is predictable. Query planners work well.</li>
+            <li><strong>Relational aggregation.</strong> <code>AVG(slot_1)</code> works like any column.</li>
+            <li><strong>Schema stability.</strong> New projects = new mapping rows, not ALTER TABLE.</li>
+          </ul>
+        </div>
+        <div class="card card-slot">
+          <h3>Weaknesses</h3>
+          <ul>
+            <li><strong>AI/text-to-SQL cannot reason about "slot_7".</strong> Multi-hop reasoning through mapping table is fragile.</li>
+            <li><strong>Slot exhaustion.</strong> 20 slots allocated, project needs 25? Schema change.</li>
+            <li><strong>Maintenance burden.</strong> Mapping table must be perfectly synced with data loading.</li>
+          </ul>
+        </div>
+      </div>
+
+      <details>
+        <summary>Query: Decoding slots through the mapping table</summary>
+        <div class="details-body">
+          <p>Every analytical query must join the mapping table and use a massive CASE expression to select the right slot column:</p>
+          <pre><code>SELECT
+    m.question_id,
+    m.question_text,
+    ROUND(AVG(CASE m.slot_number
+        WHEN 1  THEN r.slot_1  WHEN 2  THEN r.slot_2
+        WHEN 3  THEN r.slot_3  WHEN 4  THEN r.slot_4
+        WHEN 5  THEN r.slot_5  WHEN 6  THEN r.slot_6
+        WHEN 7  THEN r.slot_7  WHEN 8  THEN r.slot_8
+        WHEN 9  THEN r.slot_9  WHEN 10 THEN r.slot_10
+        WHEN 11 THEN r.slot_11 WHEN 12 THEN r.slot_12
+        WHEN 13 THEN r.slot_13 WHEN 14 THEN r.slot_14
+    END), 2) AS mean_score
+FROM slot_responses r
+JOIN slot_mapping m ON r.project = m.project
+WHERE r.project = 'Phoenix'
+GROUP BY m.question_id, m.question_text, m.slot_number
+ORDER BY m.slot_number;</code></pre>
+
+          <div class="callout callout-info">
+            <strong>AI/Text-to-SQL breakdown</strong>
+            An LLM asked "what is the average score for expectations?" must: (1) find "expectations" in slot_mapping, (2) determine it maps to slot_1, (3) query <code>slot_1</code> from slot_responses, (4) know to filter by project. This multi-hop reasoning is where text-to-SQL fails.
+          </div>
+        </div>
+      </details>
+
+      <h3>When to use slots</h3>
+      <p>Legacy systems where schema changes are politically or technically expensive (mainframe-era platforms, heavily governed enterprise databases), and the maximum number of attributes is bounded and known.</p>
+
+
+      <!-- ═══ JSON ═══ -->
+      <h2 id="json">Approach 3: JSON / Semi-Structured</h2>
+
+      <div class="card card-json">
+        <div class="approach-label">JSON Column</div>
+        <h3>Mechanism</h3>
+        <p>Store each respondent's answers as a JSON object. The JSON column is schema-on-read: each row can contain a different set of keys. The database does not enforce or know about the keys until query time. Modern analytical databases (DuckDB, Snowflake, BigQuery) support this natively.</p>
+      </div>
+
+      <h3>Schema</h3>
+      <pre><code>CREATE TABLE json_responses (
+    response_id  INTEGER,
+    project      VARCHAR,
+    team         VARCHAR,
+    responses    JSON     -- {"Q01": 4.3, "Q02": 4.0, ..., "CRW01": 4.0}
+);</code></pre>
+
+      <h3>Self-describing data</h3>
+      <p>Each row carries its own question identifiers in the JSON keys. Looking at a sample row tells you exactly what it contains:</p>
+      <pre><code>-- Response 1 (Phoenix):
+{
+  "Q01": 4.3, "Q02": 4.0, "Q03": 3.9, "Q04": 3.8,
+  "Q05": 4.0, "Q06": 3.3, "Q07": 3.9, "Q08": 3.8,
+  "Q09": 3.9, "Q10": 3.2, "Q11": 3.6, "Q12": 4.0,
+  "CRW01": 4.0, "CRW02": 3.4
+}</code></pre>
+
+      <div class="card-grid">
+        <div class="card card-json">
+          <h3>Strengths</h3>
+          <ul>
+            <li><strong>Self-describing.</strong> Question identifiers live <em>in the data</em>. Huge for debugging, AI agents, and exploration.</li>
+            <li><strong>Zero-schema-change flexibility.</strong> New questions = new keys, no DDL.</li>
+            <li><strong>Natural API fit.</strong> Survey responses arrive as JSON from web forms. Skip ETL reshaping.</li>
+          </ul>
+        </div>
+        <div class="card card-json">
+          <h3>Weaknesses</h3>
+          <ul>
+            <li><strong>Verbose query syntax.</strong> <code>json_extract(responses, '$.Q01')</code> instead of just <code>q01_score</code>.</li>
+            <li><strong>No column-level statistics.</strong> Optimizer cannot build histograms on JSON keys.</li>
+            <li><strong>Repeated type casting.</strong> JSON values are strings until you <code>CAST</code> them.</li>
+          </ul>
+        </div>
+      </div>
+
+      <details>
+        <summary>Direct access vs. UNNEST for analytics</summary>
+        <div class="details-body">
+          <h3>Direct access (entity lookup)</h3>
+          <pre><code>-- Pull specific question scores -- no joins needed
+SELECT
+    response_id, project, team,
+    CAST(json_extract(responses, '$.Q01') AS DOUBLE) AS q01,
+    CAST(json_extract(responses, '$.Q02') AS DOUBLE) AS q02,
+    json_extract(responses, '$.CRW01') AS crw01_or_null
+FROM json_responses
+WHERE project = 'Phoenix'
+LIMIT 5;</code></pre>
+          <p>CRW01 exists for Phoenix but returns NULL for Atlas/Orbit. No error, no schema issue -- the key simply is not present.</p>
+
+          <h3>UNNEST for analytics (group-by aggregation)</h3>
+          <pre><code>WITH keys_expanded AS (
+    SELECT r.response_id, r.project, r.team, r.responses,
+           UNNEST(json_keys(r.responses)) AS question_id
+    FROM json_responses r
+),
+unpacked AS (
+    SELECT response_id, project, team, question_id,
+           CAST(json_extract(responses, '$.' || question_id) AS DOUBLE) AS score
+    FROM keys_expanded
+)
+SELECT team, question_id,
+       ROUND(AVG(score), 2) AS mean_score, COUNT(*) AS n
+FROM unpacked
+WHERE project = 'Phoenix'
+  AND question_id IN ('Q01', 'Q05', 'Q10', 'CRW01')
+GROUP BY team, question_id
+ORDER BY team, question_id;</code></pre>
+
+          <div class="table-wrap">
+          <table>
+            <thead><tr><th>Team</th><th>Question</th><th>Mean</th><th>N</th></tr></thead>
+            <tbody>
+              <tr><td>Alpha</td><td>CRW01</td><td>3.80</td><td>5</td></tr>
+              <tr><td>Alpha</td><td>Q01</td><td>4.34</td><td>5</td></tr>
+              <tr><td>Alpha</td><td>Q05</td><td>3.96</td><td>5</td></tr>
+              <tr><td>Alpha</td><td>Q10</td><td>3.08</td><td>5</td></tr>
+              <tr><td>Beta</td><td>CRW01</td><td>3.56</td><td>5</td></tr>
+              <tr><td>Beta</td><td>Q01</td><td>4.22</td><td>5</td></tr>
+              <tr><td>Beta</td><td>Q05</td><td>3.62</td><td>5</td></tr>
+              <tr><td>Beta</td><td>Q10</td><td>2.88</td><td>5</td></tr>
+            </tbody>
+          </table>
+          </div>
+        </div>
+      </details>
+
+
+      <!-- ═══ WIDE ═══ -->
+      <h2 id="wide">Approach 4: Sparse Wide Table</h2>
+
+      <div class="card card-wide">
+        <div class="approach-label">Sparse Wide Table</div>
+        <h3>Mechanism</h3>
+        <p>Give every possible question its own named column. A project that does not use a question simply leaves that column NULL. The opposite bet from EAV: sacrifice flexibility for query simplicity.</p>
+      </div>
+
+      <h3>Schema</h3>
+      <pre><code>CREATE TABLE wide_responses (
+    response_id          INTEGER,
+    project              VARCHAR,
+    team                 VARCHAR,
+    q01_expectations     DECIMAL(2,1),  -- Standard Q12
+    q02_materials        DECIMAL(2,1),
+    ...
+    q12_learn_grow       DECIMAL(2,1),
+    crw01_remote_tools   DECIMAL(2,1),  -- Phoenix custom
+    crw02_remote_connect DECIMAL(2,1),
+    cld01_leadership_vis DECIMAL(2,1),  -- Atlas custom
+    ...
+    csf03_safety_train   DECIMAL(2,1)   -- Orbit custom
+);  -- 22 question columns total</code></pre>
+
+      <h3>The columnar storage insight</h3>
+      <div class="callout callout-tip">
+        <strong>NULLs are free in columnar storage</strong>
+        In a row-store (PostgreSQL, MySQL), sparse wide tables incur overhead because every row is stored contiguously -- the engine reads the full row from disk even if most columns are NULL, and the null bitmap grows with column count. <strong>In a columnar store (DuckDB, Parquet, Snowflake), NULL columns compress to near-zero bytes.</strong> Columnar engines store each column independently and compress NULL runs to negligible overhead. This makes the sparse wide table impractical in OLTP but efficient in analytical databases.
+      </div>
+
+      <p>Lab measurement: 22-column wide table in Parquet = <strong>6,250 bytes</strong>. Phoenix-only with 14 columns (no NULLs) = <strong>3,211 bytes</strong>. The 8 extra mostly-NULL columns add minimal overhead.</p>
+
+      <div class="card-grid">
+        <div class="card card-wide">
+          <h3>Strengths</h3>
+          <ul>
+            <li><strong>Simplest queries.</strong> <code>AVG(q01_expectations)</code> -- no joins, no JSON, no PIVOT.</li>
+            <li><strong>Full optimizer support.</strong> Column statistics, predicate pushdown, vectorized execution.</li>
+            <li><strong>AI/text-to-SQL excellent.</strong> Column names carry semantic meaning directly.</li>
+          </ul>
+        </div>
+        <div class="card card-wide">
+          <h3>Weaknesses</h3>
+          <ul>
+            <li><strong>Schema changes required.</strong> New question = ALTER TABLE ADD COLUMN.</li>
+            <li><strong>Column sprawl.</strong> Over years, hundreds of columns used by one or two projects.</li>
+            <li><strong>Not truly dynamic.</strong> User-generated forms cannot ALTER TABLE fast enough.</li>
+          </ul>
+        </div>
+      </div>
+
+      <details>
+        <summary>The simplicity advantage -- see the queries</summary>
+        <div class="details-body">
+          <pre><code>-- Standard Q12 analytics: just column names
+SELECT
+    team,
+    ROUND(AVG(q01_expectations), 2) AS q01_avg,
+    ROUND(AVG(q05_cares), 2)        AS q05_avg,
+    ROUND(AVG(q10_best_friend), 2)  AS q10_avg
+FROM wide_responses
+WHERE project = 'Phoenix'
+GROUP BY team ORDER BY team;</code></pre>
+
+          <div class="table-wrap">
+          <table>
+            <thead><tr><th>Team</th><th>Q01 Avg</th><th>Q05 Avg</th><th>Q10 Avg</th></tr></thead>
+            <tbody>
+              <tr><td>Alpha</td><td>4.34</td><td>3.96</td><td>3.08</td></tr>
+              <tr><td>Beta</td><td>4.22</td><td>3.62</td><td>2.88</td></tr>
+              <tr><td>Gamma</td><td>4.06</td><td>3.82</td><td>3.22</td></tr>
+            </tbody>
+          </table>
+          </div>
+
+          <pre><code>-- Custom questions: same simplicity
+SELECT
+    team,
+    ROUND(AVG(crw01_remote_tools), 2)      AS remote_tools,
+    ROUND(AVG(crw02_remote_connection), 2) AS remote_connect
+FROM wide_responses
+WHERE project = 'Phoenix'
+GROUP BY team ORDER BY team;</code></pre>
+
+          <div class="table-wrap">
+          <table>
+            <thead><tr><th>Team</th><th>Remote Tools</th><th>Remote Connection</th></tr></thead>
+            <tbody>
+              <tr><td>Alpha</td><td>3.80</td><td>3.38</td></tr>
+              <tr><td>Beta</td><td>3.56</td><td>2.96</td></tr>
+              <tr><td>Gamma</td><td>3.28</td><td>3.38</td></tr>
+            </tbody>
+          </table>
+          </div>
+        </div>
+      </details>
+
+      <details>
+        <summary>Schema metadata: what an AI agent sees</summary>
+        <div class="details-body">
+          <pre><code>SELECT column_name, data_type, is_nullable
+FROM information_schema.columns
+WHERE table_name = 'wide_responses'
+  AND (column_name LIKE 'q%' OR column_name LIKE 'c%')
+ORDER BY ordinal_position;</code></pre>
+
+          <p>The AI reads <code>q01_expectations</code>, <code>q05_cares</code>, <code>crw01_remote_tools</code> and immediately knows what to query. No mapping table, no JSON introspection. Column names <em>are</em> the schema documentation.</p>
+
+          <div class="table-wrap">
+          <table>
+            <thead><tr><th>Column Name</th><th>Data Type</th><th>Nullable</th></tr></thead>
+            <tbody>
+              <tr><td><code>q01_expectations</code></td><td>DECIMAL(2,1)</td><td>YES</td></tr>
+              <tr><td><code>q02_materials</code></td><td>DECIMAL(2,1)</td><td>YES</td></tr>
+              <tr><td><code>q05_cares</code></td><td>DECIMAL(2,1)</td><td>YES</td></tr>
+              <tr><td><code>q10_best_friend</code></td><td>DECIMAL(2,1)</td><td>YES</td></tr>
+              <tr><td><code>crw01_remote_tools</code></td><td>DECIMAL(2,1)</td><td>YES</td></tr>
+              <tr><td><code>cld01_leadership_vision</code></td><td>DECIMAL(2,1)</td><td>YES</td></tr>
+              <tr><td><code>csf01_physical_safety</code></td><td>DECIMAL(2,1)</td><td>YES</td></tr>
+            </tbody>
+          </table>
+          </div>
+        </div>
+      </details>
+
+
+      <!-- ═══ SAME DATA FOUR REPS ═══ -->
+      <h2 id="same-data">Same Data, Four Representations</h2>
+
+      <p>Respondent 1001 from Project Phoenix, Team Alpha, answered all 12 Q12 questions plus 2 custom remote-work questions. Here is how that single respondent's data is stored in each approach:</p>
+
+      <div class="approach-grid">
+        <div class="approach-box approach-box-eav">
+          <h4>EAV</h4>
+          <div class="data-row">1001 | Q01   | 4.3</div>
+          <div class="data-row">1001 | Q02   | 4.0</div>
+          <div class="data-row">1001 | Q03   | 3.9</div>
+          <div class="data-row" style="color: var(--text-secondary);">... (14 rows)</div>
+          <div class="data-row">1001 | CRW01 | 4.0</div>
+          <div class="data-row">1001 | CRW02 | 3.4</div>
+          <p style="font-size: 0.8em; margin-top: 0.5rem; color: var(--text-secondary);">14 rows for 1 respondent</p>
+        </div>
+
+        <div class="approach-box approach-box-slot">
+          <h4>Slot</h4>
+          <div class="data-row">1001 | 4.3 | 4.0 | 3.9</div>
+          <div class="data-row">     | ... | ... | ...</div>
+          <div class="data-row">     | 4.0 | 3.4 | NULL</div>
+          <div class="data-row" style="color: var(--text-secondary);">... (20 slots, 6 NULL)</div>
+          <p style="font-size: 0.8em; margin-top: 0.5rem; color: var(--text-secondary);">1 row, 20 generic columns</p>
+        </div>
+
+        <div class="approach-box approach-box-json">
+          <h4>JSON</h4>
+          <div class="data-row">1001 | {"Q01": 4.3,</div>
+          <div class="data-row">       "Q02": 4.0,</div>
+          <div class="data-row" style="color: var(--text-secondary);">       ...</div>
+          <div class="data-row">       "CRW01": 4.0,</div>
+          <div class="data-row">       "CRW02": 3.4}</div>
+          <p style="font-size: 0.8em; margin-top: 0.5rem; color: var(--text-secondary);">1 row, 1 JSON column</p>
+        </div>
+
+        <div class="approach-box approach-box-wide">
+          <h4>Sparse Wide</h4>
+          <div class="data-row">1001 | 4.3 | 4.0 | 3.9</div>
+          <div class="data-row">     | ... (Q12) ...</div>
+          <div class="data-row">     | 4.0 | 3.4</div>
+          <div class="data-row">     | NULL| NULL|NULL</div>
+          <div class="data-row" style="color: var(--text-secondary);">     (cld/csf=NULL)</div>
+          <p style="font-size: 0.8em; margin-top: 0.5rem; color: var(--text-secondary);">1 row, 22 named columns</p>
+        </div>
+      </div>
+
+      <!-- ═══ COMPARISON TABLE ═══ -->
+      <h2 id="comparison">Side-by-Side Comparison</h2>
+
+      <h3>Query Complexity</h3>
+      <p>The same analytical query -- "mean Q01 and Q10 score by team for Phoenix" -- written in each approach:</p>
+
+      <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Approach</th>
+            <th>SQL to compute AVG(Q01) by team</th>
+            <th>SQL Length</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="color: var(--eav-color); font-weight: 600;">EAV</td>
+            <td><code>AVG(CASE WHEN attribute='Q01' THEN value END)</code></td>
+            <td>223 chars</td>
+          </tr>
+          <tr>
+            <td style="color: var(--slot-color); font-weight: 600;">Slot</td>
+            <td><code>AVG(slot_1)</code> + mapping table join</td>
+            <td>159 chars</td>
+          </tr>
+          <tr>
+            <td style="color: var(--json-color); font-weight: 600;">JSON</td>
+            <td><code>AVG(CAST(json_extract(responses, '$.Q01') AS DOUBLE))</code></td>
+            <td>241 chars</td>
+          </tr>
+          <tr>
+            <td style="color: var(--wide-color); font-weight: 600;">Wide</td>
+            <td><code>AVG(q01_expectations)</code></td>
+            <td>176 chars</td>
+          </tr>
+        </tbody>
+      </table>
+      </div>
+
+      <p>All four return identical results:</p>
+      <div class="table-wrap">
+      <table>
+        <thead><tr><th>Team</th><th>Q01 Avg</th><th>Q10 Avg</th></tr></thead>
+        <tbody>
+          <tr><td>Alpha</td><td>4.34</td><td>3.08</td></tr>
+          <tr><td>Beta</td><td>4.22</td><td>2.88</td></tr>
+          <tr><td>Gamma</td><td>4.06</td><td>3.22</td></tr>
+        </tbody>
+      </table>
+      </div>
+
+      <h3>Multi-Dimension Comparison</h3>
+
+      <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Dimension</th>
+            <th style="color: var(--eav-color);">EAV</th>
+            <th style="color: var(--slot-color);">Slot</th>
+            <th style="color: var(--json-color);">JSON</th>
+            <th style="color: var(--wide-color);">Wide</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Schema Flexibility</strong></td>
+            <td class="c-good">Infinite</td>
+            <td class="c-mid">Fixed ceiling</td>
+            <td class="c-good">Infinite</td>
+            <td class="c-bad">Requires ALTER</td>
+          </tr>
+          <tr>
+            <td><strong>Query Simplicity</strong></td>
+            <td class="c-bad">PIVOT needed</td>
+            <td class="c-mid">Join + CASE</td>
+            <td class="c-mid">json_extract</td>
+            <td class="c-good">Column names</td>
+          </tr>
+          <tr>
+            <td><strong>AI/Text-to-SQL</strong></td>
+            <td class="c-bad">Poor</td>
+            <td class="c-bad">Poor</td>
+            <td class="c-mid">Moderate</td>
+            <td class="c-good">Excellent</td>
+          </tr>
+          <tr>
+            <td><strong>Self-Describing</strong></td>
+            <td class="c-mid">Attr in data</td>
+            <td class="c-bad">Opaque slots</td>
+            <td class="c-good">Keys in data</td>
+            <td class="c-good">Column names</td>
+          </tr>
+          <tr>
+            <td><strong>Type Enforcement</strong></td>
+            <td class="c-bad">Single type</td>
+            <td class="c-mid">Per-slot type</td>
+            <td class="c-bad">Cast at query</td>
+            <td class="c-good">Column types</td>
+          </tr>
+          <tr>
+            <td><strong>Optimizer Support</strong></td>
+            <td class="c-mid">Index on attr</td>
+            <td class="c-good">Full stats</td>
+            <td class="c-bad">No key stats</td>
+            <td class="c-good">Full stats</td>
+          </tr>
+          <tr>
+            <td><strong>Row Count (45 respondents)</strong></td>
+            <td>690 rows</td>
+            <td>45 rows</td>
+            <td>45 rows</td>
+            <td>45 rows</td>
+          </tr>
+          <tr>
+            <td><strong>Parquet Size</strong></td>
+            <td>2,350 B</td>
+            <td>5,651 B</td>
+            <td>4,721 B</td>
+            <td>6,250 B</td>
+          </tr>
+        </tbody>
+      </table>
+      </div>
+
+      <div class="callout callout-info">
+        <strong>Row explosion in EAV</strong>
+        45 respondents produce 690 EAV rows (one per question-answer pair) but only 45 rows in every other approach. At scale, a query touching 1M responses across 15 questions scans 15M EAV rows vs 1M wide rows. Indexes help but do not close the gap.
+      </div>
+
+
+      <!-- ═══ DATA FLOW SVG ═══ -->
+      <h3>Data Flow: Survey Response to Query Result</h3>
+
+      <div class="svg-container">
+        <svg viewBox="0 0 820 260" width="820" height="260" xmlns="http://www.w3.org/2000/svg" style="font-family: -apple-system, BlinkMacSystemFont, sans-serif;">
+          <!-- Source -->
+          <rect x="10" y="85" width="120" height="70" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/>
+          <text x="70" y="112" text-anchor="middle" font-weight="700" font-size="12" fill="var(--accent)">Survey</text>
+          <text x="70" y="128" text-anchor="middle" font-size="10" fill="var(--accent)">Response</text>
+          <text x="70" y="145" text-anchor="middle" font-size="9" fill="var(--text-secondary)">JSON from API</text>
+
+          <!-- Arrows to each approach -->
+          <line x1="130" y1="100" x2="190" y2="45" stroke="var(--eav-color)" stroke-width="2" marker-end="url(#arr-eav)"/>
+          <line x1="130" y1="110" x2="190" y2="95" stroke="var(--slot-color)" stroke-width="2" marker-end="url(#arr-slot)"/>
+          <line x1="130" y1="125" x2="190" y2="150" stroke="var(--json-color)" stroke-width="2" marker-end="url(#arr-json)"/>
+          <line x1="130" y1="140" x2="190" y2="210" stroke="var(--wide-color)" stroke-width="2" marker-end="url(#arr-wide)"/>
+
+          <!-- EAV path -->
+          <rect x="195" y="15" width="150" height="50" rx="6" fill="var(--eav-bg)" stroke="var(--eav-color)" stroke-width="1.5"/>
+          <text x="270" y="35" text-anchor="middle" font-weight="600" font-size="11" fill="var(--eav-color)">EAV Table</text>
+          <text x="270" y="52" text-anchor="middle" font-size="9" fill="var(--text-secondary)">1 row per answer</text>
+          <line x1="345" y1="40" x2="410" y2="40" stroke="var(--eav-color)" stroke-width="1.5" stroke-dasharray="4,3"/>
+          <rect x="415" y="15" width="130" height="50" rx="6" fill="var(--eav-bg)" stroke="var(--eav-color)" stroke-width="1.5"/>
+          <text x="480" y="35" text-anchor="middle" font-size="10" fill="var(--eav-color)">PIVOT / CASE</text>
+          <text x="480" y="52" text-anchor="middle" font-size="9" fill="var(--text-secondary)">conditional agg</text>
+
+          <!-- Slot path -->
+          <rect x="195" y="75" width="150" height="50" rx="6" fill="var(--slot-bg)" stroke="var(--slot-color)" stroke-width="1.5"/>
+          <text x="270" y="95" text-anchor="middle" font-weight="600" font-size="11" fill="var(--slot-color)">Slot Table</text>
+          <text x="270" y="112" text-anchor="middle" font-size="9" fill="var(--text-secondary)">generic columns</text>
+          <line x1="345" y1="100" x2="410" y2="100" stroke="var(--slot-color)" stroke-width="1.5" stroke-dasharray="4,3"/>
+          <rect x="415" y="75" width="130" height="50" rx="6" fill="var(--slot-bg)" stroke="var(--slot-color)" stroke-width="1.5"/>
+          <text x="480" y="95" text-anchor="middle" font-size="10" fill="var(--slot-color)">JOIN mapping</text>
+          <text x="480" y="112" text-anchor="middle" font-size="9" fill="var(--text-secondary)">decode slots</text>
+
+          <!-- JSON path -->
+          <rect x="195" y="135" width="150" height="50" rx="6" fill="var(--json-bg)" stroke="var(--json-color)" stroke-width="1.5"/>
+          <text x="270" y="155" text-anchor="middle" font-weight="600" font-size="11" fill="var(--json-color)">JSON Table</text>
+          <text x="270" y="172" text-anchor="middle" font-size="9" fill="var(--text-secondary)">1 blob per row</text>
+          <line x1="345" y1="160" x2="410" y2="160" stroke="var(--json-color)" stroke-width="1.5" stroke-dasharray="4,3"/>
+          <rect x="415" y="135" width="130" height="50" rx="6" fill="var(--json-bg)" stroke="var(--json-color)" stroke-width="1.5"/>
+          <text x="480" y="155" text-anchor="middle" font-size="10" fill="var(--json-color)">json_extract</text>
+          <text x="480" y="172" text-anchor="middle" font-size="9" fill="var(--text-secondary)">UNNEST keys</text>
+
+          <!-- Wide path -->
+          <rect x="195" y="195" width="150" height="50" rx="6" fill="var(--wide-bg)" stroke="var(--wide-color)" stroke-width="1.5"/>
+          <text x="270" y="215" text-anchor="middle" font-weight="600" font-size="11" fill="var(--wide-color)">Wide Table</text>
+          <text x="270" y="232" text-anchor="middle" font-size="9" fill="var(--text-secondary)">named columns</text>
+          <line x1="345" y1="220" x2="410" y2="220" stroke="var(--wide-color)" stroke-width="1.5" stroke-dasharray="4,3"/>
+          <rect x="415" y="195" width="130" height="50" rx="6" fill="var(--wide-bg)" stroke="var(--wide-color)" stroke-width="1.5"/>
+          <text x="480" y="215" text-anchor="middle" font-size="10" fill="var(--wide-color)">AVG(col)</text>
+          <text x="480" y="232" text-anchor="middle" font-size="9" fill="var(--text-secondary)">direct access</text>
+
+          <!-- All converge to result -->
+          <line x1="545" y1="40" x2="620" y2="120" stroke="var(--eav-color)" stroke-width="1.5"/>
+          <line x1="545" y1="100" x2="620" y2="120" stroke="var(--slot-color)" stroke-width="1.5"/>
+          <line x1="545" y1="160" x2="620" y2="130" stroke="var(--json-color)" stroke-width="1.5"/>
+          <line x1="545" y1="220" x2="620" y2="140" stroke="var(--wide-color)" stroke-width="1.5"/>
+
+          <!-- Result box -->
+          <rect x="625" y="90" width="180" height="80" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/>
+          <text x="715" y="115" text-anchor="middle" font-weight="700" font-size="12" fill="var(--accent)">Same Result</text>
+          <text x="715" y="133" text-anchor="middle" font-size="10" font-family="monospace" fill="var(--svg-text)">Alpha | 4.34 | 3.08</text>
+          <text x="715" y="148" text-anchor="middle" font-size="10" font-family="monospace" fill="var(--svg-text)">Beta  | 4.22 | 2.88</text>
+          <text x="715" y="163" text-anchor="middle" font-size="10" font-family="monospace" fill="var(--svg-text)">Gamma | 4.06 | 3.22</text>
+
+          <defs>
+            <marker id="arr-eav" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+              <polygon points="0 0, 8 3, 0 6" fill="var(--eav-color)"/></marker>
+            <marker id="arr-slot" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+              <polygon points="0 0, 8 3, 0 6" fill="var(--slot-color)"/></marker>
+            <marker id="arr-json" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+              <polygon points="0 0, 8 3, 0 6" fill="var(--json-color)"/></marker>
+            <marker id="arr-wide" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+              <polygon points="0 0, 8 3, 0 6" fill="var(--wide-color)"/></marker>
+          </defs>
+        </svg>
+      </div>
+
+
+      <!-- ═══ LAB RESULTS ═══ -->
+      <h2 id="lab-results">Lab Results</h2>
+
+      <p>Five labs demonstrate each approach with the same engagement survey dataset (3 projects, 3 teams, 5 respondents per team = 45 total respondents). All labs use DuckDB in-memory.</p>
+
+      <details>
+        <summary>Lab 01: EAV Model -- Flexibility vs. analytical pain</summary>
+        <div class="details-body">
+          <p>Loads 45 respondents as 690 EAV rows. Demonstrates adding a new question (CNEW01) with zero schema change -- just <code>INSERT</code> two rows. Then shows the analytical pain: pivoting Q01-Q06 by team requires 6 <code>CASE WHEN</code> expressions.</p>
+          <p>Category aggregation (Basic Needs, Individual, Teamwork, Growth) is easier in EAV because it groups on the attribute column rather than pivoting.</p>
+          <div class="callout callout-tip">
+            <strong>Try it yourself</strong>
+            <code>uv run python labs/05_dynamic_schema_eav/01_eav_model.py</code>
+          </div>
+        </div>
+      </details>
+
+      <details>
+        <summary>Lab 02: Slot Mechanism -- The Rosetta Stone problem</summary>
+        <div class="details-body">
+          <p>Creates a 20-slot response table plus a mapping table. Demonstrates the core issue: looking at <code>slot_1 = 4.3, slot_7 = 3.9, slot_13 = 4.0</code> tells you nothing without consulting the mapping. Slot 13 means CRW01 for Phoenix, CLD01 for Atlas, CSF01 for Orbit.</p>
+          <p>The query to compute mean score by question requires joining the mapping table and a 14-branch CASE expression to select the right slot column per question.</p>
+          <div class="callout callout-tip">
+            <strong>Try it yourself</strong>
+            <code>uv run python labs/05_dynamic_schema_eav/02_slot_mechanism.py</code>
+          </div>
+        </div>
+      </details>
+
+      <details>
+        <summary>Lab 03: JSON Column -- Self-describing data</summary>
+        <div class="details-body">
+          <p>Stores each respondent as one row with a JSON column. Shows two query modes: direct access (<code>json_extract(responses, '$.Q01')</code>) for entity lookups, and <code>UNNEST(json_keys(...))</code> for analytical aggregation.</p>
+          <p>Demonstrates adding CNEW01 by inserting a row with a new JSON key -- no ALTER TABLE, no mapping rows. The key feature: an AI agent can <code>SELECT responses FROM json_responses LIMIT 1</code> and immediately discover what questions exist.</p>
+          <div class="callout callout-tip">
+            <strong>Try it yourself</strong>
+            <code>uv run python labs/05_dynamic_schema_eav/03_json_variant.py</code>
+          </div>
+        </div>
+      </details>
+
+      <details>
+        <summary>Lab 04: Sparse Wide Table -- Simplest queries, columnar compression</summary>
+        <div class="details-body">
+          <p>Creates 22 named columns (<code>q01_expectations</code>, <code>crw01_remote_tools</code>, etc.). Shows the sparsity pattern: Q01 is filled for all 45 rows, CRW01 only for Phoenix's 15, CLD01 only for Atlas's 15.</p>
+          <p>Exports to Parquet and measures: 22-column wide table = 6,250 bytes, Phoenix-only 14-column = 3,211 bytes. The mostly-NULL columns add minimal overhead in columnar storage.</p>
+          <p>Shows what <code>information_schema.columns</code> looks like to an AI agent -- semantic column names like <code>q01_expectations DECIMAL(2,1)</code> that require no lookup.</p>
+          <div class="callout callout-tip">
+            <strong>Try it yourself</strong>
+            <code>uv run python labs/05_dynamic_schema_eav/04_sparse_wide_table.py</code>
+          </div>
+        </div>
+      </details>
+
+      <details>
+        <summary>Lab 05: Approach Comparison -- Side by side</summary>
+        <div class="details-body">
+          <p>Loads the same dataset into all 4 representations and runs the identical analytical query against each. Confirms all four produce identical results. Compares SQL length, execution time, row count, and Parquet file size.</p>
+          <div class="table-wrap">
+          <table>
+            <thead><tr><th>Approach</th><th>SQL Length</th><th>Time (ms)</th><th>Rows</th><th>Parquet Size</th></tr></thead>
+            <tbody>
+              <tr><td style="color: var(--eav-color); font-weight: 600;">EAV</td><td>223 chars</td><td>1.24</td><td>690</td><td>2,350 B</td></tr>
+              <tr><td style="color: var(--slot-color); font-weight: 600;">Slots</td><td>159 chars</td><td>0.75</td><td>45</td><td>5,651 B</td></tr>
+              <tr><td style="color: var(--json-color); font-weight: 600;">JSON</td><td>241 chars</td><td>0.63</td><td>45</td><td>4,721 B</td></tr>
+              <tr><td style="color: var(--wide-color); font-weight: 600;">Wide</td><td>176 chars</td><td>0.52</td><td>45</td><td>6,250 B</td></tr>
+            </tbody>
+          </table>
+          </div>
+          <div class="callout callout-tip">
+            <strong>Try it yourself</strong>
+            <code>uv run python labs/05_dynamic_schema_eav/05_approach_comparison.py</code>
+          </div>
+        </div>
+      </details>
+
+
+      <!-- ═══ DECISION FRAMEWORK ═══ -->
+      <h2 id="decision-framework">Decision Framework</h2>
+
+      <p>The right approach depends on four factors. Walk through each to narrow down your choice.</p>
+
+      <!-- Decision flow SVG -->
+      <div class="svg-container">
+        <svg viewBox="0 0 820 420" width="820" height="420" xmlns="http://www.w3.org/2000/svg" style="font-family: -apple-system, BlinkMacSystemFont, sans-serif;">
+          <!-- Question 1: Schema variability -->
+          <rect x="280" y="5" width="260" height="45" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/>
+          <text x="410" y="32" text-anchor="middle" font-weight="700" font-size="12" fill="var(--accent)">How variable is the schema?</text>
+
+          <!-- Low -->
+          <line x1="330" y1="50" x2="130" y2="85" stroke="var(--wide-color)" stroke-width="2"/>
+          <text x="210" y="65" font-size="10" fill="var(--wide-color)" font-weight="600">Low</text>
+          <rect x="30" y="85" width="200" height="40" rx="6" fill="var(--wide-bg)" stroke="var(--wide-color)" stroke-width="1.5"/>
+          <text x="130" y="105" text-anchor="middle" font-size="11" fill="var(--wide-color)" font-weight="600">Sparse Wide Table</text>
+          <text x="130" y="120" text-anchor="middle" font-size="9" fill="var(--text-secondary)">bounded questions, quarterly changes</text>
+
+          <!-- Medium -->
+          <line x1="410" y1="50" x2="410" y2="85" stroke="var(--border)" stroke-width="2"/>
+          <text x="425" y="70" font-size="10" fill="var(--text-secondary)" font-weight="600">Medium</text>
+          <rect x="300" y="85" width="220" height="40" rx="6" fill="var(--bg-secondary)" stroke="var(--border)" stroke-width="1.5"/>
+          <text x="410" y="108" text-anchor="middle" font-size="11" fill="var(--svg-text)" font-weight="600">Slot or JSON</text>
+
+          <!-- High -->
+          <line x1="490" y1="50" x2="690" y2="85" stroke="var(--eav-color)" stroke-width="2"/>
+          <text x="610" y="65" font-size="10" fill="var(--eav-color)" font-weight="600">High</text>
+          <rect x="590" y="85" width="200" height="40" rx="6" fill="var(--eav-bg)" stroke="var(--eav-color)" stroke-width="1.5"/>
+          <text x="690" y="105" text-anchor="middle" font-size="11" fill="var(--eav-color)" font-weight="600">EAV or JSON</text>
+          <text x="690" y="120" text-anchor="middle" font-size="9" fill="var(--text-secondary)">user-generated forms, unbounded</text>
+
+          <!-- Question 2: Query pattern -->
+          <line x1="410" y1="125" x2="410" y2="155" stroke="var(--border)" stroke-width="2"/>
+          <rect x="280" y="155" width="260" height="45" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/>
+          <text x="410" y="182" text-anchor="middle" font-weight="700" font-size="12" fill="var(--accent)">Primary query pattern?</text>
+
+          <!-- Entity lookup -->
+          <line x1="330" y1="200" x2="130" y2="235" stroke="var(--border)" stroke-width="2"/>
+          <text x="210" y="215" font-size="10" fill="var(--text-secondary)" font-weight="600">Entity lookup</text>
+          <rect x="30" y="235" width="200" height="40" rx="6" fill="var(--json-bg)" stroke="var(--json-color)" stroke-width="1.5"/>
+          <text x="130" y="255" text-anchor="middle" font-size="11" fill="var(--json-color)" font-weight="600">EAV or JSON work well</text>
+          <text x="130" y="270" text-anchor="middle" font-size="9" fill="var(--text-secondary);">"show respondent X's answers"</text>
+
+          <!-- Analytics -->
+          <line x1="490" y1="200" x2="690" y2="235" stroke="var(--border)" stroke-width="2"/>
+          <text x="610" y="215" font-size="10" fill="var(--text-secondary)" font-weight="600">Analytics</text>
+          <rect x="590" y="235" width="200" height="40" rx="6" fill="var(--wide-bg)" stroke="var(--wide-color)" stroke-width="1.5"/>
+          <text x="690" y="255" text-anchor="middle" font-size="11" fill="var(--wide-color)" font-weight="600">Sparse Wide wins</text>
+          <text x="690" y="270" text-anchor="middle" font-size="9" fill="var(--text-secondary);">"mean score by team by quarter"</text>
+
+          <!-- Question 3: Consumer -->
+          <line x1="410" y1="200" x2="410" y2="305" stroke="var(--border)" stroke-width="2"/>
+          <rect x="280" y="305" width="260" height="45" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/>
+          <text x="410" y="332" text-anchor="middle" font-weight="700" font-size="12" fill="var(--accent)">Who writes the queries?</text>
+
+          <!-- Human -->
+          <line x1="330" y1="350" x2="170" y2="375" stroke="var(--border)" stroke-width="2"/>
+          <text x="230" y="365" font-size="10" fill="var(--text-secondary)" font-weight="600">Human analysts</text>
+          <rect x="50" y="375" width="240" height="35" rx="6" fill="var(--bg-secondary)" stroke="var(--border)" stroke-width="1.5"/>
+          <text x="170" y="397" text-anchor="middle" font-size="11" fill="var(--svg-text)">Any approach -- they learn patterns</text>
+
+          <!-- AI -->
+          <line x1="490" y1="350" x2="650" y2="375" stroke="var(--border)" stroke-width="2"/>
+          <text x="580" y="365" font-size="10" fill="var(--text-secondary)" font-weight="600">AI agents</text>
+          <rect x="530" y="375" width="260" height="35" rx="6" fill="var(--wide-bg)" stroke="var(--wide-color)" stroke-width="2"/>
+          <text x="660" y="397" text-anchor="middle" font-size="11" fill="var(--wide-color)" font-weight="700">Wide strongly preferred</text>
+        </svg>
+      </div>
+
+      <h3>Storage Engine Matters</h3>
+      <div class="card-grid">
+        <div class="card">
+          <h3>Columnar (DuckDB, Snowflake, BigQuery, Parquet)</h3>
+          <p>Sparse wide is cheap. NULLs compress away. This is the storage engine that makes the wide table practical.</p>
+        </div>
+        <div class="card">
+          <h3>Row-store (PostgreSQL, MySQL)</h3>
+          <p>Sparse wide is expensive -- every row stores the NULL slots contiguously. EAV or JSON may be more practical here.</p>
+        </div>
+      </div>
+
+      <h3>For the Engagement Survey Agent Use Case</h3>
+
+      <div class="callout callout-tip">
+        <strong>Recommendation: Sparse Wide Table</strong>
+        <ul>
+          <li><strong>Schema variability:</strong> LOW -- 12 standard + bounded custom per project</li>
+          <li><strong>Query pattern:</strong> ANALYTICS -- mean scores, trends, comparisons</li>
+          <li><strong>Consumer:</strong> AI AGENT -- needs semantic column names</li>
+          <li><strong>Engine:</strong> COLUMNAR -- NULLs are free in DuckDB/Parquet</li>
+        </ul>
+        <p style="margin-top: 0.5rem;">Simplest queries, best AI compatibility, negligible NULL overhead. JSON is the reasonable second choice -- self-describing and flexible, but the AI must handle <code>json_extract</code> syntax.</p>
+      </div>
+
+    </main>
+
+    <footer>
+      <h2>Sources</h2>
+      <div class="source"><code>notes/05_dynamic_schema_eav.md</code></div>
+      <div class="source"><code>labs/05_dynamic_schema_eav/01_eav_model.py</code></div>
+      <div class="source"><code>labs/05_dynamic_schema_eav/02_slot_mechanism.py</code></div>
+      <div class="source"><code>labs/05_dynamic_schema_eav/03_json_variant.py</code></div>
+      <div class="source"><code>labs/05_dynamic_schema_eav/04_sparse_wide_table.py</code></div>
+      <div class="source"><code>labs/05_dynamic_schema_eav/05_approach_comparison.py</code></div>
+    </footer>
+  </div>
+
+  <script>
+    (function() {
+      var toggle = document.getElementById('theme-toggle');
+      var KEY = 'synthesis-theme';
+
+      function setTheme(t) {
+        document.documentElement.setAttribute('data-theme', t);
+        toggle.setAttribute('aria-label',
+          t === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+        try { localStorage.setItem(KEY, t); } catch(e) {}
+      }
+
+      var saved = null;
+      try { saved = localStorage.getItem(KEY); } catch(e) {}
+
+      if (saved) {
+        setTheme(saved);
+      } else {
+        setTheme(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      }
+
+      toggle.addEventListener('click', function() {
+        var current = document.documentElement.getAttribute('data-theme');
+        setTheme(current === 'dark' ? 'light' : 'dark');
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,1452 @@
+<!--
+  Synthesis Page: Warehousing Fundamentals
+  Generated: 2026-08-23
+  Sources:
+  notes/01_warehousing_fundamentals.md
+  labs/01_warehousing_fundamentals/01_star_schema.py
+  labs/01_warehousing_fundamentals/02_snowflake_schema.py
+  labs/01_warehousing_fundamentals/03_materialized_views.py
+  labs/01_warehousing_fundamentals/04_slowly_changing_dimensions.py
+  labs/01_warehousing_fundamentals/05_grain_and_measures.py
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Warehousing Fundamentals</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --bg-secondary: #f5f7fa;
+      --text: #1a1a2e;
+      --text-secondary: #555770;
+      --border: #e0e0e8;
+      --accent: #4a6cf7;
+      --accent-soft: #eef0ff;
+      --code-bg: #f0f2f8;
+      --card-bg: #ffffff;
+      --card-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      --callout-info: #e8f0fe;
+      --callout-warn: #fef7e0;
+      --callout-tip: #e6f9ef;
+      --callout-info-border: #4a6cf7;
+      --callout-warn-border: #e6a817;
+      --callout-tip-border: #27ae60;
+      --sidebar-bg: #f8f9fc;
+      --sidebar-active: #4a6cf7;
+      --sidebar-active-bg: #eef0ff;
+      --svg-fact: #4a6cf7;
+      --svg-dim: #27ae60;
+      --svg-dim-sub: #e6a817;
+      --svg-arrow: #888;
+      --svg-label: #1a1a2e;
+      --svg-fact-fill: #eef0ff;
+      --svg-dim-fill: #e6f9ef;
+      --svg-dim-sub-fill: #fef7e0;
+      --good: #27ae60;
+      --bad: #e74c3c;
+      --neutral: #e6a817;
+      --good-bg: #e6f9ef;
+      --bad-bg: #fde8e8;
+      --neutral-bg: #fef7e0;
+      --scd-old: #e74c3c;
+      --scd-new: #27ae60;
+      --scd-old-fill: #fde8e8;
+      --scd-new-fill: #e6f9ef;
+      --kw: #7c3aed;
+      --fn: #0891b2;
+      --str: #16a34a;
+      --cm: #9ca3af;
+      --num: #ea580c;
+    }
+
+    [data-theme="dark"] {
+      --bg: #0f0f1a;
+      --bg-secondary: #1a1a2e;
+      --text: #e0e0ec;
+      --text-secondary: #9999b0;
+      --border: #2a2a40;
+      --accent: #6b8cff;
+      --accent-soft: #1a1a3e;
+      --code-bg: #1e1e32;
+      --card-bg: #16162a;
+      --card-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      --callout-info: #141430;
+      --callout-warn: #1e1a10;
+      --callout-tip: #0e1e14;
+      --callout-info-border: #6b8cff;
+      --callout-warn-border: #d4a017;
+      --callout-tip-border: #2ecc71;
+      --sidebar-bg: #12121f;
+      --sidebar-active: #6b8cff;
+      --sidebar-active-bg: #1a1a3e;
+      --svg-fact: #6b8cff;
+      --svg-dim: #2ecc71;
+      --svg-dim-sub: #d4a017;
+      --svg-arrow: #666;
+      --svg-label: #e0e0ec;
+      --svg-fact-fill: #1a1a3e;
+      --svg-dim-fill: #0e1e14;
+      --svg-dim-sub-fill: #1e1a10;
+      --good: #2ecc71;
+      --bad: #ff6b6b;
+      --neutral: #d4a017;
+      --good-bg: #0e1e14;
+      --bad-bg: #1e0e0e;
+      --neutral-bg: #1e1a10;
+      --scd-old: #ff6b6b;
+      --scd-new: #2ecc71;
+      --scd-old-fill: #1e0e0e;
+      --scd-new-fill: #0e1e14;
+      --kw: #a78bfa;
+      --fn: #22d3ee;
+      --str: #4ade80;
+      --cm: #6b7280;
+      --num: #fb923c;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    /* ── Layout: sidebar + content ── */
+    .page-layout {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    aside.sidebar {
+      width: 240px;
+      flex-shrink: 0;
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--border);
+      padding: 1.5rem 0;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      transition: background 0.3s ease, border-color 0.3s ease;
+    }
+
+    .sidebar-title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-secondary);
+      padding: 0 1.2rem;
+      margin-bottom: 0.8rem;
+    }
+
+    .sidebar-nav { list-style: none; }
+
+    .sidebar-nav a {
+      display: block;
+      padding: 0.45rem 1.2rem;
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      text-decoration: none;
+      border-left: 3px solid transparent;
+      transition: all 0.15s ease;
+      border-bottom: none;
+      line-height: 1.4;
+    }
+
+    .sidebar-nav a:hover {
+      color: var(--text);
+      background: var(--bg-secondary);
+      border-bottom: none;
+    }
+
+    .sidebar-nav .active a {
+      color: var(--sidebar-active);
+      background: var(--sidebar-active-bg);
+      border-left-color: var(--sidebar-active);
+      font-weight: 600;
+    }
+
+    .sidebar-section {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-secondary);
+      padding: 1rem 1.2rem 0.4rem;
+      opacity: 0.7;
+    }
+
+    .content-area { flex: 1; min-width: 0; }
+
+    /* ── Header ── */
+    header {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2.5rem 2rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    header h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.3;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-shrink: 0;
+      padding-top: 0.35rem;
+    }
+
+    .meta-date {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+
+    /* ── Theme button ── */
+    .theme-btn {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg-secondary);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.7rem;
+      flex-shrink: 0;
+      transition: background 0.2s ease, border-color 0.2s ease;
+      color: var(--text-secondary);
+      font-family: inherit;
+      font-size: 0.8rem;
+      font-weight: 500;
+      line-height: 1;
+    }
+
+    .theme-btn:hover {
+      background: var(--border);
+      color: var(--text);
+    }
+
+    .theme-btn:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .theme-btn svg { width: 16px; height: 16px; }
+
+    .theme-btn .icon-sun,
+    .theme-btn .icon-moon,
+    .theme-btn .label-light,
+    .theme-btn .label-dark { display: none; }
+
+    [data-theme="dark"] .theme-btn .icon-sun { display: block; }
+    [data-theme="dark"] .theme-btn .label-dark { display: inline; }
+    :root:not([data-theme="dark"]) .theme-btn .icon-moon { display: block; }
+    :root:not([data-theme="dark"]) .theme-btn .label-light { display: inline; }
+    [data-theme="light"] .theme-btn .icon-moon { display: block; }
+    [data-theme="light"] .theme-btn .label-light { display: inline; }
+
+    /* ── Main ── */
+    main {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 2rem 3rem;
+    }
+
+    main h2 {
+      font-size: 1.35rem;
+      font-weight: 600;
+      margin: 2.5rem 0 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 2px solid var(--border);
+      letter-spacing: -0.01em;
+    }
+
+    main h2:first-child { margin-top: 0.5rem; }
+
+    main h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin: 1.8rem 0 0.6rem;
+    }
+
+    main h4 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin: 1.2rem 0 0.4rem;
+      color: var(--text-secondary);
+    }
+
+    main p { margin: 0.8rem 0; }
+
+    main ul, main ol {
+      margin: 0.8rem 0;
+      padding-left: 1.6rem;
+    }
+
+    main li { margin: 0.35rem 0; }
+    main li strong { color: var(--accent); }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.2s;
+    }
+
+    a:hover { border-bottom-color: var(--accent); }
+
+    code {
+      font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+      font-size: 0.88em;
+      background: var(--code-bg);
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+    }
+
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      overflow-x: auto;
+      margin: 1rem 0;
+    }
+
+    pre code {
+      background: none;
+      padding: 0;
+      font-size: 0.85em;
+      line-height: 1.6;
+    }
+
+    blockquote {
+      border-left: 3px solid var(--accent);
+      padding: 0.6rem 1rem;
+      margin: 1rem 0;
+      background: var(--accent-soft);
+      border-radius: 0 6px 6px 0;
+      color: var(--text-secondary);
+    }
+
+    /* ── Tables ── */
+    .table-wrap {
+      overflow-x: auto;
+      margin: 1rem 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.92em;
+    }
+
+    th, td {
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      font-weight: 600;
+      background: var(--bg-secondary);
+      white-space: nowrap;
+    }
+
+    tr:hover td { background: var(--bg-secondary); }
+
+    /* Color-coded cells */
+    .cell-good { background: var(--good-bg); color: var(--good); font-weight: 600; }
+    .cell-bad { background: var(--bad-bg); color: var(--bad); font-weight: 600; }
+    .cell-neutral { background: var(--neutral-bg); color: var(--neutral); font-weight: 600; }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.2rem 1.4rem;
+      margin: 1rem 0;
+      box-shadow: var(--card-shadow);
+      transition: box-shadow 0.2s ease, transform 0.2s ease;
+    }
+
+    .card:hover {
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+      transform: translateY(-1px);
+    }
+
+    [data-theme="dark"] .card:hover {
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    }
+
+    .card h3 { margin-top: 0; }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+
+    .card-grid .card { margin: 0; }
+
+    /* ── Callouts ── */
+    .callout {
+      padding: 0.8rem 1rem;
+      border-radius: 8px;
+      margin: 1rem 0;
+      border-left: 4px solid;
+    }
+
+    .callout-info {
+      background: var(--callout-info);
+      border-left-color: var(--callout-info-border);
+    }
+
+    .callout-warn {
+      background: var(--callout-warn);
+      border-left-color: var(--callout-warn-border);
+    }
+
+    .callout-tip {
+      background: var(--callout-tip);
+      border-left-color: var(--callout-tip-border);
+    }
+
+    .callout strong {
+      display: block;
+      margin-bottom: 0.3rem;
+    }
+
+    /* ── Try-it callout ── */
+    .try-it {
+      background: var(--callout-tip);
+      border-left: 4px solid var(--callout-tip-border);
+      border-radius: 8px;
+      padding: 0.8rem 1rem;
+      margin: 1.2rem 0;
+    }
+
+    .try-it strong { display: block; margin-bottom: 0.3rem; color: var(--good); }
+
+    .try-it code {
+      font-size: 0.82em;
+      display: inline-block;
+      margin-top: 0.3rem;
+    }
+
+    /* ── Syntax highlighting ── */
+    .kw { color: var(--kw); font-weight: 600; }
+    .fn { color: var(--fn); }
+    .str { color: var(--str); }
+    .cm { color: var(--cm); font-style: italic; }
+    .num { color: var(--num); }
+
+    /* ── Details/Summary ── */
+    details {
+      margin: 1rem 0;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    summary {
+      padding: 0.7rem 1rem;
+      background: var(--bg-secondary);
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.92rem;
+      user-select: none;
+      transition: background 0.15s ease;
+    }
+
+    summary:hover { background: var(--border); }
+
+    details[open] summary { border-bottom: 1px solid var(--border); }
+
+    details .detail-content {
+      padding: 1rem;
+    }
+
+    /* ── SVG diagrams ── */
+    .diagram-container {
+      margin: 1.5rem 0;
+      text-align: center;
+      overflow-x: auto;
+    }
+
+    .diagram-container svg {
+      max-width: 100%;
+      height: auto;
+    }
+
+    /* ── Comparison layout ── */
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+
+    .compare-grid > div {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .compare-label {
+      padding: 0.5rem 0.8rem;
+      font-weight: 600;
+      font-size: 0.85rem;
+      text-align: center;
+    }
+
+    .compare-label.good { background: var(--good-bg); color: var(--good); }
+    .compare-label.bad { background: var(--bad-bg); color: var(--bad); }
+    .compare-label.neutral { background: var(--neutral-bg); color: var(--neutral); }
+
+    /* ── Table of contents ── */
+    nav.toc {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.4rem;
+      margin: 1.5rem 0;
+    }
+
+    nav.toc ul { list-style: none; padding-left: 0; }
+    nav.toc li { margin: 0.3rem 0; }
+
+    nav.toc a {
+      color: var(--text-secondary);
+      font-size: 0.92em;
+    }
+
+    nav.toc a:hover { color: var(--accent); }
+
+    /* ── SVG ── */
+    svg text { fill: var(--svg-label); }
+    svg .stroke { stroke: var(--border); }
+
+    /* ── Output block ── */
+    .output-block {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.8rem 1rem;
+      margin: 0.8rem 0;
+      font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+      font-size: 0.8em;
+      overflow-x: auto;
+      line-height: 1.5;
+      white-space: pre;
+    }
+
+    /* ── Footer ── */
+    footer {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2rem;
+      border-top: 1px solid var(--border);
+    }
+
+    footer h2 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    footer .source {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin: 0.25rem 0;
+    }
+
+    footer .source code { font-size: 0.85em; }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      aside.sidebar { display: none; }
+    }
+
+    @media (max-width: 600px) {
+      header { padding: 1.5rem 1rem 1rem; flex-direction: column; }
+      main { padding: 0 1rem 2rem; }
+      footer { padding: 1.5rem 1rem; }
+      .card-grid { grid-template-columns: 1fr; }
+      .compare-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-layout">
+    <aside class="sidebar">
+      <div class="sidebar-title">Data Engineering Topics</div>
+      <ul class="sidebar-nav">
+        <li class="active"><a href="01_warehousing_fundamentals.html">1. Warehousing Fundamentals</a></li>
+        <li><a href="02_columnar_storage.html">2. Columnar Storage</a></li>
+        <li><a href="03_medallion_and_dbt.html">3. Medallion Architecture + dbt</a></li>
+        <li><a href="04_precomputation_vs_runtime.html">4. Pre-computation vs Runtime</a></li>
+        <li><a href="05_dynamic_schema_eav.html">5. Dynamic Schema / EAV</a></li>
+        <li><a href="06_oltp_olap_spectrum.html">6. OLTP vs OLAP Spectrum</a></li>
+        <li><a href="07_suppression_access_control.html">7. Suppression &amp; Access Control</a></li>
+        <li><a href="08_frontier_survey_platforms.html">8. Frontier Survey Platforms</a></li>
+        <li><a href="09_agentic_data_access.html">9. Agentic Data Access</a></li>
+      </ul>
+    </aside>
+
+    <div class="content-area">
+      <header>
+        <h1>Warehousing Fundamentals</h1>
+        <div class="header-right">
+          <span class="meta-date">2026-08-23</span>
+          <button class="theme-btn" id="theme-toggle" aria-label="Toggle dark mode">
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+            </svg>
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+            <span class="label-light">Light</span>
+            <span class="label-dark">Dark</span>
+          </button>
+        </div>
+      </header>
+
+      <main>
+        <!-- ═══ INTRO ═══ -->
+        <p>A data warehouse is a separate database optimized for analytical queries -- the opposite of your transactional (OLTP) application database. While your app handles thousands of small, fast reads and writes per second, a warehouse handles a few massive queries that scan millions of rows to produce aggregated insights.</p>
+
+        <div class="card-grid">
+          <div class="card">
+            <h3>OLTP (App Database)</h3>
+            <ul>
+              <li>Read one employee, insert one response</li>
+              <li>Normalized schema (3NF), foreign keys</li>
+              <li>Current-state only</li>
+              <li>Single source system</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>OLAP (Data Warehouse)</h3>
+            <ul>
+              <li>Scan all responses, aggregate by group</li>
+              <li>Denormalized, wide tables for fast scans</li>
+              <li>Historical data preserved</li>
+              <li>Multiple sources consolidated</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="callout callout-warn">
+          <strong>Why not just query the app database?</strong>
+          A query scanning 10 million survey responses will lock rows, consume memory, and cause timeouts for users submitting surveys. The performance conflict alone justifies a separate warehouse -- but schema mismatch, historical data needs, and multi-source consolidation make the case even stronger.
+        </div>
+
+        <nav class="toc">
+          <strong>On this page</strong>
+          <ul>
+            <li><a href="#star-schema">Star Schema</a></li>
+            <li><a href="#snowflake-schema">Snowflake Schema</a></li>
+            <li><a href="#grain">Grain: The Critical Design Decision</a></li>
+            <li><a href="#measures">Measures: Additive, Semi-Additive, Non-Additive</a></li>
+            <li><a href="#materialized-views">Materialized Views</a></li>
+            <li><a href="#scd">Slowly Changing Dimensions</a></li>
+            <li><a href="#keys">Surrogate vs Natural Keys</a></li>
+            <li><a href="#survey-challenges">Survey Data Challenges</a></li>
+          </ul>
+        </nav>
+
+        <!-- ═══ STAR SCHEMA ═══ -->
+        <h2 id="star-schema">Star Schema: The Core Pattern</h2>
+
+        <p>A star schema has two types of tables: a central <strong>fact table</strong> storing measurements (things you count, sum, or average) and surrounding <strong>dimension tables</strong> storing descriptive attributes (the who, what, when, where context). It's called a "star" because the fact table sits at the center with dimensions radiating outward.</p>
+
+        <div class="diagram-container">
+          <svg viewBox="0 0 700 420" xmlns="http://www.w3.org/2000/svg" width="700" height="420">
+            <!-- Dimension: dim_team (top-left) -->
+            <rect x="30" y="20" width="180" height="110" rx="8" fill="var(--svg-dim-fill)" stroke="var(--svg-dim)" stroke-width="2"/>
+            <text x="120" y="45" text-anchor="middle" font-weight="700" font-size="13" fill="var(--svg-dim)">dim_team</text>
+            <line x1="50" y1="55" x2="190" y2="55" stroke="var(--svg-dim)" stroke-width="1" opacity="0.4"/>
+            <text x="50" y="72" font-size="11" fill="var(--svg-label)">team_key (PK)</text>
+            <text x="50" y="88" font-size="11" fill="var(--svg-label)">team_name</text>
+            <text x="50" y="104" font-size="11" fill="var(--svg-label)">department, location</text>
+
+            <!-- Dimension: dim_question (top-right) -->
+            <rect x="490" y="20" width="180" height="110" rx="8" fill="var(--svg-dim-fill)" stroke="var(--svg-dim)" stroke-width="2"/>
+            <text x="580" y="45" text-anchor="middle" font-weight="700" font-size="13" fill="var(--svg-dim)">dim_question</text>
+            <line x1="510" y1="55" x2="650" y2="55" stroke="var(--svg-dim)" stroke-width="1" opacity="0.4"/>
+            <text x="510" y="72" font-size="11" fill="var(--svg-label)">question_key (PK)</text>
+            <text x="510" y="88" font-size="11" fill="var(--svg-label)">question_id (Q01-Q12)</text>
+            <text x="510" y="104" font-size="11" fill="var(--svg-label)">question_text, category</text>
+
+            <!-- Fact table (center) -->
+            <rect x="215" y="140" width="270" height="160" rx="8" fill="var(--svg-fact-fill)" stroke="var(--svg-fact)" stroke-width="2.5"/>
+            <text x="350" y="168" text-anchor="middle" font-weight="700" font-size="14" fill="var(--svg-fact)">fact_survey_responses</text>
+            <line x1="235" y1="178" x2="465" y2="178" stroke="var(--svg-fact)" stroke-width="1" opacity="0.4"/>
+            <text x="245" y="196" font-size="11" fill="var(--svg-label)">response_id (PK)</text>
+            <text x="245" y="212" font-size="11" fill="var(--svg-label)">team_key (FK)</text>
+            <text x="245" y="228" font-size="11" fill="var(--svg-label)">question_key (FK)</text>
+            <text x="245" y="244" font-size="11" fill="var(--svg-label)">project_key (FK)</text>
+            <text x="245" y="260" font-size="11" fill="var(--svg-label)">time_period_key (FK)</text>
+            <text x="385" y="212" font-size="11" fill="var(--svg-fact)" font-weight="600">score</text>
+            <text x="385" y="228" font-size="11" fill="var(--svg-fact)" font-weight="600">response_count</text>
+            <text x="385" y="196" font-size="10" fill="var(--text-secondary)" font-style="italic">Measures:</text>
+
+            <!-- Dimension: dim_project (bottom-left) -->
+            <rect x="30" y="330" width="180" height="80" rx="8" fill="var(--svg-dim-fill)" stroke="var(--svg-dim)" stroke-width="2"/>
+            <text x="120" y="355" text-anchor="middle" font-weight="700" font-size="13" fill="var(--svg-dim)">dim_project</text>
+            <line x1="50" y1="365" x2="190" y2="365" stroke="var(--svg-dim)" stroke-width="1" opacity="0.4"/>
+            <text x="50" y="382" font-size="11" fill="var(--svg-label)">project_key (PK)</text>
+            <text x="50" y="398" font-size="11" fill="var(--svg-label)">project_name</text>
+
+            <!-- Dimension: dim_time_period (bottom-right) -->
+            <rect x="490" y="330" width="180" height="80" rx="8" fill="var(--svg-dim-fill)" stroke="var(--svg-dim)" stroke-width="2"/>
+            <text x="580" y="355" text-anchor="middle" font-weight="700" font-size="13" fill="var(--svg-dim)">dim_time_period</text>
+            <line x1="510" y1="365" x2="650" y2="365" stroke="var(--svg-dim)" stroke-width="1" opacity="0.4"/>
+            <text x="510" y="382" font-size="11" fill="var(--svg-label)">time_period_key (PK)</text>
+            <text x="510" y="398" font-size="11" fill="var(--svg-label)">period_label, year, quarter</text>
+
+            <!-- Connecting lines (FK arrows) -->
+            <line x1="210" y1="85" x2="260" y2="170" stroke="var(--svg-arrow)" stroke-width="1.5" stroke-dasharray="4,3"/>
+            <line x1="490" y1="85" x2="440" y2="170" stroke="var(--svg-arrow)" stroke-width="1.5" stroke-dasharray="4,3"/>
+            <line x1="175" y1="330" x2="260" y2="270" stroke="var(--svg-arrow)" stroke-width="1.5" stroke-dasharray="4,3"/>
+            <line x1="525" y1="330" x2="440" y2="270" stroke="var(--svg-arrow)" stroke-width="1.5" stroke-dasharray="4,3"/>
+
+            <!-- Labels on arrows -->
+            <text x="220" y="122" font-size="9" fill="var(--text-secondary)" transform="rotate(-25, 220, 122)">team_key</text>
+            <text x="450" y="122" font-size="9" fill="var(--text-secondary)" transform="rotate(25, 450, 122)">question_key</text>
+            <text x="190" y="310" font-size="9" fill="var(--text-secondary)" transform="rotate(25, 190, 310)">project_key</text>
+            <text x="475" y="310" font-size="9" fill="var(--text-secondary)" transform="rotate(-25, 475, 310)">time_period_key</text>
+          </svg>
+        </div>
+
+        <p>The engagement survey framework provides the question dimension -- 12 validated engagement questions grouped into four categories: <strong>Basic Needs</strong> (Q01-Q02, scores ~3.9-4.1), <strong>Individual</strong> (Q03-Q06, ~3.4-3.8), <strong>Teamwork</strong> (Q07-Q10, ~3.0-3.8), and <strong>Growth</strong> (Q11-Q12, ~3.3-3.5). Each is scored on a 1-5 Likert scale.</p>
+
+        <h3>Querying the Star: Join, Filter, Aggregate</h3>
+
+        <p>Every analytical question follows the same pattern: start from the fact table, join the dimensions you need, filter, and aggregate. The star schema makes every combination of slicing available through the same SQL pattern.</p>
+
+        <pre><code><span class="cm">-- Mean engagement score for Team Alpha in Q1 2025</span>
+<span class="kw">SELECT</span>
+    dt.team_name,
+    dtp.period_label,
+    <span class="fn">ROUND</span>(<span class="fn">AVG</span>(f.score), <span class="num">2</span>) <span class="kw">AS</span> mean_score
+<span class="kw">FROM</span> fact_survey_responses f
+<span class="kw">JOIN</span> dim_team dt         <span class="kw">ON</span> f.team_key = dt.team_key
+<span class="kw">JOIN</span> dim_time_period dtp <span class="kw">ON</span> f.time_period_key = dtp.time_period_key
+<span class="kw">WHERE</span> dt.team_name = <span class="str">'Team Alpha'</span>
+  <span class="kw">AND</span> dtp.period_label = <span class="str">'Q1 2025'</span>
+<span class="kw">GROUP BY</span> dt.team_name, dtp.period_label;</code></pre>
+
+        <p>To slice differently -- by question category instead of team -- you join <code>dim_question</code> and group by <code>dq.category</code>. The fact table stays the same; only the joins and groupings change.</p>
+
+        <details>
+          <summary>Lab Output: Star Schema Queries (Lab 01)</summary>
+          <div class="detail-content">
+            <h4>Mean Engagement Score by Team</h4>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Team</th><th>Department</th><th>Mean Score</th><th>Responses</th></tr></thead>
+                <tbody>
+                  <tr><td>Team Alpha</td><td>Engineering</td><td><strong>3.95</strong></td><td>216</td></tr>
+                  <tr><td>Team Delta</td><td>Sales</td><td>3.66</td><td>216</td></tr>
+                  <tr><td>Team Beta</td><td>Engineering</td><td>3.61</td><td>216</td></tr>
+                  <tr><td>Team Gamma</td><td>Product</td><td>3.39</td><td>216</td></tr>
+                  <tr><td>Team Epsilon</td><td>Sales</td><td><strong>3.21</strong></td><td>216</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p>Team Alpha leads with a +0.3 score adjustment in the simulation; Team Epsilon trails with -0.4. Each team has 216 responses (12 questions x 2 periods x 3 projects x 3 respondents).</p>
+
+            <h4>Mean Score by Engagement Category</h4>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Category</th><th>Mean Score</th><th>Responses</th></tr></thead>
+                <tbody>
+                  <tr><td>Basic Needs</td><td><strong>3.97</strong></td><td>180</td></tr>
+                  <tr><td>Individual</td><td>3.53</td><td>360</td></tr>
+                  <tr><td>Teamwork</td><td>3.50</td><td>360</td></tr>
+                  <tr><td>Growth</td><td><strong>3.35</strong></td><td>180</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p>This pattern is realistic: Basic Needs questions ("I know what is expected of me") tend to score highest. Growth questions ("I have had opportunities to learn") score lowest. Individual and Teamwork have twice the responses because they each contain 4 questions vs 2 for the other categories.</p>
+
+            <h4>Department x Category Matrix</h4>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Department</th><th>Category</th><th>Mean Score</th></tr></thead>
+                <tbody>
+                  <tr><td>Engineering</td><td>Basic Needs</td><td>4.12</td></tr>
+                  <tr><td>Engineering</td><td>Growth</td><td>3.58</td></tr>
+                  <tr><td>Engineering</td><td>Individual</td><td>3.76</td></tr>
+                  <tr><td>Engineering</td><td>Teamwork</td><td>3.73</td></tr>
+                  <tr><td>Product</td><td>Basic Needs</td><td>3.83</td></tr>
+                  <tr><td>Product</td><td>Growth</td><td>3.16</td></tr>
+                  <tr><td>Product</td><td>Individual</td><td>3.36</td></tr>
+                  <tr><td>Product</td><td>Teamwork</td><td>3.31</td></tr>
+                  <tr><td>Sales</td><td>Basic Needs</td><td>3.89</td></tr>
+                  <tr><td>Sales</td><td>Growth</td><td>3.21</td></tr>
+                  <tr><td>Sales</td><td>Individual</td><td>3.40</td></tr>
+                  <tr><td>Sales</td><td>Teamwork</td><td>3.36</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p>Same fact table, different slicing. Three different queries, three different business questions, zero schema changes.</p>
+          </div>
+        </details>
+
+        <div class="try-it">
+          <strong>Try it yourself</strong>
+          <code>uv run python labs/01_warehousing_fundamentals/01_star_schema.py</code>
+        </div>
+
+        <!-- ═══ SNOWFLAKE SCHEMA ═══ -->
+        <h2 id="snowflake-schema">Snowflake Schema: When Dimensions Have Dimensions</h2>
+
+        <p>A snowflake schema normalizes dimension tables further. Instead of <code>dim_team</code> containing <code>department</code> and <code>location</code> directly, those become separate dimension tables linked through foreign keys.</p>
+
+        <div class="diagram-container">
+          <svg viewBox="0 0 720 380" xmlns="http://www.w3.org/2000/svg" width="720" height="380">
+            <!-- dim_department (far left) -->
+            <rect x="10" y="20" width="155" height="90" rx="8" fill="var(--svg-dim-sub-fill)" stroke="var(--svg-dim-sub)" stroke-width="2"/>
+            <text x="87" y="42" text-anchor="middle" font-weight="700" font-size="12" fill="var(--svg-dim-sub)">dim_department</text>
+            <line x1="25" y1="50" x2="150" y2="50" stroke="var(--svg-dim-sub)" stroke-width="1" opacity="0.4"/>
+            <text x="25" y="66" font-size="10" fill="var(--svg-label)">department_key (PK)</text>
+            <text x="25" y="80" font-size="10" fill="var(--svg-label)">department_name</text>
+            <text x="25" y="94" font-size="10" fill="var(--svg-label)">division</text>
+
+            <!-- dim_location (far left bottom) -->
+            <rect x="10" y="140" width="155" height="80" rx="8" fill="var(--svg-dim-sub-fill)" stroke="var(--svg-dim-sub)" stroke-width="2"/>
+            <text x="87" y="162" text-anchor="middle" font-weight="700" font-size="12" fill="var(--svg-dim-sub)">dim_location</text>
+            <line x1="25" y1="170" x2="150" y2="170" stroke="var(--svg-dim-sub)" stroke-width="1" opacity="0.4"/>
+            <text x="25" y="186" font-size="10" fill="var(--svg-label)">location_key (PK)</text>
+            <text x="25" y="200" font-size="10" fill="var(--svg-label)">city, region</text>
+
+            <!-- dim_team (normalized, middle-left) -->
+            <rect x="200" y="60" width="150" height="100" rx="8" fill="var(--svg-dim-fill)" stroke="var(--svg-dim)" stroke-width="2"/>
+            <text x="275" y="82" text-anchor="middle" font-weight="700" font-size="12" fill="var(--svg-dim)">dim_team</text>
+            <line x1="215" y1="90" x2="335" y2="90" stroke="var(--svg-dim)" stroke-width="1" opacity="0.4"/>
+            <text x="215" y="106" font-size="10" fill="var(--svg-label)">team_key (PK)</text>
+            <text x="215" y="120" font-size="10" fill="var(--svg-label)">team_name</text>
+            <text x="215" y="134" font-size="10" fill="var(--svg-label)">department_key (FK)</text>
+            <text x="215" y="148" font-size="10" fill="var(--svg-label)">location_key (FK)</text>
+
+            <!-- Fact table (center-right) -->
+            <rect x="390" y="80" width="200" height="130" rx="8" fill="var(--svg-fact-fill)" stroke="var(--svg-fact)" stroke-width="2.5"/>
+            <text x="490" y="105" text-anchor="middle" font-weight="700" font-size="13" fill="var(--svg-fact)">fact_survey_responses</text>
+            <line x1="405" y1="115" x2="575" y2="115" stroke="var(--svg-fact)" stroke-width="1" opacity="0.4"/>
+            <text x="410" y="132" font-size="10" fill="var(--svg-label)">team_key (FK)</text>
+            <text x="410" y="146" font-size="10" fill="var(--svg-label)">question_key (FK)</text>
+            <text x="410" y="160" font-size="10" fill="var(--svg-label)">time_period_key (FK)</text>
+            <text x="520" y="132" font-size="10" fill="var(--svg-fact)" font-weight="600">score</text>
+            <text x="520" y="146" font-size="10" fill="var(--svg-fact)" font-weight="600">response_count</text>
+
+            <!-- dim_question (right) -->
+            <rect x="555" y="250" width="155" height="80" rx="8" fill="var(--svg-dim-fill)" stroke="var(--svg-dim)" stroke-width="2"/>
+            <text x="632" y="272" text-anchor="middle" font-weight="700" font-size="12" fill="var(--svg-dim)">dim_question</text>
+            <line x1="570" y1="280" x2="695" y2="280" stroke="var(--svg-dim)" stroke-width="1" opacity="0.4"/>
+            <text x="570" y="296" font-size="10" fill="var(--svg-label)">question_key (PK)</text>
+            <text x="570" y="310" font-size="10" fill="var(--svg-label)">question_text, category</text>
+
+            <!-- dim_time_period (bottom-left) -->
+            <rect x="200" y="280" width="155" height="80" rx="8" fill="var(--svg-dim-fill)" stroke="var(--svg-dim)" stroke-width="2"/>
+            <text x="277" y="302" text-anchor="middle" font-weight="700" font-size="12" fill="var(--svg-dim)">dim_time_period</text>
+            <line x1="215" y1="310" x2="340" y2="310" stroke="var(--svg-dim)" stroke-width="1" opacity="0.4"/>
+            <text x="215" y="326" font-size="10" fill="var(--svg-label)">time_period_key (PK)</text>
+            <text x="215" y="340" font-size="10" fill="var(--svg-label)">period_label, year, quarter</text>
+
+            <!-- Connecting lines -->
+            <line x1="165" y1="60" x2="200" y2="90" stroke="var(--svg-arrow)" stroke-width="1.5" stroke-dasharray="4,3"/>
+            <line x1="165" y1="170" x2="210" y2="145" stroke="var(--svg-arrow)" stroke-width="1.5" stroke-dasharray="4,3"/>
+            <line x1="350" y1="110" x2="390" y2="130" stroke="var(--svg-arrow)" stroke-width="1.5" stroke-dasharray="4,3"/>
+            <line x1="490" y1="210" x2="300" y2="280" stroke="var(--svg-arrow)" stroke-width="1.5" stroke-dasharray="4,3"/>
+            <line x1="530" y1="210" x2="600" y2="250" stroke="var(--svg-arrow)" stroke-width="1.5" stroke-dasharray="4,3"/>
+
+            <!-- "Snowflake" label -->
+            <text x="80" y="260" font-size="11" fill="var(--text-secondary)" font-style="italic">Normalized</text>
+            <text x="80" y="274" font-size="11" fill="var(--text-secondary)" font-style="italic">sub-dimensions</text>
+          </svg>
+        </div>
+
+        <h3>Star vs Snowflake: The Tradeoff</h3>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Aspect</th><th>Star Schema</th><th>Snowflake Schema</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Joins to get department</td>
+                <td class="cell-good">1 join</td>
+                <td class="cell-bad">2 joins</td>
+              </tr>
+              <tr>
+                <td>Query complexity</td>
+                <td class="cell-good">Simpler SQL</td>
+                <td class="cell-bad">More joins, harder to debug</td>
+              </tr>
+              <tr>
+                <td>Query performance</td>
+                <td class="cell-good">Better (fewer joins)</td>
+                <td class="cell-neutral">More join overhead</td>
+              </tr>
+              <tr>
+                <td>Data redundancy</td>
+                <td class="cell-neutral">Some duplication</td>
+                <td class="cell-good">Minimal duplication</td>
+              </tr>
+              <tr>
+                <td>Update consistency</td>
+                <td class="cell-neutral">Update many rows</td>
+                <td class="cell-good">Update one row</td>
+              </tr>
+              <tr>
+                <td>Deep hierarchies</td>
+                <td class="cell-bad">Flat, gets wide</td>
+                <td class="cell-good">Natural fit</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout callout-info">
+          <strong>In practice, star wins</strong>
+          Most data warehouses use star schemas. Disk is cheap, and query simplicity beats storage savings. Snowflake schemas appear when a dimension has deeply nested hierarchies (team -> department -> division -> business_unit -> company) that change independently.
+        </div>
+
+        <details>
+          <summary>Side-by-Side SQL Comparison (Lab 02)</summary>
+          <div class="detail-content">
+            <div class="compare-grid">
+              <div>
+                <div class="compare-label good">Star: 1 join to get department</div>
+                <pre><code><span class="kw">SELECT</span> sdt.department,
+       <span class="fn">ROUND</span>(<span class="fn">AVG</span>(f.score), <span class="num">2</span>) <span class="kw">AS</span> mean_score
+<span class="kw">FROM</span> star_fact f
+<span class="kw">JOIN</span> star_dim_team sdt
+  <span class="kw">ON</span> f.team_key = sdt.team_key
+<span class="kw">GROUP BY</span> sdt.department
+<span class="kw">ORDER BY</span> mean_score <span class="kw">DESC</span>;</code></pre>
+              </div>
+              <div>
+                <div class="compare-label bad">Snowflake: 2 joins to get department</div>
+                <pre><code><span class="kw">SELECT</span> dd.department_name,
+       <span class="fn">ROUND</span>(<span class="fn">AVG</span>(f.score), <span class="num">2</span>) <span class="kw">AS</span> mean_score
+<span class="kw">FROM</span> fact_survey_responses f
+<span class="kw">JOIN</span> dim_team dt
+  <span class="kw">ON</span> f.team_key = dt.team_key
+<span class="kw">JOIN</span> dim_department dd
+  <span class="kw">ON</span> dt.department_key = dd.department_key
+<span class="kw">GROUP BY</span> dd.department_name
+<span class="kw">ORDER BY</span> mean_score <span class="kw">DESC</span>;</code></pre>
+              </div>
+            </div>
+            <p>Both return identical results -- Engineering 3.79, Product 3.47, Sales 3.47 -- but the snowflake version requires an extra join hop through <code>dim_team</code> to reach <code>dim_department</code>.</p>
+
+            <h4>Snowflake Advantage: Division Rollup</h4>
+            <p>Where snowflake shines: querying a parent level in a normalized hierarchy. The division rollup (Technology: 3.68, Revenue: 3.47) is clean in snowflake because <code>division</code> lives on <code>dim_department</code>, its natural home.</p>
+          </div>
+        </details>
+
+        <div class="try-it">
+          <strong>Try it yourself</strong>
+          <code>uv run python labs/01_warehousing_fundamentals/02_snowflake_schema.py</code>
+        </div>
+
+        <!-- ═══ GRAIN ═══ -->
+        <h2 id="grain">Grain: The Critical Design Decision</h2>
+
+        <p>The <strong>grain</strong> of a fact table answers: "What does one row represent?" Getting grain wrong is the single most common data warehouse design mistake, and it silently produces wrong numbers.</p>
+
+        <div class="diagram-container">
+          <svg viewBox="0 0 700 280" xmlns="http://www.w3.org/2000/svg" width="700" height="280">
+            <!-- Wrong grain (left) -->
+            <rect x="20" y="10" width="300" height="260" rx="10" fill="var(--bad-bg)" stroke="var(--bad)" stroke-width="2"/>
+            <text x="170" y="38" text-anchor="middle" font-weight="700" font-size="14" fill="var(--bad)">WRONG GRAIN</text>
+            <text x="170" y="55" text-anchor="middle" font-size="11" fill="var(--text-secondary)">One row = one team (pre-aggregated)</text>
+
+            <!-- Wrong grain table -->
+            <rect x="40" y="70" width="260" height="25" rx="4" fill="var(--bg-secondary)" stroke="var(--border)" stroke-width="1"/>
+            <text x="90" y="87" text-anchor="middle" font-size="10" font-weight="600" fill="var(--svg-label)">Team</text>
+            <text x="180" y="87" text-anchor="middle" font-size="10" font-weight="600" fill="var(--svg-label)">Avg Score</text>
+            <text x="260" y="87" text-anchor="middle" font-size="10" font-weight="600" fill="var(--svg-label)">Count</text>
+
+            <rect x="40" y="95" width="260" height="22" rx="0" fill="none" stroke="var(--border)" stroke-width="0.5"/>
+            <text x="90" y="111" text-anchor="middle" font-size="10" fill="var(--svg-label)">Team Alpha</text>
+            <text x="180" y="111" text-anchor="middle" font-size="10" fill="var(--svg-label)">4.20</text>
+            <text x="260" y="111" text-anchor="middle" font-size="10" fill="var(--svg-label)">50</text>
+
+            <rect x="40" y="117" width="260" height="22" rx="0" fill="none" stroke="var(--border)" stroke-width="0.5"/>
+            <text x="90" y="133" text-anchor="middle" font-size="10" fill="var(--svg-label)">Team Beta</text>
+            <text x="180" y="133" text-anchor="middle" font-size="10" fill="var(--svg-label)">3.50</text>
+            <text x="260" y="133" text-anchor="middle" font-size="10" fill="var(--svg-label)">10</text>
+
+            <rect x="40" y="139" width="260" height="22" rx="0" fill="none" stroke="var(--border)" stroke-width="0.5"/>
+            <text x="90" y="155" text-anchor="middle" font-size="10" fill="var(--svg-label)">Team Gamma</text>
+            <text x="180" y="155" text-anchor="middle" font-size="10" fill="var(--svg-label)">3.80</text>
+            <text x="260" y="155" text-anchor="middle" font-size="10" fill="var(--svg-label)">30</text>
+
+            <!-- Wrong result -->
+            <text x="170" y="192" text-anchor="middle" font-size="11" fill="var(--svg-label)">AVG(avg_score) = </text>
+            <text x="170" y="210" text-anchor="middle" font-size="16" font-weight="700" fill="var(--bad)">3.83</text>
+            <text x="170" y="230" text-anchor="middle" font-size="10" fill="var(--bad)">Treats 50-person Team Alpha same</text>
+            <text x="170" y="244" text-anchor="middle" font-size="10" fill="var(--bad)">as 10-person Beta and 30-person Gamma</text>
+
+            <!-- Right grain (right) -->
+            <rect x="380" y="10" width="300" height="260" rx="10" fill="var(--good-bg)" stroke="var(--good)" stroke-width="2"/>
+            <text x="530" y="38" text-anchor="middle" font-weight="700" font-size="14" fill="var(--good)">CORRECT GRAIN</text>
+            <text x="530" y="55" text-anchor="middle" font-size="11" fill="var(--text-secondary)">One row = one response (atomic)</text>
+
+            <!-- Right grain table -->
+            <rect x="400" y="70" width="260" height="25" rx="4" fill="var(--bg-secondary)" stroke="var(--border)" stroke-width="1"/>
+            <text x="450" y="87" text-anchor="middle" font-size="10" font-weight="600" fill="var(--svg-label)">ID</text>
+            <text x="530" y="87" text-anchor="middle" font-size="10" font-weight="600" fill="var(--svg-label)">Team</text>
+            <text x="630" y="87" text-anchor="middle" font-size="10" font-weight="600" fill="var(--svg-label)">Score</text>
+
+            <rect x="400" y="95" width="260" height="18" rx="0" fill="none" stroke="var(--border)" stroke-width="0.5"/>
+            <text x="450" y="108" text-anchor="middle" font-size="9" fill="var(--svg-label)">1</text>
+            <text x="530" y="108" text-anchor="middle" font-size="9" fill="var(--svg-label)">Alpha</text>
+            <text x="630" y="108" text-anchor="middle" font-size="9" fill="var(--svg-label)">4.3</text>
+
+            <rect x="400" y="113" width="260" height="18" rx="0" fill="none" stroke="var(--border)" stroke-width="0.5"/>
+            <text x="450" y="126" text-anchor="middle" font-size="9" fill="var(--svg-label)">2</text>
+            <text x="530" y="126" text-anchor="middle" font-size="9" fill="var(--svg-label)">Alpha</text>
+            <text x="630" y="126" text-anchor="middle" font-size="9" fill="var(--svg-label)">4.1</text>
+
+            <text x="530" y="148" text-anchor="middle" font-size="9" fill="var(--text-secondary)">... 88 more rows ...</text>
+
+            <!-- Right result -->
+            <text x="530" y="192" text-anchor="middle" font-size="11" fill="var(--svg-label)">AVG(score) = </text>
+            <text x="530" y="210" text-anchor="middle" font-size="16" font-weight="700" fill="var(--good)">3.99</text>
+            <text x="530" y="230" text-anchor="middle" font-size="10" fill="var(--good)">Each response weighted</text>
+            <text x="530" y="244" text-anchor="middle" font-size="10" fill="var(--good)">equally and correctly</text>
+          </svg>
+        </div>
+
+        <div class="callout callout-warn">
+          <strong>The average-of-averages trap</strong>
+          Team Alpha has 50 responses with avg 4.20, Team Beta has 10 with avg 3.50, and Team Gamma has 30 with avg 3.80. The naive <code>AVG(avg_score)</code> returns 3.83 -- treating all three teams equally. The correct weighted average is 3.99. The difference (0.16 points) can change decisions. The fix: store data at the finest grain. You can always aggregate up; you cannot disaggregate down.
+        </div>
+
+        <p>The correct grain for survey data: <strong>one row = one person's answer to one question in one time period.</strong></p>
+
+        <details>
+          <summary>Lab Output: Wrong Grain vs Correct Grain (Lab 05)</summary>
+          <div class="detail-content">
+            <div class="compare-grid">
+              <div>
+                <div class="compare-label bad">Wrong: Average of Averages = 3.83</div>
+                <pre><code><span class="cm">-- Each team weighted equally</span>
+<span class="kw">SELECT</span> <span class="fn">ROUND</span>(<span class="fn">AVG</span>(avg_score), <span class="num">2</span>)
+<span class="kw">FROM</span> wrong_grain;
+<span class="cm">-- Result: 3.83</span></code></pre>
+              </div>
+              <div>
+                <div class="compare-label good">Correct: Individual Responses = 3.99</div>
+                <pre><code><span class="cm">-- Each response weighted equally</span>
+<span class="kw">SELECT</span> <span class="fn">ROUND</span>(<span class="fn">AVG</span>(score), <span class="num">2</span>)
+<span class="kw">FROM</span> correct_grain;
+<span class="cm">-- Result: 3.99</span></code></pre>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <div class="try-it">
+          <strong>Try it yourself</strong>
+          <code>uv run python labs/01_warehousing_fundamentals/05_grain_and_measures.py</code>
+        </div>
+
+        <!-- ═══ MEASURES ═══ -->
+        <h2 id="measures">Measures: Additive, Semi-Additive, Non-Additive</h2>
+
+        <p><strong>Measures</strong> are the numbers you aggregate (score, response_count). <strong>Dimensions</strong> are the axes you slice by (team_name, category). A useful test: if you'd put it in a <code>GROUP BY</code>, it's a dimension. If you'd wrap it in <code>SUM()</code> or <code>AVG()</code>, it's a measure.</p>
+
+        <p>Not all measures can be aggregated the same way across all dimensions:</p>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Type</th><th>Can SUM across...</th><th>Example</th><th>Aggregation</th><th>Correct?</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Additive</strong></td>
+                <td class="cell-good">Any dimension</td>
+                <td><code>response_count</code></td>
+                <td>SUM = 90</td>
+                <td class="cell-good">YES</td>
+              </tr>
+              <tr>
+                <td rowspan="2"><strong>Semi-Additive</strong></td>
+                <td rowspan="2" class="cell-neutral">Some dimensions</td>
+                <td rowspan="2"><code>mean_score</code></td>
+                <td>AVG (unweighted) = 3.83</td>
+                <td class="cell-bad">NO</td>
+              </tr>
+              <tr>
+                <td>Weighted AVG = 3.99</td>
+                <td class="cell-good">YES</td>
+              </tr>
+              <tr>
+                <td><strong>Non-Additive</strong></td>
+                <td class="cell-bad">No dimension</td>
+                <td><code>p90_score</code></td>
+                <td>AVG of P90s = 4.50</td>
+                <td class="cell-bad">NO -- must recompute</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card-grid">
+          <div class="card">
+            <h3 style="color: var(--good);">Additive</h3>
+            <p>SUM works across any dimension. <code>response_count</code>, <code>completion_count</code>. Sum across teams: total responses. Sum across time: total across periods. Always correct.</p>
+          </div>
+          <div class="card">
+            <h3 style="color: var(--neutral);">Semi-Additive</h3>
+            <p>SUM works across some dimensions, not others. <code>mean_score</code> needs a weighted average across groups. Account balances: sum across accounts (total cash), but NOT across time (Jan balance + Feb balance is meaningless).</p>
+          </div>
+          <div class="card">
+            <h3 style="color: var(--bad);">Non-Additive</h3>
+            <p>Cannot be summed meaningfully. Percentiles, ratios, rates, medians. Team Alpha's P90 is 4.80, Team Beta's is 4.20 -- the overall P90 is NOT (4.80 + 4.20) / 2. Must recompute from raw responses.</p>
+          </div>
+        </div>
+
+        <div class="callout callout-info">
+          <strong>This is why grain matters</strong>
+          If you store individual responses (finest grain), you can always compute any aggregate correctly -- additive, semi-additive, or non-additive. If you store pre-computed statistics, you're limited to additive operations.
+        </div>
+
+        <!-- ═══ MATERIALIZED VIEWS ═══ -->
+        <h2 id="materialized-views">Materialized Views: Pre-Computing Results</h2>
+
+        <p>A <strong>regular view</strong> is a saved SQL query -- every read re-executes the underlying SQL. A <strong>materialized view</strong> stores the query result as a physical table. Subsequent reads scan the stored result instead of re-computing it. The tradeoff: speed vs <strong>staleness</strong>.</p>
+
+        <div class="diagram-container">
+          <svg viewBox="0 0 700 200" xmlns="http://www.w3.org/2000/svg" width="700" height="200">
+            <!-- Step 1: Create -->
+            <rect x="10" y="20" width="200" height="70" rx="8" fill="var(--svg-dim-fill)" stroke="var(--svg-dim)" stroke-width="2"/>
+            <text x="110" y="45" text-anchor="middle" font-weight="700" font-size="12" fill="var(--svg-dim)">1. Create MV</text>
+            <text x="110" y="62" text-anchor="middle" font-size="10" fill="var(--svg-label)">Team Gamma Basic Needs:</text>
+            <text x="110" y="78" text-anchor="middle" font-size="14" font-weight="700" fill="var(--svg-dim)">3.83</text>
+
+            <!-- Arrow -->
+            <text x="230" y="60" font-size="18" fill="var(--svg-arrow)">&#x2192;</text>
+
+            <!-- Step 2: Stale -->
+            <rect x="250" y="20" width="200" height="70" rx="8" fill="var(--bad-bg)" stroke="var(--bad)" stroke-width="2"/>
+            <text x="350" y="45" text-anchor="middle" font-weight="700" font-size="12" fill="var(--bad)">2. New Data Arrives</text>
+            <text x="350" y="62" text-anchor="middle" font-size="10" fill="var(--svg-label)">MV still shows:</text>
+            <text x="350" y="78" text-anchor="middle" font-size="14" font-weight="700" fill="var(--bad)">3.83 (STALE)</text>
+
+            <!-- Arrow -->
+            <text x="470" y="60" font-size="18" fill="var(--svg-arrow)">&#x2192;</text>
+
+            <!-- Step 3: Rebuilt -->
+            <rect x="490" y="20" width="200" height="70" rx="8" fill="var(--good-bg)" stroke="var(--good)" stroke-width="2"/>
+            <text x="590" y="45" text-anchor="middle" font-weight="700" font-size="12" fill="var(--good)">3. Rebuild MV</text>
+            <text x="590" y="62" text-anchor="middle" font-size="10" fill="var(--svg-label)">Now shows:</text>
+            <text x="590" y="78" text-anchor="middle" font-size="14" font-weight="700" fill="var(--good)">4.15 (FRESH)</text>
+
+            <!-- Refresh strategies -->
+            <rect x="10" y="110" width="680" height="75" rx="8" fill="var(--bg-secondary)" stroke="var(--border)" stroke-width="1"/>
+            <text x="30" y="132" font-weight="600" font-size="12" fill="var(--svg-label)">Refresh Strategies:</text>
+            <text x="30" y="152" font-size="11" fill="var(--svg-label)">Full Rebuild -- Drop + recreate. Simple, correct, expensive for huge tables.</text>
+            <text x="30" y="168" font-size="11" fill="var(--svg-label)">Incremental -- Only process new rows. Fast, complex to implement correctly.</text>
+            <text x="30" y="184" font-size="11" fill="var(--svg-label)">Scheduled -- Rebuild on a cron (nightly, hourly). Accept a known staleness window.</text>
+          </svg>
+        </div>
+
+        <pre><code><span class="cm">-- Create the materialized view (DuckDB uses CREATE TABLE AS)</span>
+<span class="kw">CREATE TABLE</span> mv_team_category_scores <span class="kw">AS</span>
+<span class="kw">SELECT</span> dt.team_name,
+       dq.category,
+       <span class="fn">ROUND</span>(<span class="fn">AVG</span>(f.score), <span class="num">2</span>)  <span class="kw">AS</span> mean_score,
+       <span class="fn">COUNT</span>(*)                 <span class="kw">AS</span> num_responses
+<span class="kw">FROM</span> fact_survey_responses f
+<span class="kw">JOIN</span> dim_team dt     <span class="kw">ON</span> f.team_key = dt.team_key
+<span class="kw">JOIN</span> dim_question dq <span class="kw">ON</span> f.question_key = dq.question_key
+<span class="kw">GROUP BY</span> dt.team_name, dq.category;</code></pre>
+
+        <details>
+          <summary>Lab Output: Staleness Demo (Lab 03)</summary>
+          <div class="detail-content">
+            <p>After creating the MV, 5 new high-scoring responses (score 4.8) arrive for Team Gamma. The materialized view is now stale:</p>
+            <div class="compare-grid">
+              <div>
+                <div class="compare-label bad">Materialized View (STALE)</div>
+                <div class="table-wrap">
+                  <table>
+                    <thead><tr><th>Team</th><th>Category</th><th>Mean</th><th>N</th></tr></thead>
+                    <tbody>
+                      <tr><td>Team Gamma</td><td>Basic Needs</td><td>3.83</td><td>10</td></tr>
+                      <tr><td>Team Gamma</td><td>Individual</td><td>3.47</td><td>10</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div>
+                <div class="compare-label good">Live Query (FRESH)</div>
+                <div class="table-wrap">
+                  <table>
+                    <thead><tr><th>Team</th><th>Category</th><th>Mean</th><th>N</th></tr></thead>
+                    <tbody>
+                      <tr><td>Team Gamma</td><td>Basic Needs</td><td><strong>4.15</strong></td><td><strong>15</strong></td></tr>
+                      <tr><td>Team Gamma</td><td>Individual</td><td>3.47</td><td>10</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <p>After a <code>DROP TABLE</code> + recreate, the MV matches the live query. For survey data -- which arrives in batches after a survey closes -- full rebuild after each batch is usually the right strategy.</p>
+          </div>
+        </details>
+
+        <div class="try-it">
+          <strong>Try it yourself</strong>
+          <code>uv run python labs/01_warehousing_fundamentals/03_materialized_views.py</code>
+        </div>
+
+        <!-- ═══ SLOWLY CHANGING DIMENSIONS ═══ -->
+        <h2 id="scd">Slowly Changing Dimensions (SCD)</h2>
+
+        <p>Real-world entities change over time. Team Alpha's department changes, an employee moves teams, a question gets reworded. <strong>Slowly Changing Dimensions</strong> are the patterns for handling these changes in a warehouse.</p>
+
+        <h3>SCD Type 2: The Essential Pattern</h3>
+
+        <p>Create a new row for each version of the entity. Each row carries <code>valid_from</code> and <code>valid_to</code> dates. The fact table's foreign key points to the specific version that was active when the event occurred.</p>
+
+        <!-- SCD Type 2 Timeline SVG -->
+        <div class="diagram-container">
+          <svg viewBox="0 0 700 290" xmlns="http://www.w3.org/2000/svg" width="700" height="290">
+            <!-- Timeline axis -->
+            <line x1="50" y1="130" x2="650" y2="130" stroke="var(--svg-arrow)" stroke-width="2"/>
+            <!-- Tick marks -->
+            <line x1="100" y1="125" x2="100" y2="135" stroke="var(--svg-arrow)" stroke-width="2"/>
+            <text x="100" y="150" text-anchor="middle" font-size="10" fill="var(--text-secondary)">Jan 2025</text>
+            <line x1="350" y1="125" x2="350" y2="135" stroke="var(--svg-arrow)" stroke-width="2"/>
+            <text x="350" y="150" text-anchor="middle" font-size="10" fill="var(--text-secondary)">Jul 2025</text>
+            <line x1="600" y1="125" x2="600" y2="135" stroke="var(--svg-arrow)" stroke-width="2"/>
+            <text x="600" y="150" text-anchor="middle" font-size="10" fill="var(--text-secondary)">Current</text>
+
+            <!-- Title -->
+            <text x="350" y="25" text-anchor="middle" font-weight="700" font-size="14" fill="var(--svg-label)">Team Alpha: SCD Type 2 Timeline</text>
+
+            <!-- Version 1: Engineering era -->
+            <rect x="100" y="50" width="245" height="60" rx="8" fill="var(--scd-old-fill)" stroke="var(--scd-old)" stroke-width="2"/>
+            <text x="222" y="72" text-anchor="middle" font-weight="600" font-size="12" fill="var(--scd-old)">team_key = 1</text>
+            <text x="222" y="88" text-anchor="middle" font-size="11" fill="var(--svg-label)">Engineering, 8 people</text>
+            <text x="222" y="102" text-anchor="middle" font-size="10" fill="var(--text-secondary)">valid_from: 2025-01-01  valid_to: 2025-06-30</text>
+
+            <!-- Version 2: Product era -->
+            <rect x="355" y="50" width="245" height="60" rx="8" fill="var(--scd-new-fill)" stroke="var(--scd-new)" stroke-width="2"/>
+            <text x="477" y="72" text-anchor="middle" font-weight="600" font-size="12" fill="var(--scd-new)">team_key = 2</text>
+            <text x="477" y="88" text-anchor="middle" font-size="11" fill="var(--svg-label)">Product, 6 people</text>
+            <text x="477" y="102" text-anchor="middle" font-size="10" fill="var(--text-secondary)">valid_from: 2025-07-01  valid_to: 9999-12-31</text>
+
+            <!-- Restructure event -->
+            <line x1="350" y1="48" x2="350" y2="20" stroke="var(--neutral)" stroke-width="2" stroke-dasharray="4,3"/>
+            <text x="350" y="42" text-anchor="middle" font-size="10" fill="var(--neutral)" font-weight="600">Restructure</text>
+
+            <!-- Fact data arrows -->
+            <text x="222" y="180" text-anchor="middle" font-size="11" fill="var(--scd-old)">Q1 responses point here</text>
+            <text x="222" y="195" text-anchor="middle" font-size="11" fill="var(--scd-old)">Mean score: 3.79</text>
+            <line x1="222" y1="165" x2="222" y2="112" stroke="var(--scd-old)" stroke-width="1.5" stroke-dasharray="3,3"/>
+
+            <text x="477" y="180" text-anchor="middle" font-size="11" fill="var(--scd-new)">Q3 responses point here</text>
+            <text x="477" y="195" text-anchor="middle" font-size="11" fill="var(--scd-new)">Mean score: 4.28</text>
+            <line x1="477" y1="165" x2="477" y2="112" stroke="var(--scd-new)" stroke-width="1.5" stroke-dasharray="3,3"/>
+
+            <!-- Team Beta (stable) -->
+            <rect x="100" y="220" width="500" height="45" rx="8" fill="var(--svg-dim-fill)" stroke="var(--svg-dim)" stroke-width="1.5"/>
+            <text x="350" y="240" text-anchor="middle" font-weight="600" font-size="12" fill="var(--svg-dim)">Team Beta: team_key = 3 (no change -- single row)</text>
+            <text x="350" y="256" text-anchor="middle" font-size="10" fill="var(--text-secondary)">Engineering, 10 people | valid_from: 2025-01-01  valid_to: 9999-12-31</text>
+          </svg>
+        </div>
+
+        <h3>All Three SCD Types</h3>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Type</th><th>Mechanism</th><th>History</th><th>Use When</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Type 1: Overwrite</strong></td>
+                <td>Update the row in place</td>
+                <td class="cell-bad">Lost</td>
+                <td>Typo fixes, non-meaningful changes</td>
+              </tr>
+              <tr>
+                <td><strong>Type 2: New Row</strong></td>
+                <td>Add row with valid_from/valid_to</td>
+                <td class="cell-good">Full history preserved</td>
+                <td>Restructures, re-orgs -- essential for survey analytics</td>
+              </tr>
+              <tr>
+                <td><strong>Type 3: New Column</strong></td>
+                <td>Add previous_value column</td>
+                <td class="cell-neutral">One level only</td>
+                <td>Rare; only need the immediately prior value</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <details>
+          <summary>Lab Output: SCD Type 2 in Action (Lab 04)</summary>
+          <div class="detail-content">
+            <p>Team Alpha restructures mid-year: 2 members move from Engineering (8 people) to Product (6 people). SCD Type 2 preserves both versions.</p>
+
+            <h4>dim_team_scd</h4>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>team_key</th><th>team_code</th><th>team_name</th><th>department</th><th>headcount</th><th>valid_from</th><th>valid_to</th><th>is_current</th></tr></thead>
+                <tbody>
+                  <tr><td>1</td><td>ALPHA</td><td>Team Alpha</td><td>Engineering</td><td>8</td><td>2025-01-01</td><td>2025-06-30</td><td class="cell-bad">false</td></tr>
+                  <tr><td>2</td><td>ALPHA</td><td>Team Alpha</td><td>Product</td><td>6</td><td>2025-07-01</td><td>9999-12-31</td><td class="cell-good">true</td></tr>
+                  <tr><td>3</td><td>BETA</td><td>Team Beta</td><td>Engineering</td><td>10</td><td>2025-01-01</td><td>9999-12-31</td><td class="cell-good">true</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p>Note: <code>team_code</code> is the natural key (stable across versions). <code>team_key</code> is the surrogate key (each version gets its own). The fact table's FK points to the specific version active at the time of the response.</p>
+
+            <h4>Full Timeline</h4>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Team</th><th>Department</th><th>Valid From</th><th>Status</th><th>Mean Score</th><th>Responses</th></tr></thead>
+                <tbody>
+                  <tr><td>Team Alpha</td><td>Engineering</td><td>2025-01-01</td><td class="cell-bad">HISTORICAL</td><td>3.79</td><td>24</td></tr>
+                  <tr><td>Team Alpha</td><td>Product</td><td>2025-07-01</td><td class="cell-good">CURRENT</td><td>4.28</td><td>18</td></tr>
+                  <tr><td>Team Beta</td><td>Engineering</td><td>2025-01-01</td><td class="cell-good">CURRENT</td><td>3.58</td><td>60</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p>Both historical and current queries work from the same data. Scores improved after the move to Product (3.79 to 4.28).</p>
+          </div>
+        </details>
+
+        <div class="try-it">
+          <strong>Try it yourself</strong>
+          <code>uv run python labs/01_warehousing_fundamentals/04_slowly_changing_dimensions.py</code>
+        </div>
+
+        <!-- ═══ SURROGATE KEYS ═══ -->
+        <h2 id="keys">Surrogate vs Natural Keys</h2>
+
+        <p>A <strong>natural key</strong> is an identifier from the source system (employee ID, team code). A <strong>surrogate key</strong> is an auto-incrementing integer the warehouse generates (team_key = 1, 2, 3...). Warehouses prefer surrogate keys for four reasons:</p>
+
+        <div class="card-grid">
+          <div class="card">
+            <h3>Source Systems Change</h3>
+            <p>If HR renumbers employee IDs, natural keys break. Surrogate keys are warehouse-internal and stable.</p>
+          </div>
+          <div class="card">
+            <h3>Multiple Sources</h3>
+            <p>Two source systems might both have a "Team Alpha" with different IDs. Surrogate keys let you map both without collision.</p>
+          </div>
+          <div class="card">
+            <h3>SCD Support</h3>
+            <p>When Team Alpha restructures, you need two rows in <code>dim_team</code>. A surrogate key gives each version its own identity (team_key 1 vs 2).</p>
+          </div>
+          <div class="card">
+            <h3>Join Performance</h3>
+            <p>Integer joins are faster than string joins. The dimension table keeps both: <code>team_key</code> (surrogate, PK) and <code>team_code</code> (natural, for traceability).</p>
+          </div>
+        </div>
+
+        <!-- ═══ SURVEY CHALLENGES ═══ -->
+        <h2 id="survey-challenges">The Survey Data Challenge</h2>
+
+        <p>Employee engagement survey data is significantly harder to warehouse than classic examples like e-commerce. These challenges exercise every concept on this page.</p>
+
+        <div class="card-grid">
+          <div class="card">
+            <h3>Dynamic Questions</h3>
+            <p>Questions change every cycle -- added, retired, reworded. Trend analysis ("how has engagement changed over 3 years?") requires mapping old questions to new ones. The <code>dim_question</code> dimension mutates far more than a typical <code>dim_product</code>.</p>
+          </div>
+          <div class="card">
+            <h3>Hierarchical Teams</h3>
+            <p>Teams nest: Team -> Department -> Division -> Company. When Team Alpha moves from Engineering to Product, every level shifts. SCD Type 2 must track changes at every level, and queries must join through the correct hierarchy version for each time period.</p>
+          </div>
+          <div class="card">
+            <h3>Anonymity &amp; Suppression</h3>
+            <p>If Team Gamma has only 3 members, showing their average could identify individuals. Suppression rules hide results for groups below a threshold (typically 5). This cascades -- suppressing one team changes the department rollup.</p>
+          </div>
+          <div class="card">
+            <h3>Pre-Computed Aggregations</h3>
+            <p>Survey platforms often deliver pre-computed results (mean per team per question) rather than raw responses. This creates the grain problem: you're stuck with a coarser grain, and certain calculations (weighted averages, re-slicing by new dimensions) become impossible or incorrect.</p>
+          </div>
+        </div>
+
+        <div class="callout callout-info">
+          <strong>Reverse-scored questions</strong>
+          "I feel burned out at work" scored 5 (strongly agree) is actually a bad signal. Some questions must be flipped before aggregation. This transformation belongs in the warehouse pipeline, not the reporting layer, because inconsistently applying it produces wrong results.
+        </div>
+
+      </main>
+
+      <footer>
+        <h2>Sources</h2>
+        <div class="source"><code>notes/01_warehousing_fundamentals.md</code></div>
+        <div class="source"><code>labs/01_warehousing_fundamentals/01_star_schema.py</code></div>
+        <div class="source"><code>labs/01_warehousing_fundamentals/02_snowflake_schema.py</code></div>
+        <div class="source"><code>labs/01_warehousing_fundamentals/03_materialized_views.py</code></div>
+        <div class="source"><code>labs/01_warehousing_fundamentals/04_slowly_changing_dimensions.py</code></div>
+        <div class="source"><code>labs/01_warehousing_fundamentals/05_grain_and_measures.py</code></div>
+      </footer>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      var toggle = document.getElementById('theme-toggle');
+      var KEY = 'synthesis-theme';
+
+      function setTheme(t) {
+        document.documentElement.setAttribute('data-theme', t);
+        toggle.setAttribute('aria-label',
+          t === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+        try { localStorage.setItem(KEY, t); } catch(e) {}
+      }
+
+      var saved = null;
+      try { saved = localStorage.getItem(KEY); } catch(e) {}
+
+      if (saved) {
+        setTheme(saved);
+      } else {
+        setTheme(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      }
+
+      toggle.addEventListener('click', function() {
+        var current = document.documentElement.getAttribute('data-theme');
+        setTheme(current === 'dark' ? 'light' : 'dark');
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,1469 @@
+<!--
+  Synthesis Page: Agentic Data Access Patterns
+  Generated: 2026-08-23
+  Sources:
+    notes/09_agentic_data_access.md
+    labs/09_agentic_data_access/01_tool_contracts.py
+    labs/09_agentic_data_access/02_scope_resolution.py
+    labs/09_agentic_data_access/03_tool_caching.py
+    labs/09_agentic_data_access/04_context_window_sizing.py
+    labs/09_agentic_data_access/05_non_contradiction.py
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agentic Data Access Patterns</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --bg-secondary: #f5f7fa;
+      --text: #1a1a2e;
+      --text-secondary: #555770;
+      --border: #e0e0e8;
+      --accent: #4a6cf7;
+      --accent-soft: #eef0ff;
+      --code-bg: #f0f2f8;
+      --card-bg: #ffffff;
+      --card-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      --callout-info: #e8f0fe;
+      --callout-warn: #fef7e0;
+      --callout-tip: #e6f9ef;
+      --callout-info-border: #4a6cf7;
+      --callout-warn-border: #e6a817;
+      --callout-tip-border: #27ae60;
+      --sidebar-width: 240px;
+      --svg-text: #1a1a2e;
+      --svg-bg: #f5f7fa;
+      --svg-line: #999;
+      --svg-accent: #4a6cf7;
+      --svg-green: #27ae60;
+      --svg-orange: #e6a817;
+      --svg-red: #e74c3c;
+      --svg-purple: #8b5cf6;
+      --svg-teal: #0ea5e9;
+      --capstone-glow: #4a6cf733;
+      --hit-bg: #e6f9ef;
+      --miss-bg: #fef0ef;
+      --hit-color: #27ae60;
+      --miss-color: #e74c3c;
+    }
+
+    [data-theme="dark"] {
+      --bg: #0f0f1a;
+      --bg-secondary: #1a1a2e;
+      --text: #e0e0ec;
+      --text-secondary: #9999b0;
+      --border: #2a2a40;
+      --accent: #6b8cff;
+      --accent-soft: #1a1a3e;
+      --code-bg: #1e1e32;
+      --card-bg: #16162a;
+      --card-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      --callout-info: #141430;
+      --callout-warn: #1e1a10;
+      --callout-tip: #0e1e14;
+      --callout-info-border: #6b8cff;
+      --callout-warn-border: #d4a017;
+      --callout-tip-border: #2ecc71;
+      --svg-text: #e0e0ec;
+      --svg-bg: #1a1a2e;
+      --svg-line: #555;
+      --svg-accent: #6b8cff;
+      --svg-green: #2ecc71;
+      --svg-orange: #d4a017;
+      --svg-red: #ef5350;
+      --svg-purple: #a78bfa;
+      --svg-teal: #38bdf8;
+      --capstone-glow: #6b8cff22;
+      --hit-bg: #0e1e14;
+      --miss-bg: #2a1515;
+      --hit-color: #2ecc71;
+      --miss-color: #ef5350;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      transition: background 0.3s ease, color 0.3s ease;
+      display: flex;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      position: fixed;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: var(--sidebar-width);
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border);
+      padding: 1.5rem 0;
+      overflow-y: auto;
+      z-index: 100;
+      transition: background 0.3s ease, border-color 0.3s ease;
+    }
+
+    .sidebar h2 {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-secondary);
+      padding: 0 1.2rem;
+      margin-bottom: 0.8rem;
+    }
+
+    .sidebar a {
+      display: block;
+      padding: 0.4rem 1.2rem;
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      text-decoration: none;
+      border-bottom: none;
+      border-left: 3px solid transparent;
+      transition: all 0.15s ease;
+      line-height: 1.5;
+    }
+
+    .sidebar a:hover {
+      color: var(--accent);
+      background: var(--accent-soft);
+      border-bottom: none;
+    }
+
+    .sidebar a.active {
+      color: var(--accent);
+      border-left-color: var(--accent);
+      background: var(--accent-soft);
+      font-weight: 600;
+    }
+
+    .sidebar .topic-num {
+      display: inline-block;
+      width: 1.4em;
+      color: var(--text-secondary);
+      opacity: 0.6;
+      font-size: 0.78rem;
+    }
+
+    /* ── Main content area ── */
+    .content-wrapper {
+      margin-left: var(--sidebar-width);
+      flex: 1;
+      min-width: 0;
+    }
+
+    header {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 2.5rem 2rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    header h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.3;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-shrink: 0;
+      padding-top: 0.35rem;
+    }
+
+    .meta-date {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+
+    /* ── Theme button ── */
+    .theme-btn {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg-secondary);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.7rem;
+      flex-shrink: 0;
+      transition: background 0.2s ease, border-color 0.2s ease;
+      color: var(--text-secondary);
+      font-family: inherit;
+      font-size: 0.8rem;
+      font-weight: 500;
+      line-height: 1;
+    }
+
+    .theme-btn:hover {
+      background: var(--border);
+      color: var(--text);
+    }
+
+    .theme-btn:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .theme-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .theme-btn .icon-sun,
+    .theme-btn .icon-moon,
+    .theme-btn .label-light,
+    .theme-btn .label-dark {
+      display: none;
+    }
+
+    [data-theme="dark"] .theme-btn .icon-sun { display: block; }
+    [data-theme="dark"] .theme-btn .label-dark { display: inline; }
+    :root:not([data-theme="dark"]) .theme-btn .icon-moon { display: block; }
+    :root:not([data-theme="dark"]) .theme-btn .label-light { display: inline; }
+    [data-theme="light"] .theme-btn .icon-moon { display: block; }
+    [data-theme="light"] .theme-btn .label-light { display: inline; }
+
+    /* ── Main ── */
+    main {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 2rem 3rem;
+    }
+
+    main h2 {
+      font-size: 1.35rem;
+      font-weight: 600;
+      margin: 2.5rem 0 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 2px solid var(--border);
+      letter-spacing: -0.01em;
+    }
+
+    main h2:first-child {
+      margin-top: 0.5rem;
+    }
+
+    main h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin: 1.8rem 0 0.6rem;
+    }
+
+    main p { margin: 0.8rem 0; }
+
+    main ul, main ol {
+      margin: 0.8rem 0;
+      padding-left: 1.6rem;
+    }
+
+    main li { margin: 0.35rem 0; }
+    main li strong { color: var(--accent); }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.2s;
+    }
+
+    a:hover { border-bottom-color: var(--accent); }
+
+    code {
+      font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+      font-size: 0.88em;
+      background: var(--code-bg);
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+    }
+
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      overflow-x: auto;
+      margin: 1rem 0;
+    }
+
+    pre code {
+      background: none;
+      padding: 0;
+      font-size: 0.85em;
+      line-height: 1.6;
+    }
+
+    blockquote {
+      border-left: 3px solid var(--accent);
+      padding: 0.6rem 1rem;
+      margin: 1rem 0;
+      background: var(--accent-soft);
+      border-radius: 0 6px 6px 0;
+      color: var(--text-secondary);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.92em;
+    }
+
+    th, td {
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      font-weight: 600;
+      background: var(--bg-secondary);
+      white-space: nowrap;
+    }
+
+    tr:hover td { background: var(--bg-secondary); }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.2rem 1.4rem;
+      margin: 1rem 0;
+      box-shadow: var(--card-shadow);
+      transition: box-shadow 0.2s ease, transform 0.2s ease;
+    }
+
+    .card:hover {
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+      transform: translateY(-1px);
+    }
+
+    [data-theme="dark"] .card:hover {
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    }
+
+    .card h3 { margin-top: 0; }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+
+    .card-grid .card { margin: 0; }
+
+    /* ── Callouts ── */
+    .callout {
+      padding: 0.8rem 1rem;
+      border-radius: 8px;
+      margin: 1rem 0;
+      border-left: 4px solid;
+    }
+
+    .callout-info {
+      background: var(--callout-info);
+      border-left-color: var(--callout-info-border);
+    }
+
+    .callout-warn {
+      background: var(--callout-warn);
+      border-left-color: var(--callout-warn-border);
+    }
+
+    .callout-tip {
+      background: var(--callout-tip);
+      border-left-color: var(--callout-tip-border);
+    }
+
+    .callout strong {
+      display: block;
+      margin-bottom: 0.3rem;
+    }
+
+    /* ── Collapsible details ── */
+    details {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin: 1rem 0;
+      overflow: hidden;
+    }
+
+    summary {
+      padding: 0.8rem 1.2rem;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.95rem;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid transparent;
+      transition: background 0.15s ease;
+      list-style: none;
+    }
+
+    summary::-webkit-details-marker { display: none; }
+
+    summary::before {
+      content: "\25B6";
+      display: inline-block;
+      margin-right: 0.5rem;
+      font-size: 0.7em;
+      transition: transform 0.2s ease;
+    }
+
+    details[open] > summary::before {
+      transform: rotate(90deg);
+    }
+
+    details[open] > summary {
+      border-bottom-color: var(--border);
+    }
+
+    summary:hover { background: var(--border); }
+
+    details .details-body {
+      padding: 1rem 1.2rem;
+    }
+
+    /* ── Table of contents ── */
+    nav.toc {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.4rem;
+      margin: 1.5rem 0;
+    }
+
+    nav.toc ul { list-style: none; padding-left: 0; }
+    nav.toc li { margin: 0.3rem 0; }
+
+    nav.toc a {
+      color: var(--text-secondary);
+      font-size: 0.92em;
+    }
+
+    nav.toc a:hover { color: var(--accent); }
+
+    /* ── SVG ── */
+    .svg-container {
+      overflow-x: auto;
+      margin: 1.5rem 0;
+    }
+
+    svg text { fill: var(--svg-text); }
+
+    /* ── Capstone badge ── */
+    .capstone-badge {
+      display: inline-block;
+      background: var(--accent-soft);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      padding: 0.2rem 0.7rem;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      margin-left: 0.5rem;
+      vertical-align: middle;
+    }
+
+    /* ── Cache timeline ── */
+    .timeline-hit {
+      background: var(--hit-bg);
+      color: var(--hit-color);
+      font-weight: 600;
+      padding: 0.15em 0.5em;
+      border-radius: 4px;
+    }
+
+    .timeline-miss {
+      background: var(--miss-bg);
+      color: var(--miss-color);
+      font-weight: 600;
+      padding: 0.15em 0.5em;
+      border-radius: 4px;
+    }
+
+    /* ── Score bars ── */
+    .score-bar-container {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .score-bar {
+      height: 8px;
+      border-radius: 4px;
+      background: var(--accent);
+      transition: width 0.3s ease;
+    }
+
+    .score-value {
+      font-size: 0.85rem;
+      font-weight: 600;
+      min-width: 2.5em;
+    }
+
+    /* ── Table scrolling ── */
+    .table-wrapper {
+      overflow-x: auto;
+    }
+
+    /* ── Footer ── */
+    footer {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 2rem;
+      border-top: 1px solid var(--border);
+    }
+
+    footer h2 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    footer .source {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin: 0.25rem 0;
+    }
+
+    footer .source code { font-size: 0.85em; }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      .sidebar { display: none; }
+      .content-wrapper { margin-left: 0; }
+    }
+
+    @media (max-width: 600px) {
+      header { padding: 1.5rem 1rem 1rem; flex-direction: column; }
+      main { padding: 0 1rem 2rem; }
+      footer { padding: 1.5rem 1rem; }
+      .card-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar Navigation -->
+  <nav class="sidebar">
+    <h2>Topics</h2>
+    <a href="01_warehousing_fundamentals.html"><span class="topic-num">1.</span> Warehousing Fundamentals</a>
+    <a href="02_columnar_storage.html"><span class="topic-num">2.</span> Columnar Storage</a>
+    <a href="03_medallion_and_dbt.html"><span class="topic-num">3.</span> Medallion Architecture + dbt</a>
+    <a href="04_precomputation_vs_runtime.html"><span class="topic-num">4.</span> Pre-computation vs Runtime</a>
+    <a href="05_dynamic_schema_eav.html"><span class="topic-num">5.</span> Dynamic Schema / EAV</a>
+    <a href="06_oltp_olap_spectrum.html"><span class="topic-num">6.</span> OLTP vs OLAP Spectrum</a>
+    <a href="07_suppression_access_control.html"><span class="topic-num">7.</span> Suppression &amp; Access Control</a>
+    <a href="08_frontier_survey_platforms.html"><span class="topic-num">8.</span> Frontier Survey Platforms</a>
+    <a href="09_agentic_data_access.html" class="active"><span class="topic-num">9.</span> Agentic Data Access</a>
+  </nav>
+
+  <div class="content-wrapper">
+    <header>
+      <h1>Agentic Data Access Patterns <span class="capstone-badge">Capstone</span></h1>
+      <div class="header-right">
+        <span class="meta-date">2026-08-23</span>
+        <button class="theme-btn" id="theme-toggle" aria-label="Toggle dark mode">
+          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+          </svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+          <span class="label-light">Light</span>
+          <span class="label-dark">Dark</span>
+        </button>
+      </div>
+    </header>
+
+    <main>
+
+      <!-- ═══ INTRO ═══ -->
+      <h2 id="problem">The Agent's Data Access Problem</h2>
+
+      <p>An AI agent reasoning over analytical data faces a fundamentally different problem than a dashboard. A dashboard renders pixels -- charts, heatmaps, tables. An agent reasons in text. This changes what data access means.</p>
+
+      <p>When a user asks "how is my team doing on engagement?", the agent must identify scope, retrieve structured data, interpret it, and compose a response -- all within a single context window. The data must be complete enough to answer without a second round-trip, compact enough to fit alongside the conversation, and annotated enough that the agent can interpret it correctly.</p>
+
+      <div class="callout callout-info">
+        <strong>Core Constraint</strong>
+        An LLM does not compute -- it pattern-matches over text. The data layer must do the computation (aggregation, trend calculation, benchmark comparison) and hand the agent pre-digested results. The agent's job is interpretation and communication, not arithmetic.
+      </div>
+
+      <nav class="toc">
+        <ul>
+          <li><a href="#problem">The Agent's Data Access Problem</a></li>
+          <li><a href="#tool-contracts">Tool Contracts as Stable Interfaces</a></li>
+          <li><a href="#scope-resolution">Scope Resolution</a></li>
+          <li><a href="#caching">Caching at the Tool Layer</a></li>
+          <li><a href="#context-window">Context Window Constraints</a></li>
+          <li><a href="#non-contradiction">Non-Contradiction Requirement</a></li>
+          <li><a href="#synthesis">Capstone Synthesis: All 9 Topics Converge</a></li>
+          <li><a href="#lab-results">Lab Results</a></li>
+        </ul>
+      </nav>
+
+      <!-- ═══ TOOL CONTRACT ARCHITECTURE ═══ -->
+      <h2 id="tool-contracts">Tool Contracts as Stable Interfaces</h2>
+
+      <p>The agent accesses data through <strong>tools</strong> -- typed functions with defined inputs and outputs. The agent never writes SQL, never knows the schema, never connects to a database. This is a hard architectural boundary.</p>
+
+      <h3>Why the Agent Must Never Touch SQL</h3>
+      <ul>
+        <li><strong>Security</strong> -- prompt injection can produce <code>DROP TABLE</code> or <code>SELECT * FROM salaries</code></li>
+        <li><strong>Correctness</strong> -- EAV pivots, suppression logic, period boundaries are too subtle for ad-hoc SQL</li>
+        <li><strong>Stability</strong> -- schema changes break SQL; a tool contract absorbs them internally</li>
+        <li><strong>Testability</strong> -- a typed function with defined inputs/outputs is testable; "whatever SQL the LLM wrote" is not</li>
+      </ul>
+
+      <h3>Tool Contract Architecture</h3>
+
+      <div class="svg-container">
+        <svg viewBox="0 0 780 320" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:780px;">
+          <!-- Agent box -->
+          <rect x="20" y="110" width="140" height="100" rx="12" fill="var(--svg-bg)" stroke="var(--svg-accent)" stroke-width="2"/>
+          <text x="90" y="148" text-anchor="middle" font-size="14" font-weight="700" fill="var(--svg-accent)">AI Agent</text>
+          <text x="90" y="170" text-anchor="middle" font-size="11" fill="var(--svg-text)" opacity="0.7">Reasons in text</text>
+          <text x="90" y="186" text-anchor="middle" font-size="11" fill="var(--svg-text)" opacity="0.7">Calls typed tools</text>
+          <text x="90" y="202" text-anchor="middle" font-size="11" fill="var(--svg-text)" opacity="0.7">Never writes SQL</text>
+
+          <!-- Arrow agent -> tool -->
+          <line x1="160" y1="160" x2="250" y2="160" stroke="var(--svg-accent)" stroke-width="2" marker-end="url(#arrowBlue)"/>
+          <text x="205" y="148" text-anchor="middle" font-size="10" fill="var(--svg-text)" opacity="0.7">calls</text>
+
+          <!-- Tool Contract box -->
+          <rect x="250" y="80" width="180" height="160" rx="12" fill="var(--svg-bg)" stroke="var(--svg-green)" stroke-width="2.5" stroke-dasharray="6,3"/>
+          <text x="340" y="108" text-anchor="middle" font-size="13" font-weight="700" fill="var(--svg-green)">Tool Contract</text>
+          <text x="340" y="130" text-anchor="middle" font-size="10.5" fill="var(--svg-text)" opacity="0.8">get_team_overview()</text>
+          <text x="340" y="148" text-anchor="middle" font-size="10.5" fill="var(--svg-text)" opacity="0.8">get_team_list()</text>
+          <text x="340" y="166" text-anchor="middle" font-size="10.5" fill="var(--svg-text)" opacity="0.8">get_project_list()</text>
+          <text x="340" y="184" text-anchor="middle" font-size="10.5" fill="var(--svg-text)" opacity="0.8">resolve_default_scope()</text>
+          <rect x="275" y="198" width="130" height="28" rx="5" fill="var(--svg-green)" opacity="0.15"/>
+          <text x="340" y="217" text-anchor="middle" font-size="10" font-weight="600" fill="var(--svg-green)">Stable interface</text>
+
+          <!-- Arrow tool -> backends -->
+          <line x1="430" y1="130" x2="530" y2="80" stroke="var(--svg-line)" stroke-width="1.5" marker-end="url(#arrowGray)"/>
+          <line x1="430" y1="160" x2="530" y2="160" stroke="var(--svg-line)" stroke-width="1.5" marker-end="url(#arrowGray)"/>
+          <line x1="430" y1="190" x2="530" y2="240" stroke="var(--svg-line)" stroke-width="1.5" marker-end="url(#arrowGray)"/>
+
+          <!-- Backend boxes -->
+          <rect x="530" y="50" width="120" height="50" rx="8" fill="var(--svg-bg)" stroke="var(--svg-orange)" stroke-width="1.5"/>
+          <text x="590" y="72" text-anchor="middle" font-size="12" font-weight="600" fill="var(--svg-orange)">DuckDB</text>
+          <text x="590" y="88" text-anchor="middle" font-size="10" fill="var(--svg-text)" opacity="0.7">Columnar OLAP</text>
+
+          <rect x="530" y="130" width="120" height="50" rx="8" fill="var(--svg-bg)" stroke="var(--svg-purple)" stroke-width="1.5"/>
+          <text x="590" y="152" text-anchor="middle" font-size="12" font-weight="600" fill="var(--svg-purple)">PostgreSQL</text>
+          <text x="590" y="168" text-anchor="middle" font-size="10" fill="var(--svg-text)" opacity="0.7">Gold serving table</text>
+
+          <rect x="530" y="215" width="120" height="50" rx="8" fill="var(--svg-bg)" stroke="var(--svg-teal)" stroke-width="1.5"/>
+          <text x="590" y="237" text-anchor="middle" font-size="12" font-weight="600" fill="var(--svg-teal)">Cache</text>
+          <text x="590" y="253" text-anchor="middle" font-size="10" fill="var(--svg-text)" opacity="0.7">Dict + TTL</text>
+
+          <!-- Result arrow back -->
+          <path d="M 250,185 C 210,185 210,185 160,185" fill="none" stroke="var(--svg-accent)" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrowBlueBack)"/>
+          <text x="205" y="198" text-anchor="middle" font-size="10" fill="var(--svg-text)" opacity="0.7">TeamOverview</text>
+
+          <!-- Label -->
+          <text x="390" y="298" text-anchor="middle" font-size="11" fill="var(--svg-text)" opacity="0.6">The agent sees ONE interface. The backend can be swapped without any change to calling code.</text>
+
+          <!-- Arrow markers -->
+          <defs>
+            <marker id="arrowBlue" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="var(--svg-accent)"/></marker>
+            <marker id="arrowGray" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="var(--svg-line)"/></marker>
+            <marker id="arrowBlueBack" markerWidth="8" markerHeight="6" refX="0" refY="3" orient="auto"><path d="M8,0 L0,3 L8,6" fill="var(--svg-accent)"/></marker>
+            <marker id="arrowGreen" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="var(--svg-green)"/></marker>
+            <marker id="arrowRed" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="var(--svg-red)"/></marker>
+            <marker id="arrowOrange" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="var(--svg-orange)"/></marker>
+            <marker id="arrowPurple" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="var(--svg-purple)"/></marker>
+          </defs>
+        </svg>
+      </div>
+
+      <h3>The Tool Contract Dataclass</h3>
+
+      <pre><code>@dataclass
+class TeamOverview:
+    team_name: str         # Echoed back -- agent says "Team Alpha" not "t1"
+    team_id: str
+    project_name: str
+    time_period: str
+    overall_score: float
+    category_scores: list[CategoryScore]  # 4 categories, 12 questions
+    response_count: int
+    freshness: str         # ISO timestamp of last data refresh
+    suppressed: bool       # Agent knows to say "suppressed for privacy"
+    benchmark: float | None  # 3.8 alone is meaningless; vs 4.0 benchmark = "below avg"
+    status: str            # ok | not_entitled | suppressed | no_data</code></pre>
+
+      <h3>Error States as Distinct Types</h3>
+
+      <p>Each failure mode requires a different agent response. Returning generic exceptions or empty results forces the agent to guess.</p>
+
+      <div class="card-grid">
+        <div class="card">
+          <h3 style="color:var(--svg-red)">not_entitled</h3>
+          <p>User lacks permission. Agent says: <em>"You don't have access to that team's results."</em></p>
+        </div>
+        <div class="card">
+          <h3 style="color:var(--svg-orange)">suppressed</h3>
+          <p>Group too small (&lt;4 responses). Agent says: <em>"Results are suppressed to protect respondent anonymity."</em></p>
+        </div>
+        <div class="card">
+          <h3 style="color:var(--svg-line)">no_data</h3>
+          <p>No survey responses for this scope. Agent says: <em>"No survey data found for that team and period."</em></p>
+        </div>
+        <div class="card">
+          <h3 style="color:var(--svg-teal)">stale_cache</h3>
+          <p>Data older than expected. Agent says: <em>"This data is from last week's refresh."</em></p>
+        </div>
+      </div>
+
+      <div class="callout callout-tip">
+        <strong>Try It Yourself</strong>
+        Run <code>uv run python labs/09_agentic_data_access/01_tool_contracts.py</code> to see the same <code>run_with_backend()</code> calling code execute against both DuckDB and PostgreSQL backends, producing identical results through the same tool contract.
+      </div>
+
+
+      <!-- ═══ SCOPE RESOLUTION ═══ -->
+      <h2 id="scope-resolution">Scope Resolution</h2>
+
+      <p>When a user says "how is my team doing?", the agent has a natural language phrase, not a <code>team_id</code>. Scope resolution is the process of converting that intent into the typed parameters the tool contract requires.</p>
+
+      <h3>Scope Resolution Flow</h3>
+
+      <div class="svg-container">
+        <svg viewBox="0 0 780 380" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:780px;">
+          <!-- User prompt -->
+          <rect x="20" y="20" width="220" height="50" rx="10" fill="var(--svg-bg)" stroke="var(--svg-accent)" stroke-width="2"/>
+          <text x="130" y="42" text-anchor="middle" font-size="12" font-weight="600" fill="var(--svg-accent)">User says:</text>
+          <text x="130" y="58" text-anchor="middle" font-size="11" fill="var(--svg-text)">"How is my team doing?"</text>
+
+          <!-- Step 1: resolve_default_scope -->
+          <line x1="130" y1="70" x2="130" y2="100" stroke="var(--svg-line)" stroke-width="1.5" marker-end="url(#arrowGray)"/>
+          <rect x="40" y="100" width="180" height="45" rx="8" fill="var(--svg-bg)" stroke="var(--svg-green)" stroke-width="1.5"/>
+          <text x="130" y="120" text-anchor="middle" font-size="11" font-weight="600" fill="var(--svg-green)">resolve_default_scope()</text>
+          <text x="130" y="136" text-anchor="middle" font-size="10" fill="var(--svg-text)" opacity="0.7">user_id -> UserScope?</text>
+
+          <!-- Decision diamond -->
+          <line x1="130" y1="145" x2="130" y2="175" stroke="var(--svg-line)" stroke-width="1.5" marker-end="url(#arrowGray)"/>
+          <polygon points="130,175 175,205 130,235 85,205" fill="var(--svg-bg)" stroke="var(--svg-orange)" stroke-width="1.5"/>
+          <text x="130" y="208" text-anchor="middle" font-size="10" font-weight="600" fill="var(--svg-orange)">Ambiguous?</text>
+
+          <!-- No path (unambiguous) -->
+          <line x1="85" y1="205" x2="20" y2="205" stroke="var(--svg-green)" stroke-width="1.5"/>
+          <text x="52" y="198" font-size="9" fill="var(--svg-green)" font-weight="600">No</text>
+          <line x1="20" y1="205" x2="20" y2="310" stroke="var(--svg-green)" stroke-width="1.5" marker-end="url(#arrowGreen)"/>
+
+          <!-- Yes path (disambiguation) -->
+          <line x1="175" y1="205" x2="290" y2="205" stroke="var(--svg-orange)" stroke-width="1.5"/>
+          <text x="232" y="198" font-size="9" fill="var(--svg-orange)" font-weight="600">Yes</text>
+
+          <!-- Disambiguation steps -->
+          <rect x="290" y="180" width="180" height="45" rx="8" fill="var(--svg-bg)" stroke="var(--svg-orange)" stroke-width="1.5"/>
+          <text x="380" y="198" text-anchor="middle" font-size="11" font-weight="600" fill="var(--svg-orange)">get_user_teams()</text>
+          <text x="380" y="214" text-anchor="middle" font-size="10" fill="var(--svg-text)" opacity="0.7">Returns 3 teams</text>
+
+          <line x1="380" y1="225" x2="380" y2="250" stroke="var(--svg-line)" stroke-width="1.5" marker-end="url(#arrowGray)"/>
+
+          <rect x="310" y="250" width="140" height="40" rx="8" fill="var(--svg-bg)" stroke="var(--svg-accent)" stroke-width="1.5"/>
+          <text x="380" y="268" text-anchor="middle" font-size="11" font-weight="600" fill="var(--svg-accent)">Ask user</text>
+          <text x="380" y="282" text-anchor="middle" font-size="10" fill="var(--svg-text)" opacity="0.7">"Which team?"</text>
+
+          <line x1="380" y1="290" x2="380" y2="310" stroke="var(--svg-line)" stroke-width="1.5" marker-end="url(#arrowGray)"/>
+
+          <!-- Both paths merge at result -->
+          <rect x="20" y="310" width="460" height="50" rx="10" fill="var(--svg-bg)" stroke="var(--svg-accent)" stroke-width="2"/>
+          <text x="250" y="330" text-anchor="middle" font-size="12" font-weight="700" fill="var(--svg-accent)">Resolved Scope</text>
+          <text x="250" y="348" text-anchor="middle" font-size="11" fill="var(--svg-text)">team_id="t1"  project_id="p1"  time_period="2025-Q2"</text>
+
+          <line x1="380" y1="310" x2="380" y2="310" stroke="var(--svg-line)" stroke-width="1.5"/>
+
+          <!-- Embedded context (separate path) -->
+          <rect x="560" y="20" width="200" height="50" rx="10" fill="var(--svg-bg)" stroke="var(--svg-purple)" stroke-width="2"/>
+          <text x="660" y="42" text-anchor="middle" font-size="12" font-weight="600" fill="var(--svg-purple)">Embedded Widget</text>
+          <text x="660" y="58" text-anchor="middle" font-size="10" fill="var(--svg-text)" opacity="0.7">Page already knows scope</text>
+
+          <line x1="660" y1="70" x2="660" y2="310" stroke="var(--svg-purple)" stroke-width="1.5" stroke-dasharray="5,4" marker-end="url(#arrowPurple)"/>
+          <text x="670" y="200" font-size="10" fill="var(--svg-purple)" opacity="0.7" transform="rotate(90, 670, 200)">Injected directly</text>
+
+          <!-- Merge arrow from embedded -->
+          <rect x="540" y="310" width="200" height="50" rx="10" fill="var(--svg-bg)" stroke="var(--svg-purple)" stroke-width="2"/>
+          <text x="640" y="332" text-anchor="middle" font-size="11" font-weight="600" fill="var(--svg-purple)">Zero round-trips</text>
+          <text x="640" y="348" text-anchor="middle" font-size="10" fill="var(--svg-text)" opacity="0.7">Scope from system prompt</text>
+        </svg>
+      </div>
+
+      <p>The key insight: scope resolution is itself a tool contract. <code>get_user_teams()</code> and <code>get_active_projects()</code> are agent tools just like <code>get_team_overview()</code>. A <code>resolve_default_scope()</code> heuristic eliminates the disambiguation step for the common case (user manages exactly one team).</p>
+
+      <details>
+        <summary>Scope Resolution Dataclasses</summary>
+        <div class="details-body">
+<pre><code>@dataclass
+class UserScope:
+    user_id: str
+    team_id: str
+    team_name: str
+    project_id: str
+    project_name: str
+    time_period: str
+
+@dataclass
+class TeamMembership:
+    team_id: str
+    team_name: str
+    role: str  # member | manager
+
+def resolve_default_scope(user_id: str) -> UserScope | None:
+    """If user manages exactly one team, resolve automatically.
+       Returns None if ambiguous -- agent must ask."""
+    teams = get_user_teams(user_id)
+    managed = [t for t in teams if t.role == "manager"]
+    if len(managed) == 1:
+        team = managed[0]
+    elif len(teams) == 1:
+        team = teams[0]
+    else:
+        return None  # Ambiguous
+    project = get_active_projects()[0]  # Most recent
+    return UserScope(user_id, team.team_id, team.team_name,
+                     project.project_id, project.project_name,
+                     project.latest_period)</code></pre>
+        </div>
+      </details>
+
+      <div class="callout callout-tip">
+        <strong>Try It Yourself</strong>
+        Run <code>uv run python labs/09_agentic_data_access/02_scope_resolution.py</code> to see three scenarios: Bob (one team, auto-resolves), Alice (three teams, disambiguation), and an embedded widget (scope injected, zero conversation round-trips).
+      </div>
+
+
+      <!-- ═══ CACHING ═══ -->
+      <h2 id="caching">Caching at the Tool Layer</h2>
+
+      <p>Same team, same project, same period -- queried twice in one conversation. Should the tool hit the database twice? No. Tool-level caching is a simple dict keyed on the request parameters with a TTL.</p>
+
+      <h3>Why Cache at the Tool Layer, Not Below</h3>
+
+      <ul>
+        <li><strong>Semantic awareness</strong> -- the tool layer knows "same team, same period" means the same request</li>
+        <li><strong>Intra-conversation consistency</strong> -- if the agent asks about Team Alpha twice, it gets the same numbers both times, even if the source data refreshes between calls</li>
+        <li><strong>Performance</strong> -- cache hits return in &lt;1ms vs ~50ms for database queries</li>
+      </ul>
+
+      <h3>Cache Hit/Miss Timeline (Lab 03)</h3>
+
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Call #</th><th>Team</th><th>Period</th><th>Status</th><th>Latency</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>t1</td><td>2025-Q2</td><td><span class="timeline-miss">MISS</span></td><td>~50 ms</td><td>First lookup -- queries database</td></tr>
+            <tr><td>2</td><td>t1</td><td>2025-Q1</td><td><span class="timeline-miss">MISS</span></td><td>~50 ms</td><td>Different period -- new cache key</td></tr>
+            <tr><td>3</td><td>t1</td><td>2025-Q2</td><td><span class="timeline-hit">HIT</span></td><td>&lt;0.01 ms</td><td>Same as call 1 -- instant return</td></tr>
+            <tr><td>4</td><td>t2</td><td>2025-Q2</td><td><span class="timeline-miss">MISS</span></td><td>~50 ms</td><td>Different team -- new cache key</td></tr>
+            <tr><td>5</td><td>t1</td><td>2025-Q2</td><td><span class="timeline-hit">HIT</span></td><td>&lt;0.01 ms</td><td>Still cached from call 1</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Caching Timeline</h3>
+
+      <div class="svg-container">
+        <svg viewBox="0 0 780 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:780px;">
+          <!-- Timeline axis -->
+          <line x1="60" y1="90" x2="740" y2="90" stroke="var(--svg-line)" stroke-width="1.5"/>
+
+          <!-- Call markers -->
+          <circle cx="120" cy="90" r="18" fill="var(--miss-bg)" stroke="var(--svg-red)" stroke-width="2"/>
+          <text x="120" y="95" text-anchor="middle" font-size="12" font-weight="700" fill="var(--svg-red)">1</text>
+          <text x="120" y="130" text-anchor="middle" font-size="9" fill="var(--svg-text)">t1/Q2</text>
+          <text x="120" y="143" text-anchor="middle" font-size="9" fill="var(--svg-red)">60ms</text>
+
+          <circle cx="250" cy="90" r="18" fill="var(--miss-bg)" stroke="var(--svg-red)" stroke-width="2"/>
+          <text x="250" y="95" text-anchor="middle" font-size="12" font-weight="700" fill="var(--svg-red)">2</text>
+          <text x="250" y="130" text-anchor="middle" font-size="9" fill="var(--svg-text)">t1/Q1</text>
+          <text x="250" y="143" text-anchor="middle" font-size="9" fill="var(--svg-red)">60ms</text>
+
+          <circle cx="380" cy="90" r="18" fill="var(--hit-bg)" stroke="var(--svg-green)" stroke-width="2"/>
+          <text x="380" y="95" text-anchor="middle" font-size="12" font-weight="700" fill="var(--svg-green)">3</text>
+          <text x="380" y="130" text-anchor="middle" font-size="9" fill="var(--svg-text)">t1/Q2</text>
+          <text x="380" y="143" text-anchor="middle" font-size="9" fill="var(--svg-green)">&lt;1ms</text>
+
+          <circle cx="510" cy="90" r="18" fill="var(--miss-bg)" stroke="var(--svg-red)" stroke-width="2"/>
+          <text x="510" y="95" text-anchor="middle" font-size="12" font-weight="700" fill="var(--svg-red)">4</text>
+          <text x="510" y="130" text-anchor="middle" font-size="9" fill="var(--svg-text)">t2/Q2</text>
+          <text x="510" y="143" text-anchor="middle" font-size="9" fill="var(--svg-red)">60ms</text>
+
+          <circle cx="640" cy="90" r="18" fill="var(--hit-bg)" stroke="var(--svg-green)" stroke-width="2"/>
+          <text x="640" y="95" text-anchor="middle" font-size="12" font-weight="700" fill="var(--svg-green)">5</text>
+          <text x="640" y="130" text-anchor="middle" font-size="9" fill="var(--svg-text)">t1/Q2</text>
+          <text x="640" y="143" text-anchor="middle" font-size="9" fill="var(--svg-green)">&lt;1ms</text>
+
+          <!-- Legend -->
+          <circle cx="240" cy="175" r="8" fill="var(--miss-bg)" stroke="var(--svg-red)" stroke-width="1.5"/>
+          <text x="255" y="179" font-size="11" fill="var(--svg-text)">MISS (database query)</text>
+          <circle cx="440" cy="175" r="8" fill="var(--hit-bg)" stroke="var(--svg-green)" stroke-width="1.5"/>
+          <text x="455" y="179" font-size="11" fill="var(--svg-text)">HIT (cached, &lt;1ms)</text>
+
+          <!-- Summary -->
+          <text x="400" y="38" text-anchor="middle" font-size="12" fill="var(--svg-text)" font-weight="600">5 calls: 3 misses (150ms) + 2 hits (&lt;1ms) = 150ms total vs 250ms uncached (40% savings)</text>
+        </svg>
+      </div>
+
+      <details>
+        <summary>Cache Implementation</summary>
+        <div class="details-body">
+<pre><code>@dataclass
+class CacheEntry:
+    data: dict
+    cached_at: float
+    hits: int = 0
+
+class ToolCache:
+    def __init__(self, ttl_seconds: float = 300):
+        self.ttl = ttl_seconds
+        self._store: dict[tuple, CacheEntry] = {}
+
+    def get(self, key: tuple) -> dict | None:
+        entry = self._store.get(key)
+        if entry is None:
+            return None
+        if time.time() - entry.cached_at > self.ttl:
+            del self._store[key]
+            return None  # Expired
+        entry.hits += 1
+        return entry.data
+
+    def put(self, key: tuple, data: dict):
+        self._store[key] = CacheEntry(data=data, cached_at=time.time())</code></pre>
+
+          <p>The cache key is the scope tuple: <code>(team_id, project_id, time_period)</code>. Survey data is batch -- it changes when a new survey closes, not continuously. A 5-minute TTL is more than enough for conversational consistency.</p>
+        </div>
+      </details>
+
+      <div class="callout callout-tip">
+        <strong>Try It Yourself</strong>
+        Run <code>uv run python labs/09_agentic_data_access/03_tool_caching.py</code> to see the cache timeline, latency comparison, and how repeated queries in one conversation return consistent results.
+      </div>
+
+
+      <!-- ═══ CONTEXT WINDOW ═══ -->
+      <h2 id="context-window">Context Window Constraints</h2>
+
+      <p>An LLM has a fixed context window. The conversation, system prompt, tool definitions, and tool results all compete for that space. How much room does analytical data actually take?</p>
+
+      <h3>Data Shape Comparison (Lab 04)</h3>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Shape</th>
+              <th>What It Contains</th>
+              <th>JSON Size</th>
+              <th>Est. Tokens</th>
+              <th>Reasoning Quality</th>
+              <th>Recommended?</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>A: Overview</strong></td>
+              <td>4 categories, 12 questions, scores</td>
+              <td>1.7 KB</td>
+              <td>~440</td>
+              <td style="color:var(--svg-green);font-weight:600;">Excellent</td>
+              <td style="color:var(--svg-green);">Yes -- default shape</td>
+            </tr>
+            <tr>
+              <td><strong>B: Detailed</strong></td>
+              <td>Mean, median, std, percentiles, distribution</td>
+              <td>5.5 KB</td>
+              <td>~1,400</td>
+              <td style="color:var(--svg-orange);font-weight:600;">Good</td>
+              <td style="color:var(--svg-orange);">On request only</td>
+            </tr>
+            <tr>
+              <td><strong>C: Dimensional</strong></td>
+              <td>Questions x demographics x scale values</td>
+              <td>39.7 KB</td>
+              <td>~10,000</td>
+              <td style="color:var(--svg-red);font-weight:600;">Degrades</td>
+              <td style="color:var(--svg-red);">No -- agent summarizes, not reasons</td>
+            </tr>
+            <tr>
+              <td><strong>D: Raw Responses</strong></td>
+              <td>Individual respondent rows</td>
+              <td>107.7 KB</td>
+              <td>~27,500</td>
+              <td style="color:var(--svg-red);font-weight:600;">Poor</td>
+              <td style="color:var(--svg-red);">Never send to an agent</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Context Window Sizing Comparison</h3>
+
+      <div class="svg-container">
+        <svg viewBox="0 0 780 280" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:780px;">
+          <!-- Full bar representing 128K context -->
+          <text x="20" y="25" font-size="12" font-weight="600" fill="var(--svg-text)">128K Token Context Window</text>
+
+          <!-- A: Overview -->
+          <text x="20" y="60" font-size="11" font-weight="600" fill="var(--svg-text)">A: Overview</text>
+          <rect x="150" y="47" width="600" height="20" rx="4" fill="var(--svg-bg)" stroke="var(--svg-line)" stroke-width="1"/>
+          <rect x="150" y="47" width="9" height="20" rx="4" fill="var(--svg-green)"/>
+          <rect x="160" y="47" width="23" height="20" rx="0" fill="var(--svg-accent)" opacity="0.4"/>
+          <text x="196" y="61" font-size="9" fill="var(--svg-text)">~440 tokens (0.3%)</text>
+
+          <!-- B: Detailed -->
+          <text x="20" y="100" font-size="11" font-weight="600" fill="var(--svg-text)">B: Detailed</text>
+          <rect x="150" y="87" width="600" height="20" rx="4" fill="var(--svg-bg)" stroke="var(--svg-line)" stroke-width="1"/>
+          <rect x="150" y="87" width="9" height="20" rx="4" fill="var(--svg-green)"/>
+          <rect x="160" y="87" width="23" height="20" rx="0" fill="var(--svg-accent)" opacity="0.4"/>
+          <rect x="184" y="87" width="7" height="20" rx="0" fill="var(--svg-orange)"/>
+          <text x="200" y="101" font-size="9" fill="var(--svg-text)">~1,400 tokens (1.1%)</text>
+
+          <!-- C: Dimensional -->
+          <text x="20" y="140" font-size="11" font-weight="600" fill="var(--svg-text)">C: Dimensional</text>
+          <rect x="150" y="127" width="600" height="20" rx="4" fill="var(--svg-bg)" stroke="var(--svg-line)" stroke-width="1"/>
+          <rect x="150" y="127" width="9" height="20" rx="4" fill="var(--svg-green)"/>
+          <rect x="160" y="127" width="23" height="20" rx="0" fill="var(--svg-accent)" opacity="0.4"/>
+          <rect x="184" y="127" width="47" height="20" rx="0" fill="var(--svg-red)"/>
+          <text x="240" y="141" font-size="9" fill="var(--svg-text)">~10,000 tokens (7.8%)</text>
+
+          <!-- D: Raw -->
+          <text x="20" y="180" font-size="11" font-weight="600" fill="var(--svg-text)">D: Raw</text>
+          <rect x="150" y="167" width="600" height="20" rx="4" fill="var(--svg-bg)" stroke="var(--svg-line)" stroke-width="1"/>
+          <rect x="150" y="167" width="9" height="20" rx="4" fill="var(--svg-green)"/>
+          <rect x="160" y="167" width="23" height="20" rx="0" fill="var(--svg-accent)" opacity="0.4"/>
+          <rect x="184" y="167" width="129" height="20" rx="0" fill="var(--svg-red)" opacity="0.8"/>
+          <text x="222" y="181" font-size="9" fill="var(--svg-text)">~27,500 tokens (21.5%)</text>
+
+          <!-- Legend -->
+          <rect x="150" y="210" width="12" height="12" rx="2" fill="var(--svg-green)"/>
+          <text x="168" y="221" font-size="10" fill="var(--svg-text)">System prompt (~2K)</text>
+          <rect x="290" y="210" width="12" height="12" rx="2" fill="var(--svg-accent)" opacity="0.4"/>
+          <text x="308" y="221" font-size="10" fill="var(--svg-text)">Conversation (~3K)</text>
+          <rect x="430" y="210" width="12" height="12" rx="2" fill="var(--svg-orange)"/>
+          <text x="448" y="221" font-size="10" fill="var(--svg-text)">Tool data</text>
+          <rect x="530" y="210" width="12" height="12" rx="2" fill="var(--svg-bg)" stroke="var(--svg-line)" stroke-width="1"/>
+          <text x="548" y="221" font-size="10" fill="var(--svg-text)">Available capacity</text>
+
+          <!-- Key point -->
+          <text x="390" y="260" text-anchor="middle" font-size="11" fill="var(--svg-text)" font-weight="600">The overview shape uses &lt;1% of context and produces excellent reasoning. More data = worse results.</text>
+        </svg>
+      </div>
+
+      <div class="callout callout-warn">
+        <strong>The Right Default Shape</strong>
+        Flat, complete-for-the-context. For survey data: 4 category scores, 12 question scores, overall score, response count, trend indicators. One level of hierarchy (categories contain questions), no deeper nesting. Past ~3K tokens of tool data, reasoning quality degrades -- the agent starts summarizing rather than analyzing.
+      </div>
+
+      <div class="callout callout-tip">
+        <strong>Try It Yourself</strong>
+        Run <code>uv run python labs/09_agentic_data_access/04_context_window_sizing.py</code> to generate all four data shapes, see their JSON previews, and compare token counts and reasoning quality ratings.
+      </div>
+
+
+      <!-- ═══ NON-CONTRADICTION ═══ -->
+      <h2 id="non-contradiction">Non-Contradiction Requirement</h2>
+
+      <p>When an agent and a dashboard appear on the same screen, they must show the same numbers. A user who sees "3.85" on the dashboard and the agent says "3.92" will lose trust in both.</p>
+
+      <h3>How Contradiction Happens</h3>
+
+      <div class="svg-container">
+        <svg viewBox="0 0 780 310" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:780px;">
+          <!-- Title -->
+          <text x="390" y="25" text-anchor="middle" font-size="13" font-weight="700" fill="var(--svg-text)">Non-Contradiction Architecture</text>
+
+          <!-- BAD: Independent Compute -->
+          <rect x="20" y="45" width="360" height="235" rx="10" fill="var(--svg-bg)" stroke="var(--svg-red)" stroke-width="1.5" stroke-dasharray="4,3"/>
+          <text x="200" y="68" text-anchor="middle" font-size="12" font-weight="700" fill="var(--svg-red)">Independent Compute (BAD)</text>
+
+          <!-- Dashboard -->
+          <rect x="40" y="85" width="130" height="45" rx="8" fill="var(--svg-bg)" stroke="var(--svg-line)" stroke-width="1.5"/>
+          <text x="105" y="105" text-anchor="middle" font-size="11" font-weight="600" fill="var(--svg-text)">Dashboard</text>
+          <text x="105" y="120" text-anchor="middle" font-size="10" fill="var(--svg-text)" opacity="0.7">Shows 3.85</text>
+
+          <!-- Agent -->
+          <rect x="230" y="85" width="130" height="45" rx="8" fill="var(--svg-bg)" stroke="var(--svg-line)" stroke-width="1.5"/>
+          <text x="295" y="105" text-anchor="middle" font-size="11" font-weight="600" fill="var(--svg-text)">Agent Tool</text>
+          <text x="295" y="120" text-anchor="middle" font-size="10" fill="var(--svg-text)" opacity="0.7">Shows 3.92</text>
+
+          <!-- Different sources -->
+          <line x1="105" y1="130" x2="105" y2="175" stroke="var(--svg-line)" stroke-width="1.5" marker-end="url(#arrowGray)"/>
+          <line x1="295" y1="130" x2="295" y2="175" stroke="var(--svg-line)" stroke-width="1.5" marker-end="url(#arrowGray)"/>
+
+          <rect x="40" y="175" width="130" height="35" rx="6" fill="var(--svg-bg)" stroke="var(--svg-purple)" stroke-width="1"/>
+          <text x="105" y="197" text-anchor="middle" font-size="10" fill="var(--svg-purple)">PostgreSQL (T1)</text>
+
+          <rect x="230" y="175" width="130" height="35" rx="6" fill="var(--svg-bg)" stroke="var(--svg-orange)" stroke-width="1"/>
+          <text x="295" y="197" text-anchor="middle" font-size="10" fill="var(--svg-orange)">DuckDB (T2)</text>
+
+          <!-- Pipeline refresh between -->
+          <text x="200" y="235" text-anchor="middle" font-size="10" fill="var(--svg-red)" font-weight="600">Pipeline refreshes between reads</text>
+          <text x="200" y="250" text-anchor="middle" font-size="10" fill="var(--svg-red)">Delta: 0.07 -- trust destroyed</text>
+          <rect x="160" y="258" width="80" height="15" rx="3" fill="var(--svg-red)" opacity="0.15"/>
+          <text x="200" y="270" text-anchor="middle" font-size="10" font-weight="700" fill="var(--svg-red)">MISMATCH</text>
+
+          <!-- GOOD: Shared Serving -->
+          <rect x="410" y="45" width="360" height="235" rx="10" fill="var(--svg-bg)" stroke="var(--svg-green)" stroke-width="1.5"/>
+          <text x="590" y="68" text-anchor="middle" font-size="12" font-weight="700" fill="var(--svg-green)">Shared Serving Table (GOOD)</text>
+
+          <!-- Dashboard -->
+          <rect x="430" y="85" width="130" height="45" rx="8" fill="var(--svg-bg)" stroke="var(--svg-line)" stroke-width="1.5"/>
+          <text x="495" y="105" text-anchor="middle" font-size="11" font-weight="600" fill="var(--svg-text)">Dashboard</text>
+          <text x="495" y="120" text-anchor="middle" font-size="10" fill="var(--svg-text)" opacity="0.7">Shows 3.92</text>
+
+          <!-- Agent -->
+          <rect x="620" y="85" width="130" height="45" rx="8" fill="var(--svg-bg)" stroke="var(--svg-line)" stroke-width="1.5"/>
+          <text x="685" y="105" text-anchor="middle" font-size="11" font-weight="600" fill="var(--svg-text)">Agent Tool</text>
+          <text x="685" y="120" text-anchor="middle" font-size="10" fill="var(--svg-text)" opacity="0.7">Shows 3.92</text>
+
+          <!-- Both point to same source -->
+          <line x1="495" y1="130" x2="590" y2="175" stroke="var(--svg-green)" stroke-width="1.5" marker-end="url(#arrowGreen)"/>
+          <line x1="685" y1="130" x2="590" y2="175" stroke="var(--svg-green)" stroke-width="1.5" marker-end="url(#arrowGreen)"/>
+
+          <rect x="520" y="175" width="140" height="35" rx="6" fill="var(--svg-bg)" stroke="var(--svg-green)" stroke-width="2"/>
+          <text x="590" y="192" text-anchor="middle" font-size="11" font-weight="700" fill="var(--svg-green)">Gold Table</text>
+          <text x="590" y="207" text-anchor="middle" font-size="10" fill="var(--svg-text)" opacity="0.7">Same rows, same values</text>
+
+          <text x="590" y="240" text-anchor="middle" font-size="10" fill="var(--svg-green)" font-weight="600">Consistent by construction</text>
+          <rect x="550" y="248" width="80" height="15" rx="3" fill="var(--svg-green)" opacity="0.15"/>
+          <text x="590" y="260" text-anchor="middle" font-size="10" font-weight="700" fill="var(--svg-green)">MATCH</text>
+        </svg>
+      </div>
+
+      <p>Non-contradiction is an architectural property, not a testing outcome. If two consumers compute independently, they <em>will</em> eventually diverge. The fix is not "run the same SQL" -- it is "read the same pre-computed rows." This is the Gold layer from the medallion architecture (Topic 3) doing its job: compute once, serve everywhere, guarantee consistency.</p>
+
+      <div class="callout callout-tip">
+        <strong>Try It Yourself</strong>
+        Run <code>uv run python labs/09_agentic_data_access/05_non_contradiction.py</code> to see three scenarios: both consumers read the same source (match), a pipeline refresh causes divergence (mismatch), and a shared serving table guarantees consistency regardless of timing.
+      </div>
+
+
+      <!-- ═══ CAPSTONE SYNTHESIS ═══ -->
+      <h2 id="synthesis">Capstone Synthesis: How All 9 Topics Converge</h2>
+
+      <p>This is where every prior topic becomes concrete. The agent calls <code>get_team_overview()</code> and gets back a dataclass. Every layer of complexity -- EAV pivots, suppression logic, columnar scans, materialized views -- is hidden behind that one function call. That is the point.</p>
+
+      <div class="svg-container">
+        <svg viewBox="0 0 780 640" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:780px;">
+          <!-- Title -->
+          <text x="390" y="28" text-anchor="middle" font-size="15" font-weight="700" fill="var(--svg-accent)">9-Topic Convergence: The Full Stack Behind get_team_overview()</text>
+
+          <!-- Agent at top -->
+          <rect x="290" y="50" width="200" height="60" rx="14" fill="var(--svg-bg)" stroke="var(--svg-accent)" stroke-width="3"/>
+          <text x="390" y="76" text-anchor="middle" font-size="14" font-weight="700" fill="var(--svg-accent)">AI Agent</text>
+          <text x="390" y="96" text-anchor="middle" font-size="11" fill="var(--svg-text)" opacity="0.7">get_team_overview(t1, p1, Q2)</text>
+
+          <!-- Tool Contract layer -->
+          <line x1="390" y1="110" x2="390" y2="140" stroke="var(--svg-accent)" stroke-width="2" marker-end="url(#arrowBlue)"/>
+          <rect x="200" y="140" width="380" height="50" rx="10" fill="var(--svg-bg)" stroke="var(--svg-green)" stroke-width="2.5"/>
+          <text x="390" y="163" text-anchor="middle" font-size="13" font-weight="700" fill="var(--svg-green)">Tool Contract (Topic 9)</text>
+          <text x="390" y="180" text-anchor="middle" font-size="10" fill="var(--svg-text)" opacity="0.7">Typed interface: inputs, outputs, error states, caching</text>
+
+          <!-- Fan out to the layers below -->
+          <line x1="390" y1="190" x2="390" y2="225" stroke="var(--svg-line)" stroke-width="1.5" marker-end="url(#arrowGray)"/>
+
+          <!-- Suppression layer -->
+          <rect x="200" y="225" width="380" height="42" rx="8" fill="var(--svg-bg)" stroke="var(--svg-red)" stroke-width="1.5"/>
+          <text x="310" y="245" text-anchor="middle" font-size="11" font-weight="600" fill="var(--svg-red)">Topic 7: Suppression</text>
+          <text x="310" y="260" text-anchor="middle" font-size="9.5" fill="var(--svg-text)" opacity="0.7">Applied in serving layer</text>
+          <text x="500" y="252" text-anchor="middle" font-size="9.5" fill="var(--svg-text)" opacity="0.7">suppressed: true when &lt;4 responses</text>
+
+          <line x1="390" y1="267" x2="390" y2="290" stroke="var(--svg-line)" stroke-width="1.5" marker-end="url(#arrowGray)"/>
+
+          <!-- Gold Serving Layer -->
+          <rect x="170" y="290" width="440" height="50" rx="10" fill="var(--svg-bg)" stroke="var(--svg-green)" stroke-width="2"/>
+          <text x="390" y="312" text-anchor="middle" font-size="12" font-weight="700" fill="var(--svg-green)">Gold Serving Table</text>
+          <text x="260" y="330" text-anchor="middle" font-size="10" fill="var(--svg-text)" opacity="0.7">Topic 3: Medallion/dbt</text>
+          <text x="520" y="330" text-anchor="middle" font-size="10" fill="var(--svg-text)" opacity="0.7">Topic 4: Pre-computed</text>
+
+          <line x1="390" y1="340" x2="390" y2="370" stroke="var(--svg-line)" stroke-width="1.5" marker-end="url(#arrowGray)"/>
+
+          <!-- Transformation layer -->
+          <rect x="200" y="370" width="380" height="42" rx="8" fill="var(--svg-bg)" stroke="var(--svg-orange)" stroke-width="1.5"/>
+          <text x="310" y="390" text-anchor="middle" font-size="11" font-weight="600" fill="var(--svg-orange)">Topic 5: EAV Pivot</text>
+          <text x="310" y="405" text-anchor="middle" font-size="9.5" fill="var(--svg-text)" opacity="0.7">Pivoted once during transform</text>
+          <text x="500" y="397" text-anchor="middle" font-size="9.5" fill="var(--svg-text)" opacity="0.7">Not by every tool call</text>
+
+          <line x1="390" y1="412" x2="390" y2="440" stroke="var(--svg-line)" stroke-width="1.5" marker-end="url(#arrowGray)"/>
+
+          <!-- Storage layer -->
+          <rect x="100" y="440" width="580" height="50" rx="10" fill="var(--svg-bg)" stroke="var(--svg-purple)" stroke-width="1.5"/>
+          <text x="230" y="462" text-anchor="middle" font-size="11" font-weight="600" fill="var(--svg-purple)">Topic 2: Columnar (DuckDB)</text>
+          <text x="230" y="478" text-anchor="middle" font-size="9.5" fill="var(--svg-text)" opacity="0.7">Fast analytical scans</text>
+          <text x="520" y="462" text-anchor="middle" font-size="11" font-weight="600" fill="var(--svg-teal)">Topic 1: Star Schema</text>
+          <text x="520" y="478" text-anchor="middle" font-size="9.5" fill="var(--svg-text)" opacity="0.7">Facts + dimensions</text>
+
+          <line x1="390" y1="490" x2="390" y2="520" stroke="var(--svg-line)" stroke-width="1.5" marker-end="url(#arrowGray)"/>
+
+          <!-- OLTP/OLAP split -->
+          <rect x="100" y="520" width="580" height="42" rx="8" fill="var(--svg-bg)" stroke="var(--svg-line)" stroke-width="1.5"/>
+          <text x="270" y="540" text-anchor="middle" font-size="11" font-weight="600" fill="var(--svg-purple)">Topic 6: OLTP</text>
+          <text x="270" y="555" text-anchor="middle" font-size="9.5" fill="var(--svg-text)" opacity="0.7">Survey submission</text>
+          <text x="510" y="540" text-anchor="middle" font-size="11" font-weight="600" fill="var(--svg-teal)">Topic 6: OLAP</text>
+          <text x="510" y="555" text-anchor="middle" font-size="9.5" fill="var(--svg-text)" opacity="0.7">Agent's analytical reads</text>
+          <line x1="390" y1="535" x2="390" y2="555" stroke="var(--svg-line)" stroke-width="0.5" stroke-dasharray="3,3"/>
+
+          <!-- Topic 8 on the side -->
+          <rect x="20" y="290" width="130" height="50" rx="8" fill="var(--svg-bg)" stroke="var(--svg-teal)" stroke-width="1.5"/>
+          <text x="85" y="310" text-anchor="middle" font-size="10" font-weight="600" fill="var(--svg-teal)">Topic 8: Frontier</text>
+          <text x="85" y="325" text-anchor="middle" font-size="9" fill="var(--svg-text)" opacity="0.7">Platform APIs</text>
+          <line x1="150" y1="315" x2="170" y2="315" stroke="var(--svg-teal)" stroke-width="1" stroke-dasharray="3,3"/>
+
+          <!-- Key: Context window constraint on the right -->
+          <rect x="640" y="140" width="130" height="50" rx="8" fill="var(--svg-bg)" stroke="var(--svg-orange)" stroke-width="1.5"/>
+          <text x="705" y="160" text-anchor="middle" font-size="10" font-weight="600" fill="var(--svg-orange)">Context Window</text>
+          <text x="705" y="175" text-anchor="middle" font-size="9" fill="var(--svg-text)" opacity="0.7">~440 tokens ideal</text>
+          <line x1="640" y1="165" x2="580" y2="165" stroke="var(--svg-orange)" stroke-width="1" stroke-dasharray="3,3"/>
+
+          <!-- Non-contradiction on the right -->
+          <rect x="640" y="290" width="130" height="50" rx="8" fill="var(--svg-bg)" stroke="var(--svg-green)" stroke-width="1.5"/>
+          <text x="705" y="310" text-anchor="middle" font-size="10" font-weight="600" fill="var(--svg-green)">Non-Contradiction</text>
+          <text x="705" y="325" text-anchor="middle" font-size="9" fill="var(--svg-text)" opacity="0.7">Same rows, same values</text>
+          <line x1="640" y1="315" x2="610" y2="315" stroke="var(--svg-green)" stroke-width="1" stroke-dasharray="3,3"/>
+
+          <!-- Bottom summary -->
+          <text x="390" y="595" text-anchor="middle" font-size="12" font-weight="600" fill="var(--svg-accent)">The agent calls one function. Nine topics make that function work correctly.</text>
+          <text x="390" y="615" text-anchor="middle" font-size="11" fill="var(--svg-text)" opacity="0.7">Every layer of complexity is hidden behind the tool contract.</text>
+        </svg>
+      </div>
+
+      <h3>Each Topic's Contribution</h3>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr><th>Topic</th><th>Role in Agentic Data Access</th><th>Where It Acts</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>1. Warehousing</strong></td>
+              <td>Star schema is the data model the tool queries</td>
+              <td>Storage layer</td>
+            </tr>
+            <tr>
+              <td><strong>2. Columnar</strong></td>
+              <td>DuckDB's columnar format makes analytical queries fast enough for real-time tool calls</td>
+              <td>Storage layer</td>
+            </tr>
+            <tr>
+              <td><strong>3. Medallion / dbt</strong></td>
+              <td>Gold serving layer is what both agent and dashboard read from</td>
+              <td>Serving layer</td>
+            </tr>
+            <tr>
+              <td><strong>4. Pre-computation</strong></td>
+              <td>Serving table is pre-computed -- the tool never runs raw aggregations</td>
+              <td>Serving layer</td>
+            </tr>
+            <tr>
+              <td><strong>5. EAV</strong></td>
+              <td>Survey data in EAV is pivoted once during transformation, not by every tool call</td>
+              <td>Transformation layer</td>
+            </tr>
+            <tr>
+              <td><strong>6. OLTP vs OLAP</strong></td>
+              <td>OLTP for survey submission, OLAP for the agent's analytical reads</td>
+              <td>Ingestion / storage split</td>
+            </tr>
+            <tr>
+              <td><strong>7. Suppression</strong></td>
+              <td>Applied in serving layer and signaled in the tool's response</td>
+              <td>Serving / contract layer</td>
+            </tr>
+            <tr>
+              <td><strong>8. Frontier Platforms</strong></td>
+              <td>Modern survey platforms expose these patterns through APIs</td>
+              <td>External integration</td>
+            </tr>
+            <tr>
+              <td><strong>9. Agentic Access</strong></td>
+              <td>Tool contracts, scope resolution, caching, context sizing, non-contradiction</td>
+              <td>Interface layer (this topic)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+
+      <!-- ═══ LAB RESULTS ═══ -->
+      <h2 id="lab-results">Lab Results</h2>
+
+      <details>
+        <summary>Lab 01: Tool Contracts -- Backend Interchangeability</summary>
+        <div class="details-body">
+          <p>The same <code>run_with_backend()</code> calling code executes against both DuckDB and PostgreSQL. Results are identical:</p>
+
+          <h3>Team Alpha -- Both Backends</h3>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>Category</th><th>Mean Score</th><th>Questions</th></tr></thead>
+              <tbody>
+                <tr><td>Basic Needs</td><td>4.2</td><td>2</td></tr>
+                <tr><td>Individual</td><td>3.8</td><td>4</td></tr>
+                <tr><td>Teamwork</td><td>3.9</td><td>4</td></tr>
+                <tr><td>Growth</td><td>3.5</td><td>2</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>Overall: <strong>3.85</strong> | Responses: <strong>18</strong> | Status: <strong>ok</strong> | Suppressed: <strong>false</strong></p>
+          <p>Error state test: querying a non-existent period (<code>2024-Q1</code>) returns <code>status: "no_data"</code> with score <code>0.0</code> from both backends.</p>
+
+          <div class="callout callout-info">
+            <strong>Key Result</strong>
+            The agent cannot tell which backend is active. The tool contract fully abstracts the data source. The entire infrastructure can change underneath without the agent knowing.
+          </div>
+        </div>
+      </details>
+
+      <details>
+        <summary>Lab 02: Scope Resolution -- Three Scenarios</summary>
+        <div class="details-body">
+          <p><strong>Scenario 1 (Bob -- unambiguous):</strong> Bob manages one team (Team Beta). <code>resolve_default_scope("u2")</code> returns a complete <code>UserScope</code> immediately. Zero disambiguation needed.</p>
+
+          <p><strong>Scenario 2 (Alice -- ambiguous):</strong> Alice is on three teams (Alpha as manager, Beta and Gamma as member). The heuristic picks her managed team, but the lab shows what happens when disambiguation is required: the agent presents all three teams and asks "which one?"</p>
+
+          <p><strong>Scenario 3 (Embedded widget):</strong> When the agent lives inside a dashboard, scope is injected from the page context. No resolution, no conversation round-trip. The same <code>get_team_overview()</code> call works regardless of how scope was resolved.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>Lab 03: Tool Caching -- Performance and Consistency</summary>
+        <div class="details-body">
+          <p>A 5-turn simulated conversation with a 300-second TTL cache:</p>
+
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>Metric</th><th>Value</th></tr></thead>
+              <tbody>
+                <tr><td>Total tool calls</td><td>5</td></tr>
+                <tr><td>Cache hits</td><td>2 (40%)</td></tr>
+                <tr><td>Cache misses</td><td>3</td></tr>
+                <tr><td>Actual total latency</td><td>~180 ms</td></tr>
+                <tr><td>Without caching (estimated)</td><td>250 ms</td></tr>
+                <tr><td>Savings</td><td>~70 ms (28%)</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p>Performance is secondary. The real purpose: when the agent references Team Alpha's score twice in one conversation, it gets the same <code>3.85</code> both times, even if the source data refreshes between calls.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>Lab 04: Context Window Sizing -- Data Shape Comparison</summary>
+        <div class="details-body">
+          <p>Four data shapes generated from 200 respondents across the 12-item engagement survey structure:</p>
+
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>Shape</th><th>JSON Size</th><th>Est. Tokens</th><th>Reasoning Quality</th></tr></thead>
+              <tbody>
+                <tr><td>A: Overview</td><td>1.7 KB</td><td>440</td><td style="color:var(--svg-green);">Excellent</td></tr>
+                <tr><td>B: Detailed</td><td>5.5 KB</td><td>1,399</td><td style="color:var(--svg-orange);">Good</td></tr>
+                <tr><td>C: Dimensional</td><td>39.7 KB</td><td>10,156</td><td style="color:var(--svg-red);">Degrades</td></tr>
+                <tr><td>D: Raw Responses</td><td>107.7 KB</td><td>27,574</td><td style="color:var(--svg-red);">Poor</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p>Shape A uses &lt;1% of a 128K token context and produces the best reasoning. Shape D would consume ~21% and produce worse results. More data does not mean better agent responses.</p>
+
+          <div class="callout callout-info">
+            <strong>Context Budget (128K model)</strong>
+            System prompt + tool definitions: ~2,000 tokens. Conversation (10 turns): ~3,000 tokens. Tool result (overview): ~500 tokens. Response generation: ~2,000 tokens. Total: ~7,500 of 128,000 tokens used. The overview shape leaves over 120K tokens of headroom.
+          </div>
+        </div>
+      </details>
+
+      <details>
+        <summary>Lab 05: Non-Contradiction -- Three Architecture Scenarios</summary>
+        <div class="details-body">
+          <p><strong>Scenario 1 (Consistent):</strong> Both dashboard and agent read the same PostgreSQL serving table. Both show <strong>3.85</strong>. Result: MATCH.</p>
+
+          <p><strong>Scenario 2 (Inconsistent):</strong> Dashboard reads PostgreSQL at T1 (pre-refresh: 3.85). Agent reads DuckDB at T2 (post-refresh: 3.92). Result: <strong>MISMATCH</strong>. Delta: 0.07. Both are "correct" but the inconsistency destroys trust.</p>
+
+          <p><strong>Scenario 3 (Shared serving):</strong> After the pipeline refreshes the Gold table, both dashboard and agent read from it. Both show <strong>3.92</strong>. Result: MATCH. Consistent by construction.</p>
+
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>Pattern</th><th>Dashboard Source</th><th>Agent Source</th><th>Consistent?</th></tr></thead>
+              <tbody>
+                <tr><td>Independent compute</td><td>PostgreSQL query</td><td>DuckDB query</td><td style="color:var(--svg-red);font-weight:600;">No</td></tr>
+                <tr><td>Shared serving table</td><td>Gold table</td><td>Gold table</td><td style="color:var(--svg-green);font-weight:600;">Yes</td></tr>
+                <tr><td>Shared + tool cache</td><td>Gold table</td><td>Cache -> Gold table</td><td style="color:var(--svg-green);font-weight:600;">Yes</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </details>
+
+    </main>
+
+    <footer>
+      <h2>Sources</h2>
+      <div class="source"><code>notes/09_agentic_data_access.md</code></div>
+      <div class="source"><code>labs/09_agentic_data_access/01_tool_contracts.py</code></div>
+      <div class="source"><code>labs/09_agentic_data_access/02_scope_resolution.py</code></div>
+      <div class="source"><code>labs/09_agentic_data_access/03_tool_caching.py</code></div>
+      <div class="source"><code>labs/09_agentic_data_access/04_context_window_sizing.py</code></div>
+      <div class="source"><code>labs/09_agentic_data_access/05_non_contradiction.py</code></div>
+    </footer>
+  </div>
+
+  <script>
+    (function() {
+      var toggle = document.getElementById('theme-toggle');
+      var KEY = 'synthesis-theme';
+
+      function setTheme(t) {
+        document.documentElement.setAttribute('data-theme', t);
+        toggle.setAttribute('aria-label',
+          t === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+        try { localStorage.setItem(KEY, t); } catch(e) {}
+      }
+
+      var saved = null;
+      try { saved = localStorage.getItem(KEY); } catch(e) {}
+
+      if (saved) {
+        setTheme(saved);
+      } else {
+        setTheme(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      }
+
+      toggle.addEventListener('click', function() {
+        var current = document.documentElement.getAttribute('data-theme');
+        setTheme(current === 'dark' ? 'light' : 'dark');
+      });
+    })();
+  </script>
+</body>
+</html>
