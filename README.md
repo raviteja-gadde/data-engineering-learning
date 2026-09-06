@@ -1,4 +1,4 @@
-# Data Engineering Learning
+# Data engineering labs
 
 Learn data engineering by building. Runnable labs, dbt models, and Airflow pipelines, all built around a practical survey analytics example.
 
