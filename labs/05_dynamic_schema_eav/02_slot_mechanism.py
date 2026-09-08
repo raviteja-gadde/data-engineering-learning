@@ -5,13 +5,16 @@ decodes what each slot means per project. Shows deterministic width but
 opaque column names that defeat AI/text-to-SQL.
 """
 
-import sys, os
+import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
-from shared.duck import duckdb_conn
-from shared.display import print_table, print_sql, print_panel
-
 import random
+
+from shared.display import print_panel, print_sql, print_table
+from shared.duck import duckdb_conn
+
 random.seed(42)
 
 # ── Question sets (same as lab 01) ───────────────────────────────────────────

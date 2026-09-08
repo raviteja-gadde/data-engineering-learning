@@ -5,13 +5,16 @@ question sets. Shows infinite flexibility (add questions without schema change)
 and the pain (analytical queries require PIVOT/conditional aggregation).
 """
 
-import sys, os
+import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
-from shared.duck import duckdb_conn
-from shared.display import print_table, print_sql, print_panel
-
 import random
+
+from shared.display import print_panel, print_sql, print_table
+from shared.duck import duckdb_conn
+
 random.seed(42)
 
 # ── Standard Q12 + custom questions per project ─────────────────────────────

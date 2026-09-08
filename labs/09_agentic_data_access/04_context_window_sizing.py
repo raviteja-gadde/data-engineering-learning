@@ -5,12 +5,15 @@ estimates token count, and rates reasoning quality. Shows why flat
 overview is the right default shape for agent consumption.
 """
 
-import sys, os
+import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 import json
 import random
-from shared.display import print_table, print_panel
+
+from shared.display import print_panel, print_table
 
 random.seed(42)
 

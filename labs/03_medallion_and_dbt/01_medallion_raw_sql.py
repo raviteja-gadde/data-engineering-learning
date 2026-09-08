@@ -4,11 +4,14 @@ Build Bronze -> Silver -> Gold layers in DuckDB using plain SQL.
 No dbt, no frameworks -- just SQL to understand the concept before the tool.
 """
 
-import sys, os
+import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
+from shared.display import print_panel, print_sql, print_table
 from shared.duck import duckdb_conn
-from shared.display import print_table, print_sql, print_panel
+
 
 def main():
     with duckdb_conn() as con:

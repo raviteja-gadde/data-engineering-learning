@@ -9,11 +9,15 @@ Uses two measurement approaches:
 - Parquet export for per-column compressed SIZE comparison
 """
 
-import sys, os, random, tempfile
+import os
+import random
+import sys
+import tempfile
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
+from shared.display import print_panel, print_sql, print_table
 from shared.duck import duckdb_conn
-from shared.display import print_table, print_sql, print_panel
 
 random.seed(42)
 NUM_ROWS = 500_000

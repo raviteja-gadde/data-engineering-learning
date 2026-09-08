@@ -5,11 +5,13 @@ Two employees move from Engineering to Product. Shows how the same data
 answers "results under old structure" vs "results under current structure."
 """
 
-import sys, os
+import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
+from shared.display import print_panel, print_sql, print_table
 from shared.duck import duckdb_conn
-from shared.display import print_table, print_sql, print_panel
 
 
 def main():

@@ -7,11 +7,13 @@ only the team name and response count but not actual scores.
 Demonstrates column-level access control vs row-level (Lab 03).
 """
 
-import sys, os
+import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
+from shared.display import print_panel, print_sql, print_table
 from shared.pg import pg_conn
-from shared.display import print_table, print_sql, print_panel
 
 ROLES = ["analyst_role", "viewer_role"]
 

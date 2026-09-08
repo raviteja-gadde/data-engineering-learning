@@ -8,15 +8,18 @@ This is why you can't just "pre-compute everything" — the storage and
 build cost explode once you cross ~4-5 dimensions.
 """
 
-import sys, os
+import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
+from shared.display import print_panel, print_table
 from shared.duck import duckdb_conn
-from shared.display import print_table, print_panel
 
 # Real survey dimension names and their cardinalities
 DIMENSIONS = [
@@ -77,7 +80,7 @@ def main():
         dims = [r[0] for r in results]
         counts = [r[2] for r in results]
 
-        fig, ax = plt.subplots(figsize=(10, 6))
+        _fig, ax = plt.subplots(figsize=(10, 6))
         ax.bar(dims, counts, color="#4C78A8", edgecolor="white", linewidth=0.5)
         ax.set_xlabel("Number of Dimensions", fontsize=12)
         ax.set_ylabel("Rollup Table Rows", fontsize=12)

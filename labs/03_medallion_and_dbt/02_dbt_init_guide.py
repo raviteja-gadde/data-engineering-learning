@@ -4,7 +4,9 @@ Walks through the dbt project structure, explains each file,
 verifies configuration, and runs dbt debug to confirm connectivity.
 """
 
-import sys, os, subprocess
+import os
+import subprocess
+import sys
 from pathlib import Path
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -17,7 +19,6 @@ PROJECT_DIR = Path(__file__).resolve().parent.parent.parent / "dbt_project"
 def check_file(path: Path, description: str) -> bool:
     """Check if a file exists and print its status."""
     exists = path.exists()
-    status = "EXISTS" if exists else "MISSING"
     return exists
 
 
@@ -25,7 +26,7 @@ def run_dbt(command: str) -> tuple[int, str]:
     """Run a dbt command in the project directory."""
     result = subprocess.run(
         f"uv run dbt {command} --profiles-dir .",
-        shell=True, capture_output=True, text=True, cwd=PROJECT_DIR,
+        shell=True, capture_output=True, text=True, cwd=PROJECT_DIR, check=False,
     )
     return result.returncode, result.stdout + result.stderr
 

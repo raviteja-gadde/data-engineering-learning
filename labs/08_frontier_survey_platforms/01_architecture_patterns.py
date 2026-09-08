@@ -6,12 +6,16 @@ to a PostgreSQL serving table with indexes, and an in-memory cache sits on top.
 A request is traced through the stack showing latency at each tier.
 """
 
-import sys, os, time, random
+import os
+import random
+import sys
+import time
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
+from shared.display import print_panel, print_table
 from shared.duck import duckdb_conn
 from shared.pg import pg_conn
-from shared.display import print_table, print_panel
 
 CACHE: dict[str, dict] = {}  # simulates Redis/memcached
 

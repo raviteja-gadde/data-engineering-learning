@@ -4,13 +4,15 @@ Executes the full dbt pipeline: seed -> run -> test,
 then queries DuckDB to inspect data at each layer.
 """
 
-import sys, os, subprocess
+import os
+import subprocess
+import sys
 from pathlib import Path
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
+from shared.display import print_panel, print_table
 from shared.duck import duckdb_conn
-from shared.display import print_table, print_panel
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent.parent / "dbt_project"
 DB_PATH = PROJECT_DIR / "dev.duckdb"
@@ -20,7 +22,7 @@ def run_dbt(command: str) -> tuple[int, str]:
     """Run a dbt command and return (exit_code, combined_output)."""
     result = subprocess.run(
         f"uv run dbt {command} --profiles-dir .",
-        shell=True, capture_output=True, text=True, cwd=PROJECT_DIR,
+        shell=True, capture_output=True, text=True, cwd=PROJECT_DIR, check=False,
     )
     return result.returncode, result.stdout + result.stderr
 

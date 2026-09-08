@@ -8,12 +8,13 @@ who executes it. Three roles: manager_a (sees Team A), manager_b
 Uses SET ROLE to switch context within a single connection.
 """
 
-import sys, os
+import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
+from shared.display import print_panel, print_sql, print_table
 from shared.pg import pg_conn
-from shared.display import print_table, print_sql, print_panel
-
 
 ROLES = ["manager_a", "manager_b", "survey_admin"]
 THE_QUERY = "SELECT team_name, avg_q01, avg_q07, response_count FROM team_scores;"

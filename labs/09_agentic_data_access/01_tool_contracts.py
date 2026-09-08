@@ -5,13 +5,16 @@ Implements TWO backends (DuckDB and PostgreSQL) behind the same contract.
 The calling code doesn't know or care which backend is active.
 """
 
-import sys, os
+import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+
+from shared.display import print_panel, print_table
 from shared.duck import duckdb_conn
 from shared.pg import pg_conn
-from shared.display import print_table, print_panel
 
 # ── Data Contracts (shared by all backends) ──────────────────────────────────
 

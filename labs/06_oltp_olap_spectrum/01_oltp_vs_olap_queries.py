@@ -5,12 +5,16 @@ Runs OLTP queries (lookup, INSERT, UPDATE) and OLAP queries (aggregation, window
 on both. Shows where each engine shines.
 """
 
-import sys, os, time, random
+import os
+import random
+import sys
+import time
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
+from shared.display import print_panel, print_table
 from shared.duck import duckdb_conn
 from shared.pg import pg_conn
-from shared.display import print_table, print_panel
 
 QUESTIONS = [
     ("Q01", "Basic Needs", 4.1), ("Q02", "Basic Needs", 3.9),
@@ -59,13 +63,13 @@ def load_postgres(duck):
 
 
 def bench_pg(sql, params=None, runs=10):
-    times, result = [], None
+    times, _result = [], None
     with pg_conn() as pg:
         cur = pg.cursor()
         for _ in range(runs):
             s = time.perf_counter()
             cur.execute(sql, params)
-            result = cur.fetchall()
+            cur.fetchall()
             times.append((time.perf_counter() - s) * 1000)
     return sum(times) / len(times)
 
@@ -125,16 +129,16 @@ def main():
         # ── OLAP: aggregation, filtered agg, window ─────────────────
         olap_queries = [
             ("Full-table AVG by category",
-             "SELECT q.category, ROUND(AVG(r.score){cast},2), COUNT(*) FROM responses r "
-             "JOIN questions q ON r.question_id=q.q_id GROUP BY q.category ORDER BY q.category"),
+             ("SELECT q.category, ROUND(AVG(r.score){cast},2), COUNT(*) FROM responses r "
+              "JOIN questions q ON r.question_id=q.q_id GROUP BY q.category ORDER BY q.category")),
             ("Filtered AGG (5 teams x cat)",
-             "SELECT t.name, q.category, ROUND(AVG(r.score){cast},2) FROM responses r "
-             "JOIN teams t ON r.team_id=t.team_id JOIN questions q ON r.question_id=q.q_id "
-             "WHERE t.name IN ('Team_01','Team_05','Team_10','Team_15','Team_20') "
-             "GROUP BY t.name, q.category ORDER BY t.name, q.category"),
+             ("SELECT t.name, q.category, ROUND(AVG(r.score){cast},2) FROM responses r "
+              "JOIN teams t ON r.team_id=t.team_id JOIN questions q ON r.question_id=q.q_id "
+              "WHERE t.name IN ('Team_01','Team_05','Team_10','Team_15','Team_20') "
+              "GROUP BY t.name, q.category ORDER BY t.name, q.category")),
             ("Window: RANK teams by score",
-             "SELECT t.name, ROUND(AVG(r.score){cast},2), RANK() OVER (ORDER BY AVG(r.score) DESC) "
-             "FROM responses r JOIN teams t ON r.team_id=t.team_id GROUP BY t.name ORDER BY 3"),
+             ("SELECT t.name, ROUND(AVG(r.score){cast},2), RANK() OVER (ORDER BY AVG(r.score) DESC) "
+              "FROM responses r JOIN teams t ON r.team_id=t.team_id GROUP BY t.name ORDER BY 3")),
         ]
         olap = []
         for label, sql_tmpl in olap_queries:

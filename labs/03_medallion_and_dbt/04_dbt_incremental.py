@@ -10,13 +10,16 @@ Since models use 'table' materialization, dbt does a full rebuild each run.
 The lab ends with an explanation of how incremental materialization differs.
 """
 
-import sys, os, subprocess, shutil
+import os
+import shutil
+import subprocess
+import sys
 from pathlib import Path
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
+from shared.display import print_panel, print_sql, print_table
 from shared.duck import duckdb_conn
-from shared.display import print_table, print_panel, print_sql
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent.parent / "dbt_project"
 DB_PATH = PROJECT_DIR / "dev.duckdb"
@@ -56,7 +59,7 @@ R132,EMP11,T002,P02,Q12,4,2025-04-16 10:06:00
 def run_dbt(command: str) -> tuple[int, str]:
     result = subprocess.run(
         f"uv run dbt {command} --profiles-dir .",
-        shell=True, capture_output=True, text=True, cwd=PROJECT_DIR,
+        shell=True, capture_output=True, text=True, cwd=PROJECT_DIR, check=False,
     )
     return result.returncode, result.stdout + result.stderr
 

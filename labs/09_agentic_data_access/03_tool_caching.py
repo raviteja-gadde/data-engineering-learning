@@ -5,13 +5,15 @@ Shows cache hits vs misses, latency impact, and why tool-level caching
 guarantees intra-conversation consistency.
 """
 
-import sys, os
+import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 import time
-from dataclasses import dataclass, field
-from shared.duck import duckdb_conn
-from shared.display import print_table, print_panel
+from dataclasses import dataclass
+
+from shared.display import print_panel, print_table
 
 # ── Simulated Data Store ─────────────────────────────────────────────────────
 
@@ -131,7 +133,7 @@ def display_timeline(cache: ToolCache):
     """Show the cache hit/miss timeline."""
     rows = []
     for i, entry in enumerate(cache.log, 1):
-        team_id, proj_id, period = entry["key"]
+        team_id, _proj_id, period = entry["key"]
         status = "HIT" if entry["hit"] else "MISS"
         latency = f"{entry['ms']:.2f} ms"
         rows.append((i, team_id, period, status, latency))

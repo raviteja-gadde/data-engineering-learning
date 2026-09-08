@@ -5,11 +5,13 @@ engagement survey. Demonstrates fact + dimension tables, analytical queries, and
 query plans.
 """
 
-import sys, os
+import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
+from shared.display import print_panel, print_sql, print_table
 from shared.duck import duckdb_conn
-from shared.display import print_table, print_sql, print_panel
 
 # ── 12-item engagement questions with categories and realistic base scores ───
 QUESTIONS = [

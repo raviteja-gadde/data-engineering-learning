@@ -11,12 +11,15 @@ This is how analytics SaaS products achieve sub-100ms response times:
 Measures latency at each stage to make the pattern concrete.
 """
 
-import sys, os, time
+import os
+import sys
+import time
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
+from shared.display import print_panel, print_table
 from shared.duck import duckdb_conn
 from shared.pg import pg_conn
-from shared.display import print_table, print_panel
 
 QUESTIONS = [
     ("Q01", "Basic Needs", 4.1), ("Q02", "Basic Needs", 3.9),

@@ -4,11 +4,13 @@ Demonstrates the materialized view pattern using DuckDB's CREATE TABLE AS.
 Shows pre-computed results, staleness after new data, and rebuild.
 """
 
-import sys, os
+import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
+from shared.display import print_panel, print_sql, print_table
 from shared.duck import duckdb_conn
-from shared.display import print_table, print_sql, print_panel
 
 QUESTIONS = [
     (1, "Q01", "I know what is expected of me at work", "Basic Needs"),

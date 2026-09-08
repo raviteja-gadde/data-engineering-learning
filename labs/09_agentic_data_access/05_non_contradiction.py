@@ -5,13 +5,14 @@ Three scenarios show when they agree, when they diverge, and why
 a shared serving table is the correct architecture.
 """
 
-import sys, os
+import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
-from dataclasses import dataclass
+from shared.display import print_panel, print_table
 from shared.duck import duckdb_conn
 from shared.pg import pg_conn
-from shared.display import print_table, print_panel
 
 # ── Setup: seed both databases with identical data ───────────────────────────
 
@@ -114,7 +115,7 @@ def scenario_2_inconsistent():
     print(f"  Result: {match}")
     print(f"  Delta: {abs(dashboard_score - agent_score):.2f}")
     print(f"  User sees dashboard showing {dashboard_score} while agent says {agent_score}.")
-    print(f"  Both are 'correct' — but the inconsistency destroys trust.\n")
+    print("  Both are 'correct' — but the inconsistency destroys trust.\n")
 
 
 def scenario_3_shared_serving():

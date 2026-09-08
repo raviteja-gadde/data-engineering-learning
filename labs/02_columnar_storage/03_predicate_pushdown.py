@@ -5,11 +5,14 @@ clauses. EXPLAIN ANALYZE shows how the engine skips data it doesn't need,
 especially when the table is sorted on the filter column.
 """
 
-import sys, os, random
+import os
+import random
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
+from shared.display import print_panel, print_sql, print_table
 from shared.duck import duckdb_conn
-from shared.display import print_table, print_sql, print_panel
 
 random.seed(42)
 NUM_ROWS = 1_000_000

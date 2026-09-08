@@ -9,14 +9,17 @@ Key: we benchmark COMPUTATION time, not data conversion. Each method
 starts from its native format (Python list, numpy array, pre-loaded table).
 """
 
-import sys, os, time
+import os
+import sys
+import time
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
+import duckdb
 import numpy as np
 import pandas as pd
-import duckdb
 
-from shared.display import print_table, print_panel
+from shared.display import print_panel, print_table
 
 NUM_VALUES = 10_000_000
 

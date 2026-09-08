@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/ruff-action@v3
+
+  labs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Run DuckDB labs
+        run: |
+          failed=0
+          for lab in labs/*/; do
+            for script in "$lab"*.py; do
+              [ -f "$script" ] || continue
+              # Skip labs that need external services
+              if grep -q 'psycopg2\|snowflake' "$script" 2>/dev/null; then
+                echo "⏭ SKIP (external service): $script"
+                continue
+              fi
+              echo "▶ Running: $script"
+              if uv run python "$script"; then
+                echo "✓ PASS: $script"
+              else
+                echo "✗ FAIL: $script"
+                failed=$((failed + 1))
+              fi
+            done
+          done
+          if [ "$failed" -gt 0 ]; then
+            echo "::error::$failed lab(s) failed"
+            exit 1
+          fi

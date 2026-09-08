@@ -5,13 +5,18 @@ run against each. Side-by-side comparison of query complexity, execution
 time, storage size, and flexibility.
 """
 
-import sys, os, json, time
+import json
+import os
+import sys
+import time
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
-from shared.duck import duckdb_conn
-from shared.display import print_table, print_sql, print_panel
-
 import random
+
+from shared.display import print_panel, print_table
+from shared.duck import duckdb_conn
+
 random.seed(42)
 
 # ── Shared question data ────────────────────────────────────────────────────

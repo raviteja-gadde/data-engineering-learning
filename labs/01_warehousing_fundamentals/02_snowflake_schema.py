@@ -5,11 +5,13 @@ dim_team, dim_department, dim_location. Shows the same queries require
 more joins, and compares the SQL side by side.
 """
 
-import sys, os
+import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
+from shared.display import print_comparison, print_panel, print_sql, print_table
 from shared.duck import duckdb_conn
-from shared.display import print_table, print_sql, print_panel, print_comparison
 
 QUESTIONS = [
     ("Q01", "I know what is expected of me at work", "Basic Needs", 4.1),
@@ -89,8 +91,8 @@ def load_data(conn):
 
     # Star dim (denormalized)
     for tk, tn, dk, lk, _ in TEAMS:
-        dept = [d for d in DEPARTMENTS if d[0] == dk][0]
-        loc = [l for l in LOCATIONS if l[0] == lk][0]
+        dept = next(d for d in DEPARTMENTS if d[0] == dk)
+        loc = next(l for l in LOCATIONS if l[0] == lk)
         conn.execute("INSERT INTO star_dim_team VALUES (?,?,?,?,?,?)",
                      [tk, tn, dept[1], dept[2], loc[1], loc[2]])
 

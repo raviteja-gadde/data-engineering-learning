@@ -8,11 +8,13 @@ Concrete attacker scenario: "I know my colleague is on Team C, in Austin,
 and in Product. What did they score?"
 """
 
-import sys, os
+import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
+from shared.display import print_panel, print_sql, print_table
 from shared.duck import duckdb_conn
-from shared.display import print_table, print_sql, print_panel
 
 K_THRESHOLD = 4
 

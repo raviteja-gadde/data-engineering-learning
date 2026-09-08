@@ -9,11 +9,14 @@ Uses a simple dict cache with TTL to make the mechanics visible.
 No external dependencies — the cache is just a Python dict with timestamps.
 """
 
-import sys, os, time
+import os
+import sys
+import time
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
+from shared.display import print_panel, print_table
 from shared.duck import duckdb_conn
-from shared.display import print_table, print_panel
 
 # ── Simple TTL cache ─────────────────────────────────────────────────
 
@@ -116,7 +119,7 @@ def main():
         print_panel("SCENARIO A", "First query = cache miss (slow). Second query = cache hit (fast).")
 
         result_a1, source_a1, lat_a1 = cached_query(conn, cache, "Team_Alpha")
-        result_a2, source_a2, lat_a2 = cached_query(conn, cache, "Team_Alpha")
+        _result_a2, source_a2, lat_a2 = cached_query(conn, cache, "Team_Alpha")
 
         timeline = []
         timeline.append(("A1: First query", source_a1, f"{lat_a1:.2f}", "Correct"))
@@ -145,8 +148,8 @@ def main():
         # What the real answer is now
         fresh_result = expensive_query(conn, "Team_Alpha")
 
-        stale_basic = [r for r in result_b if r[1] == "Basic Needs"][0][2]
-        fresh_basic = [r for r in fresh_result if r[1] == "Basic Needs"][0][2]
+        stale_basic = next(r for r in result_b if r[1] == "Basic Needs")[2]
+        fresh_basic = next(r for r in fresh_result if r[1] == "Basic Needs")[2]
 
         timeline.append(("B: After data change", source_b, f"{lat_b:.2f}",
                          f"STALE (Basic Needs: cached={stale_basic}, actual={fresh_basic})"))
@@ -165,7 +168,7 @@ def main():
         time.sleep(0.6)  # Wait for 500ms TTL to expire
 
         result_c, source_c, lat_c = cached_query(conn, cache, "Team_Alpha")
-        fresh_basic_c = [r for r in result_c if r[1] == "Basic Needs"][0][2]
+        next(r for r in result_c if r[1] == "Basic Needs")[2]
 
         timeline.append(("C: After TTL expiry", source_c, f"{lat_c:.2f}", "Correct (recomputed)"))
 

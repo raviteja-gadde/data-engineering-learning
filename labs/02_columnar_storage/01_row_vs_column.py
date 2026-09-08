@@ -5,12 +5,16 @@ Loads identical survey data into PostgreSQL (row-oriented) and DuckDB
 time and query plans.
 """
 
-import sys, os, time, random
+import os
+import random
+import sys
+import time
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
+from shared.display import print_panel, print_sql, print_table
 from shared.duck import duckdb_conn
 from shared.pg import pg_conn
-from shared.display import print_table, print_sql, print_panel
 
 random.seed(42)
 NUM_ROWS = 100_000
@@ -110,7 +114,7 @@ def main():
     try:
         with pg_conn() as _test:
             pass
-    except Exception:
+    except Exception:  # noqa: BLE001
         print_panel("Prerequisite: PostgreSQL Required",
                     "This lab compares PostgreSQL (row store) vs DuckDB (column store).\n"
                     "Start PostgreSQL via: docker compose -f docker/docker-compose.postgres.yml up -d\n"
@@ -140,7 +144,7 @@ def main():
             with pg_conn() as pgc:
                 pgcur = pgc.cursor()
                 pg_time, _ = benchmark_query(
-                    lambda s: pgcur.execute(s) or pgcur.fetchall(), sql, label
+                    lambda s, c=pgcur: c.execute(s) or c.fetchall(), sql, label
                 )
 
             # DuckDB

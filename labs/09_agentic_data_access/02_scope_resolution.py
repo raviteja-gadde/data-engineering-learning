@@ -5,11 +5,14 @@ This lab simulates the conversational flow: discover teams, present
 options, confirm selection, fetch data with resolved scope.
 """
 
-import sys, os
+import os
+import sys
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from dataclasses import dataclass
-from shared.display import print_table, print_panel
+
+from shared.display import print_panel, print_table
 
 # ── Data Model ───────────────────────────────────────────────────────────────
 
