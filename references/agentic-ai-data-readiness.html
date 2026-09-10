@@ -1,0 +1,1867 @@
+<!--
+  Synthesis Page: Making Data Ready for Agentic AI
+  Generated: 2026-09-09
+  Sources:
+  Ephemeral page — no canonical MD source
+  Source: https://martinfowler.com/articles/making-data-ready-for-agentic-ai.html
+  Authors: Pramod Sadalage, Prem Chandrasekaran (Thoughtworks)
+  Published: 27 August 2026
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Making Data Ready for Agentic AI</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --bg-secondary: #f5f7fa;
+      --text: #1a1a2e;
+      --text-secondary: #555770;
+      --border: #e0e0e8;
+      --accent: #4a6cf7;
+      --accent-soft: #eef0ff;
+      --code-bg: #f0f2f8;
+      --card-bg: #ffffff;
+      --card-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      --callout-info: #e8f0fe;
+      --callout-warn: #fef7e0;
+      --callout-tip: #e6f9ef;
+      --callout-info-border: #4a6cf7;
+      --callout-warn-border: #e6a817;
+      --callout-tip-border: #27ae60;
+    }
+
+    [data-theme="dark"] {
+      --bg: #0f0f1a;
+      --bg-secondary: #1a1a2e;
+      --text: #e0e0ec;
+      --text-secondary: #9999b0;
+      --border: #2a2a40;
+      --accent: #6b8cff;
+      --accent-soft: #1a1a3e;
+      --code-bg: #1e1e32;
+      --card-bg: #16162a;
+      --card-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      --callout-info: #141430;
+      --callout-warn: #1e1a10;
+      --callout-tip: #0e1e14;
+      --callout-info-border: #6b8cff;
+      --callout-warn-border: #d4a017;
+      --callout-tip-border: #2ecc71;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    /* ── Header ── */
+    header {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 2.5rem 2rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    header h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.3;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-shrink: 0;
+      padding-top: 0.35rem;
+    }
+
+    .meta-date {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+
+    /* ── Theme button ── */
+    .theme-btn {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg-secondary);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.7rem;
+      flex-shrink: 0;
+      transition: background 0.2s ease, border-color 0.2s ease;
+      color: var(--text-secondary);
+      font-family: inherit;
+      font-size: 0.8rem;
+      font-weight: 500;
+      line-height: 1;
+    }
+
+    .theme-btn:hover {
+      background: var(--border);
+      color: var(--text);
+    }
+
+    .theme-btn:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .theme-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .theme-btn .icon-sun,
+    .theme-btn .icon-moon,
+    .theme-btn .label-light,
+    .theme-btn .label-dark {
+      display: none;
+    }
+
+    [data-theme="dark"] .theme-btn .icon-sun { display: block; }
+    [data-theme="dark"] .theme-btn .label-dark { display: inline; }
+    :root:not([data-theme="dark"]) .theme-btn .icon-moon { display: block; }
+    :root:not([data-theme="dark"]) .theme-btn .label-light { display: inline; }
+    [data-theme="light"] .theme-btn .icon-moon { display: block; }
+    [data-theme="light"] .theme-btn .label-light { display: inline; }
+
+    /* ── Main ── */
+    main {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 2rem 3rem;
+    }
+
+    main h2 {
+      font-size: 1.35rem;
+      font-weight: 600;
+      margin: 2.5rem 0 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 2px solid var(--border);
+      letter-spacing: -0.01em;
+    }
+
+    main h2:first-child {
+      margin-top: 0.5rem;
+    }
+
+    main h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin: 1.8rem 0 0.6rem;
+    }
+
+    main p { margin: 0.8rem 0; }
+
+    main ul, main ol {
+      margin: 0.8rem 0;
+      padding-left: 1.6rem;
+    }
+
+    main li { margin: 0.35rem 0; }
+    main li strong { color: var(--accent); }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.2s;
+    }
+
+    a:hover { border-bottom-color: var(--accent); }
+
+    code {
+      font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+      font-size: 0.88em;
+      background: var(--code-bg);
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+    }
+
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      overflow-x: auto;
+      margin: 1rem 0;
+    }
+
+    pre code {
+      background: none;
+      padding: 0;
+      font-size: 0.85em;
+      line-height: 1.6;
+    }
+
+    blockquote {
+      border-left: 3px solid var(--accent);
+      padding: 0.6rem 1rem;
+      margin: 1rem 0;
+      background: var(--accent-soft);
+      border-radius: 0 6px 6px 0;
+      color: var(--text-secondary);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.92em;
+    }
+
+    th, td {
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      font-weight: 600;
+      background: var(--bg-secondary);
+      white-space: nowrap;
+    }
+
+    tr:hover td { background: var(--bg-secondary); }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.2rem 1.4rem;
+      margin: 1rem 0;
+      box-shadow: var(--card-shadow);
+      transition: box-shadow 0.2s ease, transform 0.2s ease;
+    }
+
+    .card:hover {
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+      transform: translateY(-1px);
+    }
+
+    [data-theme="dark"] .card:hover {
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    }
+
+    .card h3 { margin-top: 0; }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+
+    .card-grid .card { margin: 0; }
+
+    /* ── Callouts ── */
+    .callout {
+      padding: 0.8rem 1rem;
+      border-radius: 8px;
+      margin: 1rem 0;
+      border-left: 4px solid;
+    }
+
+    .callout-info {
+      background: var(--callout-info);
+      border-left-color: var(--callout-info-border);
+    }
+
+    .callout-warn {
+      background: var(--callout-warn);
+      border-left-color: var(--callout-warn-border);
+    }
+
+    .callout-tip {
+      background: var(--callout-tip);
+      border-left-color: var(--callout-tip-border);
+    }
+
+    .callout strong {
+      display: block;
+      margin-bottom: 0.3rem;
+    }
+
+    /* ── Sticky horizontal nav ── */
+    nav.toc {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      margin: 0 -2rem;
+      padding: 0 2rem;
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      white-space: nowrap;
+    }
+
+    nav.toc::-webkit-scrollbar { display: none; }
+
+    nav.toc ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      gap: 0.25rem;
+      padding: 0.5rem 0;
+    }
+
+    nav.toc li { margin: 0; flex-shrink: 0; }
+
+    nav.toc a {
+      display: block;
+      color: var(--text-secondary);
+      font-size: 0.82rem;
+      font-weight: 500;
+      padding: 0.3rem 0.7rem;
+      border-radius: 999px;
+      transition: background 0.2s, color 0.2s;
+      text-decoration: none;
+      border-bottom: none;
+    }
+
+    nav.toc a:hover {
+      background: var(--bg-secondary);
+      color: var(--text);
+      border-bottom: none;
+    }
+
+    nav.toc a.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    [data-theme="dark"] nav.toc a.active {
+      background: var(--accent);
+      color: #0f0f1a;
+    }
+
+    /* ── SVG ── */
+    svg text { fill: var(--text); }
+    svg .stroke { stroke: var(--border); }
+
+    /* ── Footer ── */
+    footer {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 2rem;
+      border-top: 1px solid var(--border);
+    }
+
+    footer h2 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    footer .source {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin: 0.25rem 0;
+    }
+
+    footer .source code { font-size: 0.85em; }
+
+    @media (max-width: 600px) {
+      header { padding: 1.5rem 1rem 1rem; flex-direction: column; }
+      main { padding: 0 1rem 2rem; }
+      nav.toc { margin: 0 -1rem; padding: 0 1rem; }
+      footer { padding: 1.5rem 1rem; }
+      .card-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Making Data Ready for Agentic AI</h1>
+    <div class="header-right">
+      <span class="meta-date">2026-09-09</span>
+      <button class="theme-btn" id="theme-toggle" aria-label="Toggle dark mode">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+        </svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+        <span class="label-light">Light</span>
+        <span class="label-dark">Dark</span>
+      </button>
+    </div>
+  </header>
+
+  <main>
+<!-- ── Page-specific styles ── -->
+<style>
+  /* Layer accent colors */
+  :root {
+    --layer-trust: #2d7d46;
+    --layer-trust-bg: #e8f5ed;
+    --layer-context: #1a6b8a;
+    --layer-context-bg: #e0f0f7;
+    --layer-access: #7b4bbf;
+    --layer-access-bg: #f0e8fa;
+    --layer-obs: #c47a20;
+    --layer-obs-bg: #fef3e0;
+    --danger: #d32f2f;
+    --danger-bg: #fdeaea;
+    --success: #2e7d32;
+  }
+  [data-theme="dark"] {
+    --layer-trust: #4caf68;
+    --layer-trust-bg: #1a2e20;
+    --layer-context: #4db8d8;
+    --layer-context-bg: #152830;
+    --layer-access: #b388ff;
+    --layer-access-bg: #201833;
+    --layer-obs: #f0a030;
+    --layer-obs-bg: #2a2010;
+    --danger: #ef5350;
+    --danger-bg: #2a1414;
+    --success: #66bb6a;
+  }
+
+  .hero-callout {
+    background: var(--accent-soft);
+    border: 2px solid var(--accent);
+    border-radius: 12px;
+    padding: 1.5rem 1.8rem;
+    margin: 1.5rem 0 2rem;
+    text-align: center;
+  }
+  .hero-callout .hero-quote {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--accent);
+    line-height: 1.5;
+    margin: 0;
+  }
+  .hero-callout .hero-sub {
+    font-size: 0.92rem;
+    color: var(--text-secondary);
+    margin-top: 0.6rem;
+  }
+
+  .comparison-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin: 1rem 0;
+  }
+  @media (max-width: 600px) {
+    .comparison-grid { grid-template-columns: 1fr; }
+  }
+  .compare-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.2rem;
+    box-shadow: var(--card-shadow);
+  }
+  .compare-card.human { border-top: 3px solid var(--layer-trust); }
+  .compare-card.agent { border-top: 3px solid var(--danger); }
+  .compare-card h4 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin: 0 0 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .compare-card.human h4 { color: var(--layer-trust); }
+  .compare-card.agent h4 { color: var(--danger); }
+  .compare-card ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .compare-card li {
+    padding: 0.35rem 0;
+    font-size: 0.92rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .compare-card li:last-child { border-bottom: none; }
+
+  .attribute-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 0.8rem;
+    margin: 1rem 0;
+  }
+  .attr-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.1rem;
+    box-shadow: var(--card-shadow);
+    border-left: 4px solid var(--accent);
+  }
+  .attr-card h4 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin: 0 0 0.4rem;
+  }
+  .attr-card p {
+    font-size: 0.88rem;
+    margin: 0;
+    color: var(--text-secondary);
+  }
+
+  .svg-diagram {
+    width: 100%;
+    margin: 1.2rem 0;
+    overflow-x: auto;
+  }
+  .svg-diagram svg {
+    display: block;
+    margin: 0 auto;
+    max-width: 100%;
+    height: auto;
+  }
+
+  .sql-compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin: 1rem 0;
+  }
+  @media (max-width: 600px) {
+    .sql-compare { grid-template-columns: 1fr; }
+  }
+  .sql-panel {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .sql-panel .sql-label {
+    padding: 0.5rem 0.8rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .sql-panel.bad .sql-label {
+    background: var(--danger-bg);
+    color: var(--danger);
+  }
+  .sql-panel.good .sql-label {
+    background: var(--layer-trust-bg);
+    color: var(--layer-trust);
+  }
+  .sql-panel pre {
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    padding: 0.8rem 1rem;
+  }
+
+  .scenario-box {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.2rem 1.4rem;
+    margin: 1rem 0;
+    box-shadow: var(--card-shadow);
+  }
+  .scenario-box .scenario-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--layer-obs);
+    margin-bottom: 0.5rem;
+  }
+  .scenario-flow {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    flex-wrap: wrap;
+    margin: 0.6rem 0;
+  }
+  .scenario-step {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.35rem 0.7rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .scenario-step.bad { background: var(--danger-bg); color: var(--danger); border-color: var(--danger); }
+  .scenario-step.good { background: var(--layer-trust-bg); color: var(--layer-trust); border-color: var(--layer-trust); }
+  .scenario-arrow {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    flex-shrink: 0;
+  }
+
+  .autonomy-stages {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin: 1rem 0;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .autonomy-stage {
+    display: grid;
+    grid-template-columns: 140px 1fr 1fr 1fr;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.88rem;
+  }
+  .autonomy-stage:last-child { border-bottom: none; }
+  .autonomy-stage > div { padding: 0.7rem 0.8rem; }
+  .autonomy-stage .stage-name {
+    font-weight: 600;
+    background: var(--bg-secondary);
+    display: flex;
+    align-items: center;
+  }
+  .autonomy-stage.header-row {
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+  }
+  .autonomy-stage.header-row > div { padding: 0.5rem 0.8rem; }
+  @media (max-width: 600px) {
+    .autonomy-stage {
+      grid-template-columns: 1fr;
+    }
+    .autonomy-stage .stage-name {
+      border-bottom: 1px solid var(--border);
+    }
+  }
+
+  .stage-badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    margin-right: 0.3rem;
+    vertical-align: middle;
+  }
+  .badge-shadow { background: var(--layer-context-bg); color: var(--layer-context); }
+  .badge-supervised { background: var(--layer-obs-bg); color: var(--layer-obs); }
+  .badge-guardrails { background: var(--layer-trust-bg); color: var(--layer-trust); }
+  .badge-full { background: var(--layer-access-bg); color: var(--layer-access); }
+
+  .action-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1rem;
+    margin: 1rem 0;
+  }
+  @media (max-width: 700px) {
+    .action-cards { grid-template-columns: 1fr; }
+  }
+  .action-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.2rem 1.4rem;
+    box-shadow: var(--card-shadow);
+    position: relative;
+    padding-left: 3.5rem;
+  }
+  .action-card .action-num {
+    position: absolute;
+    left: 1rem;
+    top: 1.1rem;
+    width: 2rem;
+    height: 2rem;
+    background: var(--accent);
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.95rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  [data-theme="dark"] .action-card .action-num { color: #0f0f1a; }
+  .action-card h4 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin: 0 0 0.3rem;
+  }
+  .action-card p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin: 0;
+  }
+
+  .section-actions {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.2rem;
+    margin: 1.5rem 0 0.5rem;
+  }
+  .section-actions h4 {
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-secondary);
+    margin: 0 0 0.6rem;
+  }
+  .section-actions ol {
+    margin: 0;
+    padding-left: 1.4rem;
+  }
+  .section-actions li {
+    font-size: 0.88rem;
+    padding: 0.25rem 0;
+    line-height: 1.5;
+  }
+  .section-actions li strong {
+    color: var(--text);
+  }
+
+  .antipattern {
+    background: var(--danger-bg);
+    border-left: 4px solid var(--danger);
+    padding: 0.8rem 1rem;
+    border-radius: 0 8px 8px 0;
+    margin: 1rem 0;
+  }
+  .antipattern strong {
+    color: var(--danger);
+    display: block;
+    margin-bottom: 0.3rem;
+  }
+
+  .principle-box {
+    background: var(--layer-trust-bg);
+    border-left: 4px solid var(--layer-trust);
+    padding: 0.8rem 1rem;
+    border-radius: 0 8px 8px 0;
+    margin: 1rem 0;
+  }
+  .principle-box strong {
+    color: var(--layer-trust);
+    display: block;
+    margin-bottom: 0.3rem;
+  }
+
+  .readiness-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    margin: 1rem 0;
+  }
+  .readiness-table th, .readiness-table td {
+    padding: 0.6rem 0.7rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .readiness-table th {
+    background: var(--bg-secondary);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .readiness-table td:first-child {
+    font-weight: 600;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+  .era-human { color: var(--text-secondary); }
+  .era-transition { color: var(--layer-obs); }
+  .era-ready { color: var(--layer-trust); }
+
+  .key-insight {
+    font-size: 1.05rem;
+    font-weight: 500;
+    font-style: italic;
+    color: var(--accent);
+    text-align: center;
+    margin: 1.5rem 0;
+    padding: 0.5rem 1rem;
+  }
+</style>
+
+<!-- ── Navigation ── -->
+<nav class="toc">
+  <ul>
+    <li><a href="#thesis">Thesis</a></li>
+    <li><a href="#gap">The Gap</a></li>
+    <li><a href="#attributes">Five Attributes</a></li>
+    <li><a href="#stack">Data Stack</a></li>
+    <li><a href="#trust">Trust</a></li>
+    <li><a href="#governance">Governance</a></li>
+    <li><a href="#context">Context</a></li>
+    <li><a href="#access">Access</a></li>
+    <li><a href="#ownership">Ownership</a></li>
+    <li><a href="#assessment">Assessment</a></li>
+    <li><a href="#start">Start Here</a></li>
+  </ul>
+</nav>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- HERO / THESIS                               -->
+<!-- ═══════════════════════════════════════════ -->
+<h2 id="thesis">The Central Thesis</h2>
+
+<div class="hero-callout">
+  <p class="hero-quote">"A human hesitates at data that looks wrong; an agent acts on it anyway."</p>
+  <p class="hero-sub">For three decades, data systems were built for human analysts who supply implicit context, judgment, and skepticism. Autonomous agents provide none of this. When agents become primary data consumers, your data architecture <em>becomes</em> your AI architecture.</p>
+</div>
+
+<p>Sadalage and Chandrasekaran's argument is structural, not incremental: you cannot make data "AI-ready" by adding a RAG layer on top of existing infrastructure. The implicit work humans performed&mdash;sniffing out bad data, knowing what "revenue" means, judging when to hesitate&mdash;must be <strong>engineered into the data layer itself</strong>. Skip that, and agents will confidently propagate errors at machine speed.</p>
+
+<p>The article identifies four interdependent layers that must be built bottom-up&mdash;data contracts and quality, traceability and governance, the context layer, and agent-ready data access&mdash;with observability running alongside all of them from day one.</p>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- THE GAP                                     -->
+<!-- ═══════════════════════════════════════════ -->
+<h2 id="gap">The Behavioral Gap</h2>
+
+<p>Human analysts brought enormous implicit knowledge to their work. They understood organizational context, noticed suspicious patterns, and paused at questionable data. Agents lack all of this. The gap isn't a bug to patch&mdash;it's a fundamental characteristic that reshapes what "data quality" must mean.</p>
+
+<div class="comparison-grid">
+  <div class="compare-card human">
+    <h4>Human Analyst</h4>
+    <ul>
+      <li>Knows which tables to trust and which to avoid</li>
+      <li>Notices round numbers, holiday dates, suspicious prices</li>
+      <li>Understands "revenue" means net after returns in this org</li>
+      <li>Pauses when data "smells wrong"</li>
+      <li>Reads dashboards, then acts manually</li>
+      <li>Can explain decisions after the fact</li>
+    </ul>
+  </div>
+  <div class="compare-card agent">
+    <h4>Autonomous Agent</h4>
+    <ul>
+      <li>Treats every data source equally&mdash;no trust ranking</li>
+      <li>Acts confidently on stale, wrong, or suspicious values</li>
+      <li>Has no institutional knowledge of metric definitions</li>
+      <li>Cannot "smell" bad data; errors cascade silently</li>
+      <li>Must perform actions directly on systems</li>
+      <li>Reasoning must be captured as decisions happen</li>
+    </ul>
+  </div>
+</div>
+
+<div class="callout callout-warn">
+  <strong>The Confidence Gap in Numbers</strong>
+  A 2026 survey found 87% of data leaders believed their data was AI-ready, while 43% simultaneously identified data readiness as their biggest barrier to extracting AI value. This gap reflects organizations' overconfidence in systems built for human consumers, not autonomous agents.
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- FIVE ATTRIBUTES                             -->
+<!-- ═══════════════════════════════════════════ -->
+<h2 id="attributes">Five Attributes of AI-Ready Data</h2>
+
+<p>Each attribute addresses a job humans performed implicitly that now requires explicit engineering.</p>
+
+<div class="attribute-cards">
+  <div class="attr-card">
+    <h4>Trusted</h4>
+    <p>Confidence built into data through accuracy, freshness, and validation&mdash;before agents access it.</p>
+  </div>
+  <div class="attr-card">
+    <h4>Contextual</h4>
+    <p>Business meaning (fiscal calendars, revenue definitions) moved from people's heads into the data layer.</p>
+  </div>
+  <div class="attr-card">
+    <h4>Traceable</h4>
+    <p>Complete reasoning chains reconstructable. Decisions captured as they happen, not explained after the fact.</p>
+  </div>
+  <div class="attr-card">
+    <h4>Governed</h4>
+    <p>Permissions scoped, controlled, and auditable by design&mdash;not bounded by role and judgment alone.</p>
+  </div>
+  <div class="attr-card">
+    <h4>Operational</h4>
+    <p>Data is not merely readable&mdash;it is actionable. Agents perform actions directly, not through manual intermediaries.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- THE AI-READY DATA STACK                     -->
+<!-- ═══════════════════════════════════════════ -->
+<h2 id="stack">The AI-Ready Data Stack</h2>
+
+<p>The four topics&mdash;trust, context, access, and observability&mdash;aren't independent pillars. They form a <strong>dependency-ordered stack</strong>. You can't attach meaning to untrusted data. You can't safely let agents act without meaning to constrain them. Skip any foundational layer and everything above collapses. This is why many agentic AI programs stall: jumping to agent access without building the foundation.</p>
+
+<div class="svg-diagram">
+  <svg viewBox="0 0 700 430" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="AI-Ready Data Stack: four layers with dependency ordering, observability alongside">
+    <!-- Observability sidebar -->
+    <rect x="560" y="30" width="120" height="370" rx="8" fill="var(--layer-obs-bg)" stroke="var(--layer-obs)" stroke-width="2"/>
+    <text x="620" y="140" text-anchor="middle" font-size="13" font-weight="600" fill="var(--layer-obs)">Observability</text>
+    <text x="620" y="160" text-anchor="middle" font-size="10" fill="var(--text-secondary)">Traces &amp; spans</text>
+    <text x="620" y="175" text-anchor="middle" font-size="10" fill="var(--text-secondary)">Audit trails</text>
+    <text x="620" y="190" text-anchor="middle" font-size="10" fill="var(--text-secondary)">Cost tracking</text>
+    <text x="620" y="230" text-anchor="middle" font-size="10" font-style="italic" fill="var(--layer-obs)">Runs alongside</text>
+    <text x="620" y="245" text-anchor="middle" font-size="10" font-style="italic" fill="var(--layer-obs)">all layers from</text>
+    <text x="620" y="260" text-anchor="middle" font-size="10" font-style="italic" fill="var(--layer-obs)">day one</text>
+    <text x="620" y="290" text-anchor="middle" font-size="9" fill="var(--layer-obs)">NOT staged &mdash;</text>
+    <text x="620" y="303" text-anchor="middle" font-size="9" fill="var(--layer-obs)">full strength always</text>
+    <!-- Arrow from obs to stack -->
+    <line x1="560" y1="215" x2="530" y2="215" stroke="var(--layer-obs)" stroke-width="1.5" stroke-dasharray="4,3"/>
+
+    <!-- Layer 4: Access (top) -->
+    <rect x="40" y="30" width="490" height="70" rx="8" fill="var(--layer-access-bg)" stroke="var(--layer-access)" stroke-width="2"/>
+    <text x="60" y="55" font-size="13" font-weight="700" fill="var(--layer-access)">Layer 4: Agent-Ready Data Access</text>
+    <text x="60" y="72" font-size="11" fill="var(--text-secondary)">Retrieval &rarr; Real-time query &rarr; Write-back</text>
+    <text x="60" y="88" font-size="10" fill="var(--text-secondary)">MCP resources, prompts, tools; staged autonomy</text>
+
+    <!-- Arrow down -->
+    <text x="285" y="114" text-anchor="middle" font-size="13" fill="var(--text-secondary)">&darr; depends on</text>
+
+    <!-- Layer 3: Context -->
+    <rect x="40" y="125" width="490" height="70" rx="8" fill="var(--layer-context-bg)" stroke="var(--layer-context)" stroke-width="2"/>
+    <text x="60" y="150" font-size="13" font-weight="700" fill="var(--layer-context)">Layer 3: The Context Layer</text>
+    <text x="60" y="167" font-size="11" fill="var(--text-secondary)">Nouns (domain model) + Numbers (semantic model) + Verbs (capability model)</text>
+    <text x="60" y="183" font-size="10" fill="var(--text-secondary)">Metrics as code, knowledge graphs, curated operations</text>
+
+    <!-- Arrow down -->
+    <text x="285" y="209" text-anchor="middle" font-size="13" fill="var(--text-secondary)">&darr; depends on</text>
+
+    <!-- Layer 2: Traceability & Governance -->
+    <rect x="40" y="220" width="490" height="70" rx="8" fill="var(--layer-obs-bg)" stroke="var(--layer-obs)" stroke-width="2"/>
+    <text x="60" y="245" font-size="13" font-weight="700" fill="var(--layer-obs)">Layer 2: Traceability &amp; Governance</text>
+    <text x="60" y="262" font-size="11" fill="var(--text-secondary)">Agentic lineage, staged autonomy, delegated access</text>
+    <text x="60" y="278" font-size="10" fill="var(--text-secondary)">Lethal trifecta defenses, JIT credentials, least privilege</text>
+
+    <!-- Arrow down -->
+    <text x="285" y="304" text-anchor="middle" font-size="13" fill="var(--text-secondary)">&darr; depends on</text>
+
+    <!-- Layer 1: Trust (foundation) -->
+    <rect x="40" y="315" width="490" height="80" rx="8" fill="var(--layer-trust-bg)" stroke="var(--layer-trust)" stroke-width="2"/>
+    <text x="60" y="342" font-size="13" font-weight="700" fill="var(--layer-trust)">Layer 1: Trusted Data Foundation</text>
+    <text x="60" y="359" font-size="11" fill="var(--text-secondary)">Data contracts, schema enforcement, freshness SLAs</text>
+    <text x="60" y="375" font-size="10" fill="var(--text-secondary)">Quarantine pattern, medallion architecture (agents: Gold only)</text>
+  </svg>
+</div>
+
+<div class="principle-box">
+  <strong>Dependency Ordering</strong>
+  Readiness is capped by the weakest foundational layer. A flawless context layer on untrusted data isn't agent-ready. Find your weakest row; invest there next.
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- TRUST FOUNDATION                            -->
+<!-- ═══════════════════════════════════════════ -->
+<h2 id="trust">Layer 1: Trusted Data Foundation</h2>
+
+<p class="key-insight">"Agents can't smell bad data."</p>
+
+<p>Humans have an intuitive sense for data that looks wrong&mdash;numbers that seem off, dates that don't make sense, prices that appear too low. As Simon Willison notes, "language models are gullible," accepting and acting on whatever they receive. Errors don't trigger warnings; they cascade silently through agent workflows.</p>
+
+<h3>The Pricing Scenario</h3>
+
+<div class="scenario-box">
+  <div class="scenario-label">Worked Example: Stale Price Cascading</div>
+  <div class="scenario-flow">
+    <span class="scenario-step">Product X price updates to $59.99</span>
+    <span class="scenario-arrow">&rarr;</span>
+    <span class="scenario-step bad">Data source still shows $49.99 (stale)</span>
+    <span class="scenario-arrow">&rarr;</span>
+    <span class="scenario-step bad">Agent quotes customer $49.99</span>
+    <span class="scenario-arrow">&rarr;</span>
+    <span class="scenario-step bad">$10 loss per unit, technically correct execution</span>
+  </div>
+  <p style="font-size: 0.88rem; color: var(--text-secondary); margin: 0.5rem 0 0;">Every step was technically correct. The data was wrong. No warning was raised.</p>
+</div>
+
+<h3>Schema Is Law: Data Contracts as Code</h3>
+
+<p>Data contracts enforce schema as <strong>law</strong> rather than suggestion. While loose schemas merely inconvenience human analysts, they're dangerous for agents. A contract specifies strict logical types, quality rules (price must exceed zero), allowed values (currency in USD, EUR, GBP), and&mdash;critically&mdash;<strong>freshness SLAs</strong> defining maximum acceptable staleness.</p>
+
+<div class="callout callout-info">
+  <strong>Freshness SLAs: a subtle but critical point</strong>
+  SLAs must be keyed to <em>successful load completion</em>, not when values last changed. A failed indexer makes data stale even when nothing appears changed. For unstructured data (RAG vector stores), measure when re-indexing completed, not when content was last modified.
+</div>
+
+<div class="callout callout-warn">
+  <strong>Unstructured data needs contracts too</strong>
+  Most agent data isn't tabular&mdash;it's documents, PDFs, and tickets chunked into vector stores for RAG. Contracts for unstructured data specify surrounding metadata: source and version identification, timestamp and access scope, rejection of empty or truncated chunks, detection of near-duplicate documents that skew retrieval, flagging failed extractions and OCR corruption, and monitoring embedding drift.
+</div>
+
+<p>Enforcement happens along three dimensions: <strong>schema enforcement</strong> (types and constraints match), <strong>freshness SLAs</strong> (staleness within bounds), and <strong>quality gates</strong> (contracts validated in CI/CD, blocking deployment on failure).</p>
+
+<details style="margin: 1rem 0;">
+  <summary style="cursor: pointer; font-weight: 600; font-size: 0.92rem; color: var(--accent); padding: 0.4rem 0;">Example: Open Data Contract Standard (YAML)</summary>
+  <pre style="margin-top: 0.5rem;"><code>apiVersion: v3.1.0
+kind: DataContract
+id: product-pricing
+name: Product Pricing
+version: 1.0.0
+status: active
+schema:
+  - name: product_pricing
+    physicalType: table
+    properties:
+      - name: product_id
+        logicalType: string
+        physicalType: varchar(64)
+        required: true
+        unique: true
+        primaryKey: true
+        primaryKeyPosition: 1
+      - name: price
+        logicalType: number
+        physicalType: decimal
+        required: true
+        quality:
+          - type: sql
+            description: Every price must be greater than zero
+            query: SELECT min({property}) FROM {object}
+            mustBeGreaterThan: 0
+      - name: currency
+        logicalType: string
+        physicalType: varchar(3)
+        required: true
+        quality:
+          - type: sql
+            description: Currency must be a supported ISO code
+            query: |
+              SELECT count(*) FROM {object}
+              WHERE {property} NOT IN ('USD','EUR','GBP')
+            mustBe: 0
+      - name: ingested_at
+        logicalType: timestamp
+        physicalType: timestamp
+        required: true
+slaProperties:
+  - property: latency
+    value: 24
+    unit: h
+    element: product_pricing.ingested_at</code></pre>
+</details>
+
+<h3>The Quarantine Pattern</h3>
+
+<p>When data violates a contract, it must <em>never</em> reach agents. The quarantine pattern catches bad data before it enters agent-accessible storage.</p>
+
+<div class="svg-diagram">
+  <svg viewBox="0 0 700 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Quarantine pattern: raw data flows through validation gate to certified or quarantine paths">
+    <!-- Raw data -->
+    <rect x="20" y="70" width="110" height="50" rx="6" fill="var(--bg-secondary)" stroke="var(--border)" stroke-width="1.5"/>
+    <text x="75" y="100" text-anchor="middle" font-size="12" font-weight="600" fill="var(--text)">Raw Data</text>
+
+    <!-- Arrow -->
+    <line x1="130" y1="95" x2="195" y2="95" stroke="var(--text-secondary)" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+
+    <!-- Validation gate -->
+    <polygon points="235,55 315,95 235,135" fill="var(--layer-obs-bg)" stroke="var(--layer-obs)" stroke-width="2"/>
+    <text x="255" y="92" font-size="10" font-weight="600" fill="var(--layer-obs)">Contract</text>
+    <text x="255" y="105" font-size="10" font-weight="600" fill="var(--layer-obs)">Validation</text>
+
+    <!-- Pass arrow -->
+    <line x1="315" y1="75" x2="400" y2="45" stroke="var(--layer-trust)" stroke-width="2" marker-end="url(#arrowGreen)"/>
+    <text x="348" y="52" font-size="10" font-weight="600" fill="var(--layer-trust)">PASS</text>
+
+    <!-- Fail arrow -->
+    <line x1="315" y1="115" x2="400" y2="150" stroke="var(--danger)" stroke-width="2" marker-end="url(#arrowRed)"/>
+    <text x="348" y="146" font-size="10" font-weight="600" fill="var(--danger)">FAIL</text>
+
+    <!-- Certified tier -->
+    <rect x="405" y="20" width="140" height="50" rx="6" fill="var(--layer-trust-bg)" stroke="var(--layer-trust)" stroke-width="2"/>
+    <text x="475" y="43" text-anchor="middle" font-size="11" font-weight="600" fill="var(--layer-trust)">Certified Tier</text>
+    <text x="475" y="58" text-anchor="middle" font-size="9" fill="var(--text-secondary)">Agent-accessible</text>
+
+    <!-- Arrow to agent response -->
+    <line x1="545" y1="45" x2="600" y2="45" stroke="var(--layer-trust)" stroke-width="1.5" marker-end="url(#arrowGreen)"/>
+    <rect x="605" y="25" width="80" height="40" rx="6" fill="var(--layer-trust-bg)" stroke="var(--layer-trust)" stroke-width="1"/>
+    <text x="645" y="43" text-anchor="middle" font-size="9" font-weight="500" fill="var(--layer-trust)">Agent acts</text>
+    <text x="645" y="55" text-anchor="middle" font-size="9" font-weight="500" fill="var(--layer-trust)">with confidence</text>
+
+    <!-- Dead-letter queue -->
+    <rect x="405" y="130" width="140" height="50" rx="6" fill="var(--danger-bg)" stroke="var(--danger)" stroke-width="2"/>
+    <text x="475" y="152" text-anchor="middle" font-size="11" font-weight="600" fill="var(--danger)">Dead-Letter Queue</text>
+    <text x="475" y="168" text-anchor="middle" font-size="9" fill="var(--text-secondary)">Human review + alerts</text>
+
+    <!-- Arrow to safe response -->
+    <line x1="545" y1="155" x2="600" y2="155" stroke="var(--danger)" stroke-width="1.5" marker-end="url(#arrowRed)"/>
+    <rect x="605" y="135" width="80" height="40" rx="6" fill="var(--danger-bg)" stroke="var(--danger)" stroke-width="1"/>
+    <text x="645" y="152" text-anchor="middle" font-size="9" font-weight="500" fill="var(--danger)">"I don't have</text>
+    <text x="645" y="164" text-anchor="middle" font-size="9" font-weight="500" fill="var(--danger)">current data"</text>
+
+    <!-- Arrowhead markers -->
+    <defs>
+      <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="var(--text-secondary)"/></marker>
+      <marker id="arrowGreen" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="var(--layer-trust)"/></marker>
+      <marker id="arrowRed" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="var(--danger)"/></marker>
+    </defs>
+  </svg>
+</div>
+
+<p>In the pricing scenario, stale data violates the 24-hour freshness SLA, triggering quarantine. The agent responds "I don't have current pricing data" rather than confidently quoting wrong numbers.</p>
+
+<h3>Medallion Architecture</h3>
+
+<p>The medallion architecture organizes data through progressive quality tiers, with a new <strong>Adaptive Gold</strong> tier for agents.</p>
+
+<div class="svg-diagram">
+  <svg viewBox="0 0 700 180" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Medallion architecture: Bronze, Silver, Gold, Adaptive Gold with agent access boundary">
+    <!-- Bronze -->
+    <rect x="20" y="50" width="130" height="80" rx="8" fill="var(--bg-secondary)" stroke="var(--border)" stroke-width="1.5"/>
+    <text x="85" y="78" text-anchor="middle" font-size="13" font-weight="700" fill="var(--text-secondary)">Bronze</text>
+    <text x="85" y="95" text-anchor="middle" font-size="9" fill="var(--text-secondary)">Raw ingestion</text>
+    <text x="85" y="108" text-anchor="middle" font-size="9" fill="var(--text-secondary)">Immutable audit</text>
+    <text x="85" y="121" text-anchor="middle" font-size="9" fill="var(--text-secondary)">Lineage trails</text>
+
+    <!-- Arrow -->
+    <line x1="150" y1="90" x2="180" y2="90" stroke="var(--text-secondary)" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+
+    <!-- Silver -->
+    <rect x="185" y="50" width="130" height="80" rx="8" fill="var(--bg-secondary)" stroke="var(--border)" stroke-width="1.5"/>
+    <text x="250" y="78" text-anchor="middle" font-size="13" font-weight="700" fill="var(--text-secondary)">Silver</text>
+    <text x="250" y="95" text-anchor="middle" font-size="9" fill="var(--text-secondary)">Validated, deduped</text>
+    <text x="250" y="108" text-anchor="middle" font-size="9" fill="var(--text-secondary)">Contracts enforced</text>
+    <text x="250" y="121" text-anchor="middle" font-size="9" fill="var(--text-secondary)">Quarantine active</text>
+
+    <!-- Arrow -->
+    <line x1="315" y1="90" x2="345" y2="90" stroke="var(--text-secondary)" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+
+    <!-- Agent access boundary -->
+    <rect x="342" y="15" width="340" height="150" rx="10" fill="none" stroke="var(--layer-trust)" stroke-width="2" stroke-dasharray="6,3"/>
+    <text x="512" y="33" text-anchor="middle" font-size="10" font-weight="600" fill="var(--layer-trust)">AGENT ACCESS BOUNDARY</text>
+
+    <!-- Gold -->
+    <rect x="350" y="50" width="130" height="80" rx="8" fill="var(--layer-trust-bg)" stroke="var(--layer-trust)" stroke-width="2"/>
+    <text x="415" y="78" text-anchor="middle" font-size="13" font-weight="700" fill="var(--layer-trust)">Gold</text>
+    <text x="415" y="95" text-anchor="middle" font-size="9" fill="var(--text-secondary)">Certified data</text>
+    <text x="415" y="108" text-anchor="middle" font-size="9" fill="var(--text-secondary)">Semantic model</text>
+    <text x="415" y="121" text-anchor="middle" font-size="9" fill="var(--text-secondary)">Governed access</text>
+
+    <!-- Arrow -->
+    <line x1="480" y1="90" x2="510" y2="90" stroke="var(--layer-trust)" stroke-width="1.5" marker-end="url(#arrowGreen)"/>
+
+    <!-- Adaptive Gold -->
+    <rect x="515" y="50" width="155" height="80" rx="8" fill="var(--layer-access-bg)" stroke="var(--layer-access)" stroke-width="2"/>
+    <text x="593" y="75" text-anchor="middle" font-size="12" font-weight="700" fill="var(--layer-access)">Adaptive Gold</text>
+    <text x="593" y="90" text-anchor="middle" font-size="9" fill="var(--text-secondary)">Agent-curated views</text>
+    <text x="593" y="103" text-anchor="middle" font-size="9" fill="var(--text-secondary)">Materialized combos</text>
+    <text x="593" y="116" text-anchor="middle" font-size="9" fill="var(--text-secondary)">Query-pattern driven</text>
+    <text x="593" y="129" text-anchor="middle" font-size="8" font-style="italic" fill="var(--text-secondary)">New tier for agentic systems</text>
+  </svg>
+</div>
+
+<div class="callout callout-tip">
+  <strong>Critical principle</strong>
+  Agents access only Gold tier or above. Bronze and Silver remain for human investigation and debugging.
+</div>
+
+<h3>Confidence-Threshold Routing</h3>
+
+<p>Not all problematic data is clearly bad; some falls in gray areas. Confidence-threshold routing bridges full autonomy and human control. The agent assesses both model confidence and data-level quality signals (freshness, completeness, consistency). If confidence exceeds the threshold (e.g., 85%), it proceeds autonomously; below threshold, it defers to a human.</p>
+
+<div class="svg-diagram">
+  <svg viewBox="0 0 700 170" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Confidence-threshold routing: high confidence proceeds autonomously, low confidence defers to human">
+    <!-- Input -->
+    <rect x="20" y="55" width="120" height="50" rx="6" fill="var(--bg-secondary)" stroke="var(--border)" stroke-width="1.5"/>
+    <text x="80" y="76" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">Agent Query</text>
+    <text x="80" y="92" text-anchor="middle" font-size="9" fill="var(--text-secondary)">+ Data quality signals</text>
+
+    <!-- Arrow -->
+    <line x1="140" y1="80" x2="200" y2="80" stroke="var(--text-secondary)" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+
+    <!-- Decision diamond -->
+    <polygon points="280,40 350,80 280,120 210,80" fill="var(--layer-obs-bg)" stroke="var(--layer-obs)" stroke-width="2"/>
+    <text x="280" y="76" text-anchor="middle" font-size="9" font-weight="600" fill="var(--layer-obs)">Confidence</text>
+    <text x="280" y="89" text-anchor="middle" font-size="9" font-weight="600" fill="var(--layer-obs)">&ge; threshold?</text>
+
+    <!-- Yes path -->
+    <line x1="350" y1="60" x2="420" y2="35" stroke="var(--layer-trust)" stroke-width="2" marker-end="url(#arrowGreen)"/>
+    <text x="378" y="40" font-size="10" font-weight="600" fill="var(--layer-trust)">YES</text>
+    <rect x="425" y="15" width="130" height="40" rx="6" fill="var(--layer-trust-bg)" stroke="var(--layer-trust)" stroke-width="1.5"/>
+    <text x="490" y="40" text-anchor="middle" font-size="11" font-weight="600" fill="var(--layer-trust)">Act Autonomously</text>
+
+    <!-- No path -->
+    <line x1="350" y1="100" x2="420" y2="125" stroke="var(--layer-obs)" stroke-width="2" marker-end="url(#arrowhead)"/>
+    <text x="378" y="122" font-size="10" font-weight="600" fill="var(--layer-obs)">NO</text>
+    <rect x="425" y="105" width="130" height="40" rx="6" fill="var(--layer-obs-bg)" stroke="var(--layer-obs)" stroke-width="1.5"/>
+    <text x="490" y="130" text-anchor="middle" font-size="11" font-weight="600" fill="var(--layer-obs)">Defer to Human</text>
+
+    <!-- Override note -->
+    <rect x="580" y="55" width="110" height="50" rx="6" fill="var(--danger-bg)" stroke="var(--danger)" stroke-width="1" stroke-dasharray="4,3"/>
+    <text x="635" y="74" text-anchor="middle" font-size="8.5" font-weight="600" fill="var(--danger)">SLA/contract breach</text>
+    <text x="635" y="88" text-anchor="middle" font-size="8.5" fill="var(--danger)">always forces</text>
+    <text x="635" y="100" text-anchor="middle" font-size="8.5" fill="var(--danger)">human review</text>
+  </svg>
+</div>
+
+<div class="antipattern">
+  <strong>Antipattern: trusting model confidence alone</strong>
+  Data quality signals should override model confidence. A model can be certain about stale data; freshness SLAs override that misplaced certainty. Start with hard gates: any contract or SLA breach forces human involvement regardless of other signals.
+</div>
+
+<div class="section-actions">
+  <h4>Where to start &mdash; Trust</h4>
+  <ol>
+    <li><strong>Define freshness SLAs</strong> for every dataset agents touch, varying per consumer (pricing tables fine on nightly batches for dashboards but need real-time updates for quoting agents)</li>
+    <li><strong>Implement quarantine gates</strong> validating contracts before agent-accessible storage, starting with highest-risk datasets (pricing, inventory, customer records)</li>
+    <li><strong>Use the Data Contract CLI</strong>, bringing contract governance into CI/CD as YAML definitions with automatic validation and deployment blocking</li>
+    <li><strong>Add confidence-threshold routing</strong> deferring to humans when quality signals drop below thresholds, starting conservatively around 90%</li>
+  </ol>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- GOVERNANCE                                  -->
+<!-- ═══════════════════════════════════════════ -->
+<h2 id="governance">Layer 2: Traceability &amp; Governance</h2>
+
+<p>With trusted data established, the harder question emerges: when regulators ask <em>why</em> an agent acted, can you explain? Traditional systems record <strong>what</strong> happened; agentic systems must explain <strong>why</strong>.</p>
+
+<h3>The Audit Gap</h3>
+
+<div class="scenario-box">
+  <div class="scenario-label">Worked Example: Letter of Credit</div>
+  <p style="font-size: 0.9rem; margin: 0 0 0.5rem;">A bank's agent processes letter of credit LC-4892, approving a $2.4M transaction in 30 seconds.</p>
+  <div class="scenario-flow">
+    <span class="scenario-step">KYC check</span>
+    <span class="scenario-arrow">&rarr;</span>
+    <span class="scenario-step">Sanctions screening</span>
+    <span class="scenario-arrow">&rarr;</span>
+    <span class="scenario-step">Credit terms evaluation</span>
+    <span class="scenario-arrow">&rarr;</span>
+    <span class="scenario-step good">APPROVE (94% confidence)</span>
+  </div>
+  <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0.5rem 0 0;">Audit logs can show which tables were queried and when. They <em>cannot</em> explain why the agent checked sanctions before credit terms, or why it approved despite minor documentation gaps.</p>
+</div>
+
+<h3>Agentic Lineage</h3>
+
+<p>Closing the audit gap requires <strong>agentic lineage</strong>&mdash;extending traditional data lineage to capture decision reasoning, using the traces-and-spans model from distributed systems observability.</p>
+
+<div class="comparison-grid">
+  <div class="compare-card human" style="border-top-color: var(--text-secondary);">
+    <h4 style="color: var(--text-secondary);">Traditional Lineage</h4>
+    <ul>
+      <li>"Which sources were accessed?"</li>
+      <li>Records tables, timestamps, queries</li>
+      <li>Answers <strong>what</strong> happened</li>
+    </ul>
+  </div>
+  <div class="compare-card agent" style="border-top-color: var(--accent);">
+    <h4 style="color: var(--accent);">Agentic Lineage</h4>
+    <ul>
+      <li>"Why did the agent access X, because it found Y in source Z?"</li>
+      <li>Records traces with spans per step, reasoning and sources attached</li>
+      <li>Answers <strong>why</strong>&mdash;the complete decision pathway</li>
+    </ul>
+  </div>
+</div>
+
+<div class="callout callout-warn">
+  <strong>The Regulatory Teeth Are Real</strong>
+  The EU AI Act Article 12 mandates automatic logging sufficient to trace operation. Article 19 requires six-month retention. Penalties: up to &euro;15M or 3% of global annual turnover. Tools: OpenTelemetry (Radar: Adopt), Langfuse (Trial), Arize Phoenix (Assess).
+</div>
+
+<h3>Staged Autonomy</h3>
+
+<p>Autonomy should be earned progressively, not granted wholesale. Just as you wouldn't give new employees unrestricted access immediately, don't grant agents full autonomy on day one.</p>
+
+<div class="autonomy-stages">
+  <div class="autonomy-stage header-row">
+    <div>Stage</div>
+    <div>Agent Does</div>
+    <div>Human Does</div>
+    <div>Monitoring</div>
+  </div>
+  <div class="autonomy-stage">
+    <div class="stage-name"><span class="stage-badge badge-shadow">1</span> Shadow</div>
+    <div>Recommends actions</div>
+    <div>Reviews and executes if appropriate</div>
+    <div>All recommendations logged to track accuracy</div>
+  </div>
+  <div class="autonomy-stage">
+    <div class="stage-name"><span class="stage-badge badge-supervised">2</span> Supervised</div>
+    <div>Prepares action and waits</div>
+    <div>Reviews and approves or denies</div>
+    <div>All proposed actions and decisions logged</div>
+  </div>
+  <div class="autonomy-stage">
+    <div class="stage-name"><span class="stage-badge badge-guardrails">3</span> Guardrails</div>
+    <div>Acts within defined boundaries</div>
+    <div>Defines guardrails (prefer reversibility over size)</div>
+    <div>All actions logged; alerts on exceptions</div>
+  </div>
+  <div class="autonomy-stage">
+    <div class="stage-name"><span class="stage-badge badge-full">4</span> Full</div>
+    <div>Carries out all actions</div>
+    <div>Spot checks</div>
+    <div>Continuous monitoring by agents and humans</div>
+  </div>
+</div>
+
+<div class="principle-box">
+  <strong>Promotion Should Turn on Evidence</strong>
+  Build test harnesses where tools and models are mocked or replayed deterministically in CI, agents are scored with evals rather than live service calls, and decisions are validated systematically.
+</div>
+
+<div class="callout callout-tip">
+  <strong>Autonomy is staged; observability is not</strong>
+  Autonomy progresses through four stages. Observability goes in from day one at full strength, regardless of autonomy level. Retrofitting observability onto a running system is painful&mdash;wire it before granting any autonomy, not after.
+</div>
+
+<h3>Security: The Lethal Trifecta</h3>
+
+<p>Three security patterns defend against Simon Willison's "lethal trifecta"&mdash;agents holding access to <strong>private data</strong>, exposure to <strong>untrusted content</strong>, and <strong>external communication</strong> capability. A poisoned document could hijack such an agent via prompt injection and exfiltrate whatever it reaches.</p>
+
+<div class="card-grid">
+  <div class="card">
+    <h3>Delegated Access</h3>
+    <p>Agents act with the invoking user's permissions, not broad service accounts. "Alice's agent acting with Alice's permissions" is traceable; "the service account" is not.</p>
+  </div>
+  <div class="card">
+    <h3>Just-in-Time Credentials</h3>
+    <p>Short-lived tokens scoped to specific tasks. Checking sanctions? Issue an OFAC-API-read token for that customer, valid five minutes. No standing credentials.</p>
+  </div>
+  <div class="card">
+    <h3>Least Privilege</h3>
+    <p>Agents get minimum access their tasks require. Processing letters of credit doesn't need HR or marketing data reach. Shrink blast radius.</p>
+  </div>
+</div>
+
+<div class="section-actions">
+  <h4>Where to start &mdash; Governance</h4>
+  <ol>
+    <li><strong>Instrument from day one.</strong> Every agent workflow should emit traces with spans for each step, including reasoning and sources. Use proven tools (OpenTelemetry, Langfuse, Arize Phoenix) rather than building custom solutions.</li>
+    <li><strong>Start in shadow mode.</strong> Lowest risk, highest learning. Agents recommend, humans decide. Build audit trails before compliance requires them; measure accuracy before granting autonomy.</li>
+    <li><strong>Implement delegated access.</strong> Agents inherit invoking user permissions; use just-in-time credentials with short expiry. No persistent tokens.</li>
+    <li><strong>Build for explainability.</strong> Whether regulators ask or not, audit trails answering "why" enable debugging, defense, and confidence to expand autonomy. Wire it in now; adding later is harder.</li>
+  </ol>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- CONTEXT LAYER                               -->
+<!-- ═══════════════════════════════════════════ -->
+<h2 id="context">Layer 3: The Context Layer</h2>
+
+<p class="key-insight">"Your agent doesn't know what revenue means."</p>
+
+<p>Ask an analyst "What was Q3 revenue for Product X?" and they know which tables to query, whether revenue means gross or net, how Q3 maps to your fiscal year. They accumulated this through institutional knowledge. Agents have none of it. Without context, they hallucinate answers or give up.</p>
+
+<h3>Nouns, Numbers, Verbs</h3>
+
+<p>Agents need three separate definition bodies, each serving a distinct purpose. Together they guarantee that context is declared once in version control rather than worked out afresh by models on every request.</p>
+
+<div class="svg-diagram">
+  <svg viewBox="0 0 700 270" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Context layer: three bodies - domain model (nouns), semantic model (numbers), capability model (verbs)">
+    <!-- Outer container -->
+    <rect x="20" y="10" width="660" height="250" rx="10" fill="var(--layer-context-bg)" stroke="var(--layer-context)" stroke-width="1.5" stroke-dasharray="6,3"/>
+    <text x="350" y="35" text-anchor="middle" font-size="13" font-weight="700" fill="var(--layer-context)">THE CONTEXT LAYER</text>
+
+    <!-- Domain Model (Nouns) -->
+    <rect x="40" y="55" width="190" height="185" rx="8" fill="var(--card-bg)" stroke="var(--layer-trust)" stroke-width="2"/>
+    <text x="135" y="80" text-anchor="middle" font-size="14" font-weight="700" fill="var(--layer-trust)">Nouns</text>
+    <text x="135" y="96" text-anchor="middle" font-size="10" font-weight="600" fill="var(--text-secondary)">Domain Model</text>
+    <line x1="60" y1="105" x2="210" y2="105" stroke="var(--border)" stroke-width="1"/>
+    <text x="135" y="122" text-anchor="middle" font-size="10" fill="var(--text-secondary)">What exists:</text>
+    <text x="135" y="138" text-anchor="middle" font-size="10" fill="var(--text-secondary)">Entities, relationships,</text>
+    <text x="135" y="154" text-anchor="middle" font-size="10" fill="var(--text-secondary)">business meaning rules</text>
+    <text x="135" y="178" text-anchor="middle" font-size="9" font-style="italic" fill="var(--text-secondary)">Consulted for</text>
+    <text x="135" y="192" text-anchor="middle" font-size="9" font-style="italic" fill="var(--text-secondary)">interpretation, planning</text>
+    <text x="135" y="210" text-anchor="middle" font-size="8.5" fill="var(--text-secondary)">Also: Ontology, Knowledge Graph,</text>
+    <text x="135" y="222" text-anchor="middle" font-size="8.5" fill="var(--text-secondary)">Bounded Context (DDD)</text>
+
+    <!-- Semantic Model (Numbers) -->
+    <rect x="255" y="55" width="190" height="185" rx="8" fill="var(--card-bg)" stroke="var(--layer-context)" stroke-width="2"/>
+    <text x="350" y="80" text-anchor="middle" font-size="14" font-weight="700" fill="var(--layer-context)">Numbers</text>
+    <text x="350" y="96" text-anchor="middle" font-size="10" font-weight="600" fill="var(--text-secondary)">Semantic Model</text>
+    <line x1="275" y1="105" x2="425" y2="105" stroke="var(--border)" stroke-width="1"/>
+    <text x="350" y="122" text-anchor="middle" font-size="10" fill="var(--text-secondary)">How numbers compute:</text>
+    <text x="350" y="138" text-anchor="middle" font-size="10" fill="var(--text-secondary)">Metrics and dimensions</text>
+    <text x="350" y="154" text-anchor="middle" font-size="10" fill="var(--text-secondary)">One versioned formula each</text>
+    <text x="350" y="178" text-anchor="middle" font-size="9" font-style="italic" fill="var(--text-secondary)">Compiled to identical SQL</text>
+    <text x="350" y="192" text-anchor="middle" font-size="9" font-style="italic" fill="var(--text-secondary)">every time</text>
+    <text x="350" y="210" text-anchor="middle" font-size="8.5" fill="var(--text-secondary)">Also: Classic semantic layer,</text>
+    <text x="350" y="222" text-anchor="middle" font-size="8.5" fill="var(--text-secondary)">BI layer, Metrics layer (dbt)</text>
+
+    <!-- Capability Model (Verbs) -->
+    <rect x="470" y="55" width="190" height="185" rx="8" fill="var(--card-bg)" stroke="var(--layer-access)" stroke-width="2"/>
+    <text x="565" y="80" text-anchor="middle" font-size="14" font-weight="700" fill="var(--layer-access)">Verbs</text>
+    <text x="565" y="96" text-anchor="middle" font-size="10" font-weight="600" fill="var(--text-secondary)">Capability Model</text>
+    <line x1="490" y1="105" x2="640" y2="105" stroke="var(--border)" stroke-width="1"/>
+    <text x="565" y="122" text-anchor="middle" font-size="10" fill="var(--text-secondary)">What agents may do:</text>
+    <text x="565" y="138" text-anchor="middle" font-size="10" fill="var(--text-secondary)">Curated operations</text>
+    <text x="565" y="154" text-anchor="middle" font-size="10" fill="var(--text-secondary)">Reads and writes separated</text>
+    <text x="565" y="178" text-anchor="middle" font-size="9" font-style="italic" fill="var(--text-secondary)">Each carries permissions,</text>
+    <text x="565" y="192" text-anchor="middle" font-size="9" font-style="italic" fill="var(--text-secondary)">owner, preconditions</text>
+    <text x="565" y="206" text-anchor="middle" font-size="8.5" fill="var(--text-secondary)">Cf. Palantir Foundry, Databricks</text>
+    <text x="565" y="218" text-anchor="middle" font-size="8.5" fill="var(--text-secondary)">Genie Ontology; article keeps</text>
+    <text x="565" y="230" text-anchor="middle" font-size="8.5" fill="var(--text-secondary)">reads &amp; writes separate</text>
+  </svg>
+</div>
+
+<h3>Metrics as Code</h3>
+
+<p>Business logic lives in declarative definitions, not buried in BI tools or ad-hoc SQL views:</p>
+
+<details style="margin: 1rem 0;">
+  <summary style="cursor: pointer; font-weight: 600; font-size: 0.92rem; color: var(--accent); padding: 0.4rem 0;">Example: dbt Semantic Model (YAML)</summary>
+  <pre style="margin-top: 0.5rem;"><code>semantic_models:
+  - name: orders
+    model: ref('orders')
+    defaults:
+      agg_time_dimension: order_date
+    entities:
+      - name: order_id
+        type: primary
+      - name: customer_id
+        type: foreign
+    dimensions:
+      - name: order_date
+        type: time
+        type_params:
+          time_granularity: day
+    measures:
+      - name: revenue
+        agg: sum
+        expr: order_amount - discount_amount
+        create_metric: true</code></pre>
+</details>
+
+<h3>Same Question, Very Different SQL</h3>
+
+<p>The semantic model doesn't make agents smarter&mdash;it <em>prevents guessing</em>. For agents acting unchecked, that's what matters.</p>
+
+<div class="sql-compare">
+  <div class="sql-panel bad">
+    <div class="sql-label">Without Semantic Model (agent guesses)</div>
+    <pre><code>SELECT SUM(amount)
+  FROM sales_data
+ WHERE product = 'Product X'
+   AND quarter = 'Q3'</code></pre>
+  </div>
+  <div class="sql-panel good">
+    <div class="sql-label">With Semantic Model (constrained)</div>
+    <pre><code>SELECT SUM(order_amount - discount_amount)
+  FROM orders o
+  JOIN products p
+    ON o.product_id = p.id
+ WHERE p.name = 'Product X'
+   AND o.order_date
+       BETWEEN '2025-07-01'
+           AND '2025-09-30'</code></pre>
+  </div>
+</div>
+
+<p>With the semantic model: agent sends a natural-language question &rarr; semantic model looks up metric definitions, valid dimensions, join paths, access rules via MCP &rarr; generates constrained SQL &rarr; warehouse executes &rarr; result flows back with full lineage metadata. Agents pick from governed metrics, never raw tables.</p>
+
+<div class="callout callout-tip">
+  <strong>Impact: raw schema vs. semantic layer</strong>
+  AtScale's text-to-SQL benchmark showed accuracy jumping from under 20% on raw schema to over 92.5% with a semantic layer on the same model. That's not a tuning improvement; it's the difference between guessing and being constrained.
+</div>
+
+<h3>Knowledge Graphs for Relationship Reasoning</h3>
+
+<p>Structured metric queries work well with tables, but some tasks require richer relationship reasoning across entities, events, and time over unknown depth&mdash;following chains until finding what you seek. That's the domain model's territory.</p>
+
+<p>Microsoft's <strong>GraphRAG</strong> uses community detection for abstract queries traditional RAG can't handle. <strong>Graphiti</strong> builds temporally-aware knowledge graphs for evolving facts. The semantic model defines metrics; the graph carries entity connections over time. Together they give agents something approaching institutional memory.</p>
+
+<p>Most implementations bootstrap from existing table structures, glossaries, and query patterns, letting humans curate on top rather than writing everything from scratch.</p>
+
+<div class="section-actions">
+  <h4>Where to start &mdash; Context</h4>
+  <ol>
+    <li><strong>Find conflicting metric definitions.</strong> Most organizations have competing definitions for key metrics (revenue being classic: gross vs. net, with/without returns). These conflicts are biggest risks and quickest wins.</li>
+    <li><strong>Pick a tool but focus on discipline.</strong> Any mainstream semantic layer tool works; what matters is keeping metric definitions in version control, ensuring one agreed definition per metric, routing agents through the layer.</li>
+    <li><strong>Route agents through the context layer.</strong> Agents see governed metrics and dimensions, never raw tables. MCP is common; dbt, Cube, and AtScale all ship MCP servers, but the principle&mdash;abstraction over raw schema&mdash;is what counts.</li>
+    <li><strong>Test adversarially.</strong> Every hallucination points to missing definitions. Fix the definition, not the prompt.</li>
+  </ol>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- DATA ACCESS                                 -->
+<!-- ═══════════════════════════════════════════ -->
+<h2 id="access">Layer 4: Agent-Ready Data Access</h2>
+
+<p>Once agents understand data and governance is in place, the question shifts: how do agents reach data and <em>act</em> on it? Traditional RAG only does step one&mdash;searching and retrieving content. It can't query live monitoring to check service status or create tickets in ServiceNow. That gap between <strong>searchable</strong> and <strong>actionable</strong> is this section's focus.</p>
+
+<h3>The Data Access Spectrum</h3>
+
+<p>Three tiers exist (per Microsoft's Cloud Adoption Framework for AI):</p>
+
+<div class="svg-diagram">
+  <svg viewBox="0 0 700 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Data access spectrum: three tiers from retrieval to write-back, mapped to MCP primitives">
+    <!-- Risk gradient bar -->
+    <defs>
+      <linearGradient id="riskGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" style="stop-color:var(--layer-trust);stop-opacity:0.3"/>
+        <stop offset="50%" style="stop-color:var(--layer-obs);stop-opacity:0.3"/>
+        <stop offset="100%" style="stop-color:var(--danger);stop-opacity:0.3"/>
+      </linearGradient>
+    </defs>
+    <rect x="40" y="15" width="620" height="25" rx="12" fill="url(#riskGrad)" stroke="var(--border)" stroke-width="1"/>
+    <text x="110" y="32" text-anchor="middle" font-size="10" font-weight="600" fill="var(--layer-trust)">Low Risk</text>
+    <text x="580" y="32" text-anchor="middle" font-size="10" font-weight="600" fill="var(--danger)">High Risk</text>
+    <text x="350" y="32" text-anchor="middle" font-size="10" font-weight="600" fill="var(--layer-obs)">Medium Risk</text>
+
+    <!-- Tier 1: Retrieval -->
+    <rect x="40" y="55" width="190" height="120" rx="8" fill="var(--layer-trust-bg)" stroke="var(--layer-trust)" stroke-width="2"/>
+    <text x="135" y="78" text-anchor="middle" font-size="13" font-weight="700" fill="var(--layer-trust)">Tier 1: Retrieval</text>
+    <text x="135" y="96" text-anchor="middle" font-size="10" fill="var(--text-secondary)">RAG, vector search,</text>
+    <text x="135" y="110" text-anchor="middle" font-size="10" fill="var(--text-secondary)">document lookup</text>
+    <rect x="65" y="122" width="140" height="22" rx="4" fill="var(--layer-trust)" opacity="0.15" stroke="var(--layer-trust)" stroke-width="1"/>
+    <text x="135" y="137" text-anchor="middle" font-size="9" font-weight="600" fill="var(--layer-trust)">MCP: Resources (read-only)</text>
+    <text x="135" y="162" text-anchor="middle" font-size="9" fill="var(--text-secondary)">Most orgs are here</text>
+
+    <!-- Arrow -->
+    <line x1="230" y1="115" x2="252" y2="115" stroke="var(--text-secondary)" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+
+    <!-- Tier 2: Real-Time Query -->
+    <rect x="255" y="55" width="190" height="120" rx="8" fill="var(--layer-obs-bg)" stroke="var(--layer-obs)" stroke-width="2"/>
+    <text x="350" y="78" text-anchor="middle" font-size="13" font-weight="700" fill="var(--layer-obs)">Tier 2: Real-Time</text>
+    <text x="350" y="96" text-anchor="middle" font-size="10" fill="var(--text-secondary)">Query live systems,</text>
+    <text x="350" y="110" text-anchor="middle" font-size="10" fill="var(--text-secondary)">check current status</text>
+    <rect x="280" y="122" width="140" height="22" rx="4" fill="var(--layer-obs)" opacity="0.15" stroke="var(--layer-obs)" stroke-width="1"/>
+    <text x="350" y="137" text-anchor="middle" font-size="9" font-weight="600" fill="var(--layer-obs)">MCP: Tools (read)</text>
+    <text x="350" y="162" text-anchor="middle" font-size="9" fill="var(--text-secondary)">Emerging gap for most</text>
+
+    <!-- Arrow -->
+    <line x1="445" y1="115" x2="467" y2="115" stroke="var(--text-secondary)" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+
+    <!-- Tier 3: Write-Back -->
+    <rect x="470" y="55" width="190" height="120" rx="8" fill="var(--danger-bg)" stroke="var(--danger)" stroke-width="2"/>
+    <text x="565" y="78" text-anchor="middle" font-size="13" font-weight="700" fill="var(--danger)">Tier 3: Write-Back</text>
+    <text x="565" y="96" text-anchor="middle" font-size="10" fill="var(--text-secondary)">Create tickets, update</text>
+    <text x="565" y="110" text-anchor="middle" font-size="10" fill="var(--text-secondary)">records, trigger workflows</text>
+    <rect x="495" y="122" width="140" height="22" rx="4" fill="var(--danger)" opacity="0.15" stroke="var(--danger)" stroke-width="1"/>
+    <text x="565" y="137" text-anchor="middle" font-size="9" font-weight="600" fill="var(--danger)">MCP: Tools (write)</text>
+    <text x="565" y="162" text-anchor="middle" font-size="9" fill="var(--text-secondary)">Highest capability + risk</text>
+
+    <!-- PO scenario -->
+    <rect x="40" y="185" width="620" height="28" rx="6" fill="var(--bg-secondary)" stroke="var(--border)" stroke-width="1"/>
+    <text x="55" y="203" font-size="9" font-weight="600" fill="var(--text-secondary)">PO SCENARIO:</text>
+    <text x="135" y="203" font-size="9" fill="var(--layer-trust)">Retrieve guide</text>
+    <text x="220" y="203" font-size="9" fill="var(--text-secondary)">&rarr;</text>
+    <text x="250" y="203" font-size="9" fill="var(--layer-obs)">Check payment status (live)</text>
+    <text x="420" y="203" font-size="9" fill="var(--text-secondary)">&rarr;</text>
+    <text x="445" y="203" font-size="9" fill="var(--danger)">File support ticket (write)</text>
+  </svg>
+</div>
+
+<h3>Three MCP Primitives</h3>
+
+<p>MCP (Model Context Protocol) rapidly became the default wiring mechanism. It defines three primitives on a risk gradient:</p>
+
+<div class="card-grid">
+  <div class="card" style="border-left: 4px solid var(--layer-trust);">
+    <h3 style="color: var(--layer-trust);">Resources <span style="font-size: 0.75rem; font-weight: 400; color: var(--text-secondary);">(safest)</span></h3>
+    <p>Read-only access to knowledge bases, configs, documentation. No state change. Maps to retrieval tier.</p>
+  </div>
+  <div class="card" style="border-left: 4px solid var(--layer-obs);">
+    <h3 style="color: var(--layer-obs);">Prompts <span style="font-size: 0.75rem; font-weight: 400; color: var(--text-secondary);">(moderate)</span></h3>
+    <p>Shape agent behavior through instruction&mdash;decision trees, step-by-step triage. Influences reasoning without changing external state.</p>
+  </div>
+  <div class="card" style="border-left: 4px solid var(--danger);">
+    <h3 style="color: var(--danger);">Tools <span style="font-size: 0.75rem; font-weight: 400; color: var(--text-secondary);">(most dangerous)</span></h3>
+    <p>Execute actions, modify state. Create tickets, issue refunds, update records. Maps to real-time query and write-back tiers. Requires strongest governance.</p>
+  </div>
+</div>
+
+<h3>Design Capabilities, Not Endpoints</h3>
+
+<div class="antipattern">
+  <strong>Antipattern: Naive API-to-MCP Conversion (TW Tech Radar: HOLD)</strong>
+  Wrapping existing REST APIs one-to-one as tools creates tool sprawl. The agent chooses among 50 barely-distinguished tools; LLMs are bad at this; accuracy drops sharply as tool count climbs.
+</div>
+
+<div class="principle-box">
+  <strong>Design capabilities, not endpoints</strong>
+  Expose functionality as a handful (5&ndash;10) of well-described business capabilities with rich descriptions and parameterized inputs. <code>check_service_status(service, location)</code> beats 50 per-service wrappers every time. This principle is protocol-agnostic&mdash;whether agents reach data through MCP or other standards, rich descriptions, parameterized access, and clear schemas make data agent-ready.
+</div>
+
+<h3>What a Capability Declares</h3>
+
+<div class="card-grid">
+  <div class="card">
+    <h3>Permissions &amp; Owner</h3>
+    <p>Who may invoke, acting as whom. Who's accountable when it misbehaves.</p>
+  </div>
+  <div class="card">
+    <h3>Preconditions</h3>
+    <p>Conditions that must hold before action proceeds, checked against live state at decision time. A refund needs an original payment, not yet refunded, within authorization limits.</p>
+  </div>
+  <div class="card">
+    <h3>Reversibility Class</h3>
+    <p><strong>Cleanly reversible</strong>, <strong>reversible at cost</strong> (compensating transaction), or <strong>irreversible</strong>. A $50K internal ledger correction you can back out is safer to automate than a $200 external payment you can't claw back.</p>
+  </div>
+</div>
+
+<div class="callout callout-info">
+  <strong>Key insight: Reversibility predicts safe autonomy better than transaction size</strong>
+  A large but reversible internal operation is safer to automate than a small irreversible external one. Design guardrails around reversibility class, not dollar amounts.
+</div>
+
+<h3>Retrieved Text Informs, It Never Gates</h3>
+
+<p>Business documents hold rule definitions. But rules gating actions must <em>not</em> be read and interpreted at decision time. Rules are extracted ahead of time, curated, and stored as declared preconditions with links to source passages.</p>
+
+<div class="comparison-grid">
+  <div class="compare-card human" style="border-top-color: var(--layer-trust);">
+    <h4 style="color: var(--layer-trust);">Informing (safe)</h4>
+    <ul>
+      <li>Retrieved text shapes proposals</li>
+      <li>Serves as evidence for human approvers</li>
+      <li>Influences what agents suggest</li>
+      <li>Document changes flagged for review</li>
+    </ul>
+  </div>
+  <div class="compare-card agent" style="border-top-color: var(--danger);">
+    <h4 style="color: var(--danger);">Gating (dangerous)</h4>
+    <ul>
+      <li>Retrieved text authorizes actions directly</li>
+      <li>Poisoned documents grant permissions</li>
+      <li>Injected text can fabricate evidence</li>
+      <li>Unknown cases trigger autonomous judgment</li>
+    </ul>
+  </div>
+</div>
+
+<p>Declared rules&mdash;checked deterministically against live state&mdash;authorize actions. Agents may read unstructured content shaping proposals, but never act on retrieved text alone. Provenance links connecting declarations to source documents enable review when documents change&mdash;flagging derived rules for re-checking when sources move. Where declarations don't cover a situation, an undeclared case degrades the agent to supervised mode&mdash;it escalates rather than improvising from its own policy reading. This closes one of the three paths in the lethal trifecta: a poisoned document cannot grant the agent permission it didn't already have.</p>
+
+<div class="section-actions">
+  <h4>Where to start &mdash; Access</h4>
+  <ol>
+    <li><strong>Map data access tiers</strong> for your top three agent use cases. Classify whether each needs retrieval, real-time query, or write-back. Most gaps sit in real-time query and write-back.</li>
+    <li><strong>Design capabilities, not endpoints.</strong> Group existing APIs into 5&ndash;10 well-described business capabilities. Rich descriptions matter&mdash;they guide LLM tool selection.</li>
+    <li><strong>Start with MCP Resources.</strong> Read-only access is lowest-risk entry. Expose knowledge bases, configs, documentation as Resources. Graduate to Tools only with governance in place.</li>
+    <li><strong>Instrument from day one.</strong> Before deploying agents with write access, log every tool invocation: who triggered it, what was called, when, and critically, on whose behalf.</li>
+  </ol>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- OWNERSHIP                                   -->
+<!-- ═══════════════════════════════════════════ -->
+<h2 id="ownership">Data Ownership</h2>
+
+<p>Technology is necessary but insufficient. Every artifact in the stack&mdash;data contracts, metric definitions, access scopes, observability traces&mdash;produces something that must <em>stay true</em>. Artifacts don't maintain themselves.</p>
+
+<div class="svg-diagram">
+  <svg viewBox="0 0 700 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Data ownership: artifacts without owners drift; agents propagate drift at machine speed">
+    <!-- Left: unowned -->
+    <rect x="20" y="20" width="300" height="160" rx="8" fill="var(--danger-bg)" stroke="var(--danger)" stroke-width="1.5"/>
+    <text x="170" y="45" text-anchor="middle" font-size="12" font-weight="700" fill="var(--danger)">Without Named Owner</text>
+    <text x="40" y="72" font-size="10" fill="var(--text-secondary)">Contract drifts out of sync with source</text>
+    <text x="40" y="90" font-size="10" fill="var(--text-secondary)">Metric definitions fork back to 3 versions</text>
+    <text x="40" y="108" font-size="10" fill="var(--text-secondary)">Access scope quietly widens to service account</text>
+    <text x="40" y="126" font-size="10" fill="var(--text-secondary)">Observability gaps emerge silently</text>
+    <text x="170" y="158" text-anchor="middle" font-size="10" font-style="italic" fill="var(--danger)">Human notices, works around it</text>
+    <text x="170" y="172" text-anchor="middle" font-size="10" font-style="italic" fill="var(--danger)">Agent propagates error at machine speed</text>
+
+    <!-- Right: owned -->
+    <rect x="380" y="20" width="300" height="160" rx="8" fill="var(--layer-trust-bg)" stroke="var(--layer-trust)" stroke-width="1.5"/>
+    <text x="530" y="45" text-anchor="middle" font-size="12" font-weight="700" fill="var(--layer-trust)">Data as Product</text>
+    <text x="400" y="72" font-size="10" fill="var(--text-secondary)">Every dataset has a named owner</text>
+    <text x="400" y="90" font-size="10" fill="var(--text-secondary)">Published contract and SLA</text>
+    <text x="400" y="108" font-size="10" fill="var(--text-secondary)">Versioned lifecycle (like APIs)</text>
+    <text x="400" y="126" font-size="10" fill="var(--text-secondary)">Contract blocks deployment at 2am?</text>
+    <text x="400" y="142" font-size="10" fill="var(--text-secondary)">Someone is accountable.</text>
+    <text x="530" y="172" text-anchor="middle" font-size="10" font-style="italic" fill="var(--layer-trust)">Faster consumers = less tolerance for drift</text>
+  </svg>
+</div>
+
+<div class="principle-box">
+  <strong>The ownership principle</strong>
+  The faster and more autonomous the consumers, the less you can afford ownerless data. When a contract blocks a deployment at 2 a.m., someone must be accountable. When finance and sales disagree on "revenue," someone owns the decision. When a new agent requests access, someone reviews the scope.
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- MATURITY ASSESSMENT                         -->
+<!-- ═══════════════════════════════════════════ -->
+<h2 id="assessment">Readiness Assessment</h2>
+
+<p>Score each attribute against these signals. Don't average rows&mdash;the stack is dependency-ordered. Readiness is capped by the weakest foundational layer.</p>
+
+<div style="overflow-x: auto;">
+<table class="readiness-table">
+  <thead>
+    <tr>
+      <th>Attribute</th>
+      <th class="era-human">Human-Era</th>
+      <th class="era-transition">In Transition</th>
+      <th class="era-ready">Agent-Ready</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Trusted</td>
+      <td>Loose schemas, no freshness SLAs; quality rests on analyst noticing</td>
+      <td>Contracts on critical datasets; quality checked but not enforced in CI/CD</td>
+      <td>Contracts enforced as code; freshness SLAs per consumer; quarantine before agent storage; agents read Gold only</td>
+    </tr>
+    <tr>
+      <td>Contextual</td>
+      <td>Metric definitions in BI tools, SQL, heads; humans supply context</td>
+      <td>Some metrics as code; definitions still conflict; agents hit raw schema</td>
+      <td>Context layer in Git: domain model, one semantic definition per metric, curated capabilities; agents route through it</td>
+    </tr>
+    <tr>
+      <td>Traceable</td>
+      <td>Logs show queries and timing; why lives in analyst's head</td>
+      <td>Traces on some workflows; reasoning captured inconsistently</td>
+      <td>Every workflow emits spans with reasoning and sources; any decision's why is reconstructable</td>
+    </tr>
+    <tr>
+      <td>Governed</td>
+      <td>People access through personal roles; systems share broad accounts</td>
+      <td>Agents on scoped but long-lived, coarse credentials</td>
+      <td>Delegated per-user access, just-in-time credentials, least privilege; lethal-trifecta paths closed</td>
+    </tr>
+    <tr>
+      <td>Operational</td>
+      <td>No agent actions; people read dashboards manually</td>
+      <td>Agents retrieve via RAG; real-time reads emerging; write-back experimental or ungoverned</td>
+      <td>All three tiers via well-designed capabilities; write-back gated by staged autonomy and instrumentation</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- WHERE TO START                              -->
+<!-- ═══════════════════════════════════════════ -->
+<h2 id="start">Where to Start</h2>
+
+<p>Four priorities, with observability running alongside everything else from day one.</p>
+
+<div class="action-cards">
+  <div class="action-card">
+    <div class="action-num">1</div>
+    <h4>Instrument from Day One</h4>
+    <p>This runs alongside everything else, not sequentially. Observability is harder to retrofit than build in. You'll want audit trails answering "why" for debugging today and regulators tomorrow.</p>
+  </div>
+  <div class="action-card">
+    <div class="action-num">2</div>
+    <h4>Contract Everything</h4>
+    <p>Freshness SLAs, strict schema enforcement, quarantine for bad data. This is the floor everything stands on. Agents can't smell bad data; the architecture must.</p>
+  </div>
+  <div class="action-card">
+    <div class="action-num">3</div>
+    <h4>Context Over Models</h4>
+    <p>Once data is trusted, a context layer delivers highest returns. AtScale's benchmark: under 20% accuracy on raw schema &rarr; over 92.5% with a semantic layer, same model.</p>
+  </div>
+  <div class="action-card">
+    <div class="action-num">4</div>
+    <h4>Read Before Write</h4>
+    <p>Start with MCP Resources (read-only), graduate to Tools (write) only with governance. Earn autonomy in stages: shadow &rarr; supervised &rarr; guardrails &rarr; full.</p>
+  </div>
+</div>
+
+<div class="callout callout-info">
+  <strong>The Bottom Line</strong>
+  When agents become your primary data consumers, your data architecture <em>becomes</em> your AI architecture. The faster and more autonomous the consumers, the less you can afford ownerless data. Every dataset, contract, and metric needs a named owner, published contract and SLA, and versioned lifecycle&mdash;like APIs.
+</div>
+
+<p style="font-size: 0.88rem; color: var(--text-secondary); margin-top: 1rem;">For deeper treatment of the data architecture patterns discussed here, see Sadalage &amp; Chandrasekaran's forthcoming <em>Data Architecture for Software Architects</em> (O'Reilly).</p>
+  </main>
+
+  <footer>
+    <h2>Sources</h2>
+    <div class="source"><a href="https://martinfowler.com/articles/making-data-ready-for-agentic-ai.html">martinfowler.com/articles/making-data-ready-for-agentic-ai.html</a> &mdash; Pramod Sadalage &amp; Prem Chandrasekaran (Thoughtworks), 27 Aug 2026</div>
+  </footer>
+
+  <script>
+    (function() {
+      var toggle = document.getElementById('theme-toggle');
+      var KEY = 'synthesis-theme';
+
+      function setTheme(t) {
+        document.documentElement.setAttribute('data-theme', t);
+        toggle.setAttribute('aria-label',
+          t === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+        try { localStorage.setItem(KEY, t); } catch(e) {}
+      }
+
+      var saved = null;
+      try { saved = localStorage.getItem(KEY); } catch(e) {}
+
+      if (saved) {
+        setTheme(saved);
+      } else {
+        setTheme(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      }
+
+      toggle.addEventListener('click', function() {
+        var current = document.documentElement.getAttribute('data-theme');
+        setTheme(current === 'dark' ? 'light' : 'dark');
+      });
+    })();
+  </script>
+
+  <script>
+    (function() {
+      var nav = document.querySelector('nav.toc');
+      if (!nav) return;
+      var links = nav.querySelectorAll('a[href^="#"]');
+      if (!links.length) return;
+
+      var sections = [];
+      links.forEach(function(a) {
+        var id = a.getAttribute('href').slice(1);
+        var el = document.getElementById(id);
+        if (el) sections.push({ el: el, link: a });
+      });
+
+      if (!sections.length) return;
+
+      var current = null;
+
+      var observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          entry.target._isVisible = entry.isIntersecting;
+        });
+
+        var topmost = null;
+        for (var i = 0; i < sections.length; i++) {
+          if (sections[i].el._isVisible) { topmost = sections[i]; break; }
+        }
+
+        if (topmost && topmost !== current) {
+          if (current) current.link.classList.remove('active');
+          topmost.link.classList.add('active');
+          current = topmost;
+
+          // scroll the nav to keep the active pill visible
+          var pill = topmost.link;
+          var navRect = nav.getBoundingClientRect();
+          var pillRect = pill.getBoundingClientRect();
+          if (pillRect.left < navRect.left || pillRect.right > navRect.right) {
+            pill.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+          }
+        }
+      }, { rootMargin: '-80px 0px -60% 0px', threshold: 0 });
+
+      sections.forEach(function(s) { observer.observe(s.el); });
+    })();
+  </script>
+</body>
+</html>
